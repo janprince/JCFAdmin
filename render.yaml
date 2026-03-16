@@ -22,3 +22,5 @@ services:
         value: 4
       - key: PYTHON_VERSION
         value: 3.13.0
+      - key: DEBUG
+        value: "False"
