@@ -16,7 +16,7 @@ python manage.py runserver
 
 - **Django 6.0.3** (Python 3.13) with PostgreSQL
 - **Paces Bootstrap 5** admin template (static assets in `static/paces/`)
-- **Paces Bootstrap 5** frontend template (static assets in `/Users/kami/websites/Paces`)
+- **Paces Bootstrap 5** frontend template (static assets in `/Users/kami/websites/Paces`) -> Remember this is the frontend templates we are using for this project
 - **Key packages:** django-environ, django-phonenumber-field, Pillow
 
 ## Project Structure

@@ -52,7 +52,7 @@ class CentreListSerializer(serializers.ModelSerializer):
         model = Centre
         fields = [
             'id', 'name', 'slug', 'location', 'country', 'image_url',
-            'leader', 'member_count', 'is_active',
+            'leader', 'coordinates', 'member_count', 'is_active',
         ]
 
     def get_leader(self, obj):

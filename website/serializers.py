@@ -106,6 +106,8 @@ class ContactSubmissionSerializer(serializers.ModelSerializer):
 
 
 class VolunteerApplicationSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = VolunteerApplication
         fields = [
@@ -116,6 +118,8 @@ class VolunteerApplicationSerializer(serializers.ModelSerializer):
 
 
 class JoinCentreRequestSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = JoinCentreRequest
         fields = [
