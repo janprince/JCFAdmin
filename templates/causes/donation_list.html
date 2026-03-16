@@ -1,0 +1,205 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Donations | JCF Management{% endblock %}
+{% block page_title %}Donations{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Donations</li>
+{% endblock %}
+
+{% block content %}
+<!-- Summary Cards -->
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary-subtle rounded">
+                        <span class="avatar-title text-primary"><i class="ti ti-heart fs-20"></i></span>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ total_donations }}</h4>
+                        <p class="text-muted mb-0">Total Donations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-success-subtle rounded">
+                        <span class="avatar-title text-success"><i class="ti ti-currency-dollar fs-20"></i></span>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">GHS {{ total_amount|floatformat:2 }}</h4>
+                        <p class="text-muted mb-0">Total Amount</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-success-subtle rounded">
+                        <span class="avatar-title text-success"><i class="ti ti-check fs-20"></i></span>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ completed_count }}</h4>
+                        <p class="text-muted mb-0">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-warning-subtle rounded">
+                        <span class="avatar-title text-warning"><i class="ti ti-clock fs-20"></i></span>
+                    </div>
+                    <div class="ms-3">
+                        <h4 class="mb-0">{{ pending_count }}</h4>
+                        <p class="text-muted mb-0">Pending</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">All Donations</h5>
+                <a href="{% url 'causes:donation_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> Record Donation
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <div class="app-search">
+                                <input type="search" name="q" class="form-control" placeholder="Search by donor name..." value="{{ search_query }}" />
+                                <i class="ti ti-search app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="method" class="form-select">
+                                <option value="">All Methods</option>
+                                {% for value, label in method_choices %}
+                                <option value="{{ value }}" {% if selected_method == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="cause" class="form-select">
+                                <option value="">All Causes</option>
+                                {% for c in causes %}
+                                <option value="{{ c.pk }}" {% if selected_cause == c.pk|stringformat:"d" %}selected{% endif %}>{{ c.title|truncatewords:5 }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            {% if search_query or selected_method or selected_status or selected_cause %}
+                            <a href="{% url 'causes:donation_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>#</th>
+                                <th>Donor</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Cause</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in donations %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if d.is_anonymous %}
+                                    <span class="text-muted fst-italic">Anonymous</span>
+                                    {% else %}
+                                    <span class="fw-semibold">{{ d.donor_name }}</span>
+                                    {% if d.donor_email %}<br><small class="text-muted">{{ d.donor_email }}</small>{% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.currency }} {{ d.amount|floatformat:2 }}</td>
+                                <td><span class="badge bg-info-subtle text-info">{{ d.get_method_display }}</span></td>
+                                <td>
+                                    {% if d.cause %}
+                                    <a href="{% url 'causes:cause_detail' d.cause.pk %}" class="text-reset">{{ d.cause.title|truncatewords:4 }}</a>
+                                    {% else %}
+                                    <span class="text-muted">General</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if d.status == "completed" %}
+                                    <span class="badge bg-success-subtle text-success">Completed</span>
+                                    {% elif d.status == "pending" %}
+                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
+                                    {% elif d.status == "failed" %}
+                                    <span class="badge bg-danger-subtle text-danger">Failed</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">Refunded</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.donated_at|date:"d M Y H:i" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'causes:donation_update' d.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
+                                        <i class="ti ti-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'causes:donation_delete' d.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this donation?')">
+                                        <i class="ti ti-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No donations found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_cause %}&cause={{ selected_cause }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_cause %}&cause={{ selected_cause }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_method %}&method={{ selected_method }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_cause %}&cause={{ selected_cause }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

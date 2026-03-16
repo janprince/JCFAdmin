@@ -1,0 +1,114 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Team Members | JCF Management{% endblock %}
+{% block page_title %}Team Members{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Team Members</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Team</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="app-search">
+                                <input type="search" name="q" class="form-control" placeholder="Search by name..." value="{{ search_query }}" />
+                                <i class="ti ti-search app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            {% if search_query %}
+                            <a href="{% url 'website:team_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="row">
+                    {% for member in team_members %}
+                    <div class="col-sm-6 col-md-4 mb-3">
+                        <div class="card border shadow-none mb-0 h-100 text-center">
+                            <div class="card-body p-3">
+                                {% if member.image %}
+                                <img src="{{ member.image.url }}" class="rounded-circle mb-2" alt="{{ member.name }}" width="80" height="80" style="object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-primary-subtle d-inline-flex align-items-center justify-content-center mb-2" style="width: 80px; height: 80px;">
+                                    <i class="ti ti-user fs-1 text-primary"></i>
+                                </div>
+                                {% endif %}
+                                <h6 class="mb-0">{{ member.name }}</h6>
+                                <small class="text-muted">{{ member.role }}</small>
+                                <div class="mt-2">
+                                    {% if not member.is_active %}
+                                    <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                                    {% endif %}
+                                    <span class="badge bg-light text-dark">Order: {{ member.order }}</span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent p-2">
+                                <a href="{% url 'website:team_update' member.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
+                                    <i class="ti ti-pencil"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-center text-muted py-4">No team members yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Add Team Member</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'website:team_create' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.role.id_for_label }}" class="form-label">Role <span class="text-danger">*</span></label>
+                        {{ form.role }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.bio.id_for_label }}" class="form-label">Bio <span class="text-danger">*</span></label>
+                        {{ form.bio }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Photo</label>
+                        {{ form.image }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.order.id_for_label }}" class="form-label">Order</label>
+                        {{ form.order }}
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ti ti-plus me-1"></i>Add Member
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

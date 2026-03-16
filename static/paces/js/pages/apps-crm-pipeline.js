@@ -1,0 +1,1 @@
+document.addEventListener("DOMContentLoaded",()=>{var e=document.querySelectorAll('[data-plugins="sortable"]');0===e.length?console.error('CRM Pipeline: Elements with data-plugins="sortable" not found.'):e.forEach(e=>{new Sortable(e,{animation:150,group:"shared",ghostClass:"sortable-item-ghost",forceFallback:!0,emptyInsertThreshold:100,chosenClass:"sortable-item-active"})})});

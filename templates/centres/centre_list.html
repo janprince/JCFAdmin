@@ -1,0 +1,151 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Centres | JCF Management{% endblock %}
+{% block page_title %}Centres{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Centres</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <form method="get" class="d-flex gap-2">
+                <div class="app-search">
+                    <input type="search" name="q" class="form-control" placeholder="Search centres..." value="{{ search_query }}" />
+                    <i class="ti ti-search app-search-icon text-muted"></i>
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+                {% if search_query %}
+                <a href="{% url 'centres:centre_list' %}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </form>
+            <a href="{% url 'centres:centre_create' %}" class="btn btn-primary">
+                <i class="ti ti-plus me-1"></i>Add Centre
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for centre in centres %}
+    <div class="col-xl-4 col-md-6">
+        <div class="card">
+            {% if centre.image %}
+            <img src="{{ centre.image.url }}" class="card-img-top" alt="{{ centre.name }}" style="height: 180px; object-fit: cover;" />
+            {% else %}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                <i class="ti ti-building-community text-muted" style="font-size: 3rem;"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ centre.name }}</h5>
+                    {% if centre.is_active %}
+                    <span class="badge bg-success-subtle text-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-danger-subtle text-danger">Inactive</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted mb-2">
+                    <i class="ti ti-map-pin me-1"></i>{{ centre.location }}, {{ centre.country }}
+                </p>
+                {% if centre.address %}
+                <p class="text-muted small mb-2">
+                    <i class="ti ti-home me-1"></i>{{ centre.address|truncatewords:8 }}
+                </p>
+                {% endif %}
+
+                <div class="d-flex align-items-center mb-3">
+                    {% if centre.leader_avatar %}
+                    <img src="{{ centre.leader_avatar.url }}" class="rounded-circle me-2" width="32" height="32" alt="{{ centre.leader_name }}" />
+                    {% else %}
+                    <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                        <i class="ti ti-user text-primary"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <span class="fw-semibold d-block lh-1">{{ centre.leader_name }}</span>
+                        <small class="text-muted">{{ centre.leader_title }}</small>
+                    </div>
+                </div>
+
+                <div class="row text-center border-top pt-2">
+                    <div class="col-4">
+                        <p class="mb-0">
+                            <i class="ti ti-users text-muted me-1"></i>
+                            <span class="fw-semibold">{{ centre.member_count }}</span>
+                        </p>
+                        <small class="text-muted">Members</small>
+                    </div>
+                    <div class="col-4">
+                        <p class="mb-0 text-truncate" title="{{ centre.contact_email }}">
+                            <i class="ti ti-mail text-muted me-1"></i>
+                        </p>
+                        <small class="text-muted text-truncate d-block">{{ centre.contact_email|truncatechars:12 }}</small>
+                    </div>
+                    <div class="col-4">
+                        <p class="mb-0">
+                            <i class="ti ti-phone text-muted me-1"></i>
+                        </p>
+                        <small class="text-muted">{{ centre.contact_phone }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-end gap-1">
+                <a href="{% url 'centres:centre_update' centre.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
+                    <i class="ti ti-pencil"></i>
+                </a>
+                <form method="post" action="{% url 'centres:centre_delete' centre.pk %}" class="d-inline" onsubmit="return confirm('Delete {{ centre.name }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-soft-danger" title="Delete">
+                        <i class="ti ti-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="ti ti-building-community" style="font-size: 3rem;"></i>
+                <p class="mt-2 mb-0">No centres found.</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="row">
+    <div class="col-12">
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                        <i class="ti ti-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                    <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                        <i class="ti ti-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

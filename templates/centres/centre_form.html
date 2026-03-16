@@ -1,0 +1,155 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit Centre{% else %}Add Centre{% endif %} | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Centre{% else %}Add Centre{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'centres:centre_list' %}">Centres</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row mt-3">
+        <!-- Left Column: Basic Info -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-building-community me-1"></i>Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-danger fs-12 mt-1">{{ form.name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">Location <span class="text-danger">*</span></label>
+                            {{ form.location }}
+                            {% if form.location.errors %}<div class="text-danger fs-12 mt-1">{{ form.location.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.country.id_for_label }}" class="form-label">Country <span class="text-danger">*</span></label>
+                            {{ form.country }}
+                            {% if form.country.errors %}<div class="text-danger fs-12 mt-1">{{ form.country.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">Address <span class="text-danger">*</span></label>
+                        {{ form.address }}
+                        {% if form.address.errors %}<div class="text-danger fs-12 mt-1">{{ form.address.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-danger">*</span></label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-danger fs-12 mt-1">{{ form.description.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.image.id_for_label }}" class="form-label">Centre Image</label>
+                        {{ form.image }}
+                        {% if form.image.errors %}<div class="text-danger fs-12 mt-1">{{ form.image.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.member_count.id_for_label }}" class="form-label">Member Count</label>
+                            {{ form.member_count }}
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Leader, Contact, Coordinates -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-user me-1"></i>Leader
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.leader_name.id_for_label }}" class="form-label">Leader Name <span class="text-danger">*</span></label>
+                        {{ form.leader_name }}
+                        {% if form.leader_name.errors %}<div class="text-danger fs-12 mt-1">{{ form.leader_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.leader_title.id_for_label }}" class="form-label">Leader Title <span class="text-danger">*</span></label>
+                        {{ form.leader_title }}
+                        {% if form.leader_title.errors %}<div class="text-danger fs-12 mt-1">{{ form.leader_title.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.leader_avatar.id_for_label }}" class="form-label">Leader Avatar</label>
+                        {{ form.leader_avatar }}
+                        {% if form.leader_avatar.errors %}<div class="text-danger fs-12 mt-1">{{ form.leader_avatar.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-address-book me-1"></i>Contact
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.contact_email.id_for_label }}" class="form-label">Email <span class="text-danger">*</span></label>
+                        {{ form.contact_email }}
+                        {% if form.contact_email.errors %}<div class="text-danger fs-12 mt-1">{{ form.contact_email.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Phone <span class="text-danger">*</span></label>
+                        {{ form.contact_phone }}
+                        {% if form.contact_phone.errors %}<div class="text-danger fs-12 mt-1">{{ form.contact_phone.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-map-2 me-1"></i>Coordinates
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.latitude.id_for_label }}" class="form-label">Latitude</label>
+                            {{ form.latitude }}
+                            {% if form.latitude.errors %}<div class="text-danger fs-12 mt-1">{{ form.latitude.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.longitude.id_for_label }}" class="form-label">Longitude</label>
+                            {{ form.longitude }}
+                            {% if form.longitude.errors %}<div class="text-danger fs-12 mt-1">{{ form.longitude.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="ti ti-device-floppy me-1"></i>{% if object %}Update Centre{% else %}Add Centre{% endif %}
+                </button>
+                <a href="{% url 'centres:centre_list' %}" class="btn btn-outline-secondary ms-1">Cancel</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

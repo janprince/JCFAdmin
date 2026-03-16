@@ -1,0 +1,203 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{{ contact.full_name }} | JCF Management{% endblock %}
+{% block page_title %}{{ contact.full_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'members:contact_list' %}">Contacts</a></li>
+<li class="breadcrumb-item active">{{ contact.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="avatar-xl mx-auto mb-3">
+                    <span class="avatar-title bg-primary-subtle text-primary rounded-circle fs-24">{{ contact.full_name|make_list|first }}</span>
+                </div>
+                <h4 class="mb-1">{{ contact.full_name }}</h4>
+                <p class="text-muted">{{ contact.profession|default:"No profession" }}</p>
+                <div class="mb-3">
+                    {% if contact.is_member %}<span class="badge bg-primary me-1">Member</span>{% endif %}
+                    {% if contact.is_student %}<span class="badge bg-success me-1">Student</span>{% endif %}
+                    {% if contact.is_initiate %}<span class="badge bg-info">Initiate</span>{% endif %}
+                </div>
+                {% if pending_consultation %}
+                <div class="alert alert-warning mb-3">
+                    <i class="ti ti-calendar me-1"></i>
+                    Consultation: {{ pending_consultation.scheduled_date|date:"d M Y" }} ({{ pending_consultation.mode }})
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{% url 'consultations:consultation_create' %}?contact={{ contact.pk }}" class="btn btn-warning btn-sm"><i class="ti ti-calendar-plus me-1"></i>Book Consultation</a>
+                    <a href="{% url 'members:contact_update' contact.pk %}" class="btn btn-primary btn-sm"><i class="ti ti-pencil me-1"></i>Edit</a>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="ti ti-trash me-1"></i>Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Contact Information</h5></div>
+            <div class="card-body">
+                <div class="mb-2"><i class="ti ti-phone me-2 text-muted"></i><span>{{ contact.phone }}</span></div>
+                {% if contact.telephone %}<div class="mb-2"><i class="ti ti-phone-call me-2 text-muted"></i><span>{{ contact.telephone }}</span></div>{% endif %}
+                {% if contact.email %}<div class="mb-2"><i class="ti ti-mail me-2 text-muted"></i><span>{{ contact.email }}</span></div>{% endif %}
+                <div class="mb-2"><i class="ti ti-map-pin me-2 text-muted"></i><span>{{ contact.residence|default:"-" }}, {{ contact.country }}</span></div>
+                <div class="mb-2"><i class="ti ti-home me-2 text-muted"></i><span>Hometown: {{ contact.hometown|default:"-" }}</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Personal Details</h5></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><td class="text-muted">Gender</td><td>{{ contact.gender|default:"-" }}</td></tr>
+                    <tr><td class="text-muted">Date of Birth</td><td>{{ contact.date_of_birth|date:"d M Y"|default:"-" }}</td></tr>
+                    <tr><td class="text-muted">Religion</td><td>{{ contact.religion }}</td></tr>
+                    <tr><td class="text-muted">Referral</td><td>{{ contact.referral|default:"-" }}</td></tr>
+                    <tr><td class="text-muted">Father</td><td>{{ contact.father_name|default:"-" }}</td></tr>
+                    <tr><td class="text-muted">Mother</td><td>{{ contact.mother_name|default:"-" }}</td></tr>
+                    <tr><td class="text-muted">Added</td><td>{{ contact.created_at|date:"d M Y" }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <!-- Inquiries -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Inquiries</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addInquiryModal"><i class="ti ti-plus me-1"></i>Add Inquiry</button>
+            </div>
+            <div class="card-body">
+                {% if inquiries %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr><th>Subject</th><th>Remark</th><th>Guidance</th><th>Date</th><th class="text-end">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for inq in inquiries %}
+                            <tr>
+                                <td>{{ inq.subject|truncatewords:10 }}</td>
+                                <td>{{ inq.remark|truncatewords:10|default:"-" }}</td>
+                                <td>{{ inq.guidance|truncatewords:10|default:"-" }}</td>
+                                <td>{{ inq.created_at|date:"d M Y" }}</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-soft-info" data-bs-toggle="modal" data-bs-target="#editInquiryModal{{ inq.pk }}"><i class="ti ti-pencil"></i></button>
+                                    <a href="{% url 'members:delete_inquiry' inq.pk %}?contact_id={{ contact.pk }}" class="btn btn-sm btn-soft-danger" onclick="return confirm('Delete this inquiry?')"><i class="ti ti-trash"></i></a>
+                                </td>
+                            </tr>
+                            <!-- Edit Inquiry Modal -->
+                            <div class="modal fade" id="editInquiryModal{{ inq.pk }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" action="{% url 'members:update_inquiry' inq.pk %}?contact_id={{ contact.pk }}">
+                                            {% csrf_token %}
+                                            <div class="modal-header"><h5 class="modal-title">Edit Inquiry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                            <div class="modal-body">
+                                                <div class="mb-3"><label class="form-label">Subject</label><textarea name="subject" class="form-control" rows="3">{{ inq.subject }}</textarea></div>
+                                                <div class="mb-3"><label class="form-label">Remark</label><textarea name="remark" class="form-control" rows="2">{{ inq.remark }}</textarea></div>
+                                                <div class="mb-3"><label class="form-label">Guidance</label><textarea name="guidance" class="form-control" rows="2">{{ inq.guidance }}</textarea></div>
+                                            </div>
+                                            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Update</button></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0 py-3">No inquiries yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Files -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Attached Files</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFileModal"><i class="ti ti-upload me-1"></i>Upload Files</button>
+            </div>
+            <div class="card-body">
+                {% if datafiles %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50"><tr><th>File</th><th>Type</th><th>Size</th><th>Uploaded</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody>
+                            {% for file in datafiles %}
+                            <tr>
+                                <td><a href="{{ file.file.url }}" target="_blank"><i class="ti ti-file me-1"></i>{{ file.file.name|cut:"data-files/" }}</a></td>
+                                <td>{{ file.extension }}</td>
+                                <td>{{ file.filesize }}</td>
+                                <td>{{ file.created_at|date:"d M Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{{ file.file.url }}" class="btn btn-sm btn-soft-primary" target="_blank"><i class="ti ti-download"></i></a>
+                                    <a href="{% url 'members:delete_datafile' file.pk %}" class="btn btn-sm btn-soft-danger" onclick="return confirm('Delete this file?')"><i class="ti ti-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0 py-3">No files attached.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Inquiry Modal -->
+<div class="modal fade" id="addInquiryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'members:add_inquiry' contact.pk %}">
+                {% csrf_token %}
+                <div class="modal-header"><h5 class="modal-title">Add Inquiry</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Subject</label><textarea name="subject" class="form-control" rows="3" required></textarea></div>
+                    <div class="mb-3"><label class="form-label">Remark</label><textarea name="remark" class="form-control" rows="2"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Guidance</label><textarea name="guidance" class="form-control" rows="2"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add File Modal -->
+<div class="modal fade" id="addFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'members:add_datafiles' contact.pk %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-header"><h5 class="modal-title">Upload Files</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Select Files</label><input type="file" name="datafiles" class="form-control" multiple required /><small class="text-muted">You can select multiple files.</small></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Upload</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'members:contact_delete' contact.pk %}">
+                {% csrf_token %}
+                <div class="modal-header"><h5 class="modal-title">Delete {{ contact.full_name }}?</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body"><p>Are you sure you want to delete <strong>{{ contact.full_name }}</strong>? This action cannot be undone.</p></div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-danger">Delete</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

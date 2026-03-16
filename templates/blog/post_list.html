@@ -1,0 +1,139 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Blog Posts | JCF Management{% endblock %}
+{% block page_title %}Blog Posts{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Blog Posts</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">All Posts</h5>
+                <div>
+                    <a href="{% url 'blog:author_list' %}" class="btn btn-soft-secondary btn-sm me-1">
+                        <i class="ti ti-users me-1"></i>Authors
+                    </a>
+                    <a href="{% url 'blog:category_list' %}" class="btn btn-soft-secondary btn-sm me-1">
+                        <i class="ti ti-category me-1"></i>Categories
+                    </a>
+                    <a href="{% url 'blog:tag_list' %}" class="btn btn-soft-secondary btn-sm me-1">
+                        <i class="ti ti-tags me-1"></i>Tags
+                    </a>
+                    <a href="{% url 'blog:post_create' %}" class="btn btn-primary btn-sm">
+                        <i class="ti ti-plus me-1"></i>New Post
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <div class="app-search">
+                                <input type="search" name="q" class="form-control" placeholder="Search posts..." value="{{ search_query }}" />
+                                <i class="ti ti-search app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-select">
+                                <option value="">All Statuses</option>
+                                <option value="draft" {% if current_status == "draft" %}selected{% endif %}>Draft</option>
+                                <option value="published" {% if current_status == "published" %}selected{% endif %}>Published</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.pk }}" {% if current_category == cat.pk|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            {% if search_query or current_status or current_category %}
+                            <a href="{% url 'blog:post_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for post in posts %}
+                            <tr>
+                                <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
+                                <td>
+                                    <span class="fw-semibold">{{ post.title }}</span>
+                                    <br><small class="text-muted">{{ post.excerpt|truncatewords:12 }}</small>
+                                </td>
+                                <td>{{ post.author|default:"-" }}</td>
+                                <td>
+                                    {% if post.category %}
+                                    <span class="badge bg-primary-subtle text-primary">{{ post.category.name }}</span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if post.status == "published" %}
+                                    <span class="badge bg-success-subtle text-success">Published</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning">Draft</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if post.published_date %}
+                                    {{ post.published_date|date:"d M Y" }}
+                                    {% else %}
+                                    <span class="text-muted">{{ post.created_at|date:"d M Y" }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'blog:post_update' post.pk %}" class="btn btn-sm btn-soft-info me-1" title="Edit">
+                                        <i class="ti ti-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'blog:post_delete' post.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this post?')">
+                                        <i class="ti ti-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No posts found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_category %}&category={{ current_category }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

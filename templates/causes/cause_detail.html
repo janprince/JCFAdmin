@@ -1,0 +1,132 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{{ cause.title }} | JCF Management{% endblock %}
+{% block page_title %}{{ cause.title }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'causes:cause_list' %}">Causes</a></li>
+<li class="breadcrumb-item active">{{ cause.title|truncatewords:5 }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-body">
+                {% if cause.image %}
+                <img src="{{ cause.image.url }}" alt="{{ cause.title }}" class="img-fluid rounded mb-3">
+                {% endif %}
+                <h4 class="mb-1">{{ cause.title }}</h4>
+                <p class="text-muted">{{ cause.description }}</p>
+                <div class="mb-3">
+                    {% if cause.is_active %}
+                    <span class="badge bg-success-subtle text-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                    {% endif %}
+                    {% if cause.category %}
+                    <span class="badge bg-primary-subtle text-primary ms-1">{{ cause.category.name }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Progress -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold">{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }} raised</span>
+                        <span class="text-muted">of {{ cause.currency }} {{ cause.goal_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if cause.progress_percent >= 100 %}bg-success{% elif cause.progress_percent >= 50 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ cause.progress_percent }}%;"></div>
+                    </div>
+                    <small class="text-muted">{{ cause.progress_percent }}% funded &middot; {{ cause.donors_count }} donor{{ cause.donors_count|pluralize }}</small>
+                </div>
+
+                <table class="table table-sm table-borderless mb-3">
+                    <tr><td class="text-muted">Created</td><td>{{ cause.created_at|date:"d M Y" }}</td></tr>
+                    <tr><td class="text-muted">Updated</td><td>{{ cause.updated_at|date:"d M Y" }}</td></tr>
+                </table>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'causes:cause_update' cause.pk %}" class="btn btn-primary btn-sm"><i class="ti ti-pencil me-1"></i>Edit</a>
+                    <a href="{% url 'causes:cause_delete' cause.pk %}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this cause?')"><i class="ti ti-trash me-1"></i>Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <!-- Content -->
+        {% if cause.content %}
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Details</h5></div>
+            <div class="card-body">{{ cause.content|safe }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Donations -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Donations ({{ donations|length }})</h5>
+                <a href="{% url 'causes:donation_create' %}?cause={{ cause.pk }}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i>Add Donation
+                </a>
+            </div>
+            <div class="card-body">
+                {% if donations %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>#</th>
+                                <th>Donor</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in donations %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if d.is_anonymous %}
+                                    <span class="text-muted fst-italic">Anonymous</span>
+                                    {% else %}
+                                    <span class="fw-semibold">{{ d.donor_name }}</span>
+                                    {% if d.donor_email %}<br><small class="text-muted">{{ d.donor_email }}</small>{% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.currency }} {{ d.amount|floatformat:2 }}</td>
+                                <td><span class="badge bg-info-subtle text-info">{{ d.get_method_display }}</span></td>
+                                <td>
+                                    {% if d.status == "completed" %}
+                                    <span class="badge bg-success-subtle text-success">Completed</span>
+                                    {% elif d.status == "pending" %}
+                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
+                                    {% elif d.status == "failed" %}
+                                    <span class="badge bg-danger-subtle text-danger">Failed</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">Refunded</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.donated_at|date:"d M Y H:i" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'causes:donation_update' d.pk %}" class="btn btn-sm btn-soft-info" title="Edit"><i class="ti ti-pencil"></i></a>
+                                    <a href="{% url 'causes:donation_delete' d.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this donation?')"><i class="ti ti-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0 py-3">No donations yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

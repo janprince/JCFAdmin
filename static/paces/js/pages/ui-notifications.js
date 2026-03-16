@@ -1,0 +1,1 @@
+let toastTrigger=document.querySelector("#liveToastBtn"),toastLiveExample=document.querySelector("#liveToast"),toastBootstrap=(toastTrigger&&toastLiveExample||console.error("UI Notifications: Elements not found."),bootstrap.Toast.getOrCreateInstance(toastLiveExample));toastTrigger.addEventListener("click",()=>{toastBootstrap.show()});

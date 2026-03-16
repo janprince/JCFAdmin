@@ -1,0 +1,211 @@
+{% load static %}
+<div class="sidenav-menu">
+    <!-- Brand Logo -->
+    <a href="{% url 'dashboard:analytics' %}" class="logo">
+        <span class="logo logo-light">
+            <span class="logo-lg"><img src="{% static 'paces/images/logo.png' %}" alt="logo" /></span>
+            <span class="logo-sm"><img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" /></span>
+        </span>
+        <span class="logo logo-dark">
+            <span class="logo-lg"><img src="{% static 'paces/images/logo-black.png' %}" alt="dark logo" /></span>
+            <span class="logo-sm"><img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" /></span>
+        </span>
+    </a>
+
+    <button class="button-on-hover">
+        <span class="btn-on-hover-icon"></span>
+    </button>
+
+    <button class="button-close-offcanvas">
+        <i class="ti ti-menu-4 align-middle"></i>
+    </button>
+
+    <div class="scrollbar" data-simplebar="">
+        <div id="user-profile-settings" class="sidenav-user" style="background: url({% static 'paces/images/user-bg-pattern.svg' %})">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="#!" class="link-reset">
+                        <img src="{% static 'paces/images/users/user-1.jpg' %}" alt="user-image" class="rounded-circle mb-2 avatar-md" />
+                        <span class="sidenav-user-name fw-bold">{{ request.user.get_full_name|default:request.user.username }}</span>
+                        <span class="fs-12 fw-semibold">{{ request.user.profile.get_role_display|default:"Staff" }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="sidenav-menu">
+            <ul class="side-nav">
+
+                <li class="side-nav-title mt-2">Main</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'dashboard:analytics' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-dashboard"></i></span>
+                        <span class="menu-text">Dashboard</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-title mt-2">Foundation</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'members:contact_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-address-book"></i></span>
+                        <span class="menu-text">Contacts</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'members:member_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-users"></i></span>
+                        <span class="menu-text">Members</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'members:student_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-school"></i></span>
+                        <span class="menu-text">Students</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'consultations:consultation_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-calendar"></i></span>
+                        <span class="menu-text">Consultations</span>
+                    </a>
+                </li>
+
+                {% if perms.staff_mgmt.view_worker %}
+                <li class="side-nav-title mt-2">Administration</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'staff:staff_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-briefcase"></i></span>
+                        <span class="menu-text">Staff</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="side-nav-title mt-2">Content</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'teachings:teaching_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-book"></i></span>
+                        <span class="menu-text">Teachings</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'events:event_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-calendar-event"></i></span>
+                        <span class="menu-text">Events</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'blog:post_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-article"></i></span>
+                        <span class="menu-text">Blog</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'centres:centre_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-building"></i></span>
+                        <span class="menu-text">Centres</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-title mt-2">Donations</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'causes:cause_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-heart-handshake"></i></span>
+                        <span class="menu-text">Causes</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'causes:donation_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-cash"></i></span>
+                        <span class="menu-text">Donations</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-title mt-2">Website</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'website:gallery_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-photo"></i></span>
+                        <span class="menu-text">Gallery</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a data-bs-toggle="collapse" href="#websiteSubmenu" aria-expanded="false" aria-controls="websiteSubmenu" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-world"></i></span>
+                        <span class="menu-text">Website Content</span>
+                        <span class="menu-arrow"></span>
+                    </a>
+                    <div class="collapse" id="websiteSubmenu">
+                        <ul class="sub-menu">
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:team_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Team Members</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:testimonial_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Testimonials</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:volunteer_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Volunteer Roles</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:impact_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Impact Stats</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <li class="side-nav-item">
+                    <a data-bs-toggle="collapse" href="#submissionsSubmenu" aria-expanded="false" aria-controls="submissionsSubmenu" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-inbox"></i></span>
+                        <span class="menu-text">Submissions</span>
+                        <span class="menu-arrow"></span>
+                    </a>
+                    <div class="collapse" id="submissionsSubmenu">
+                        <ul class="sub-menu">
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:contact_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Contact Messages</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:volunteer_app_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Volunteer Applications</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:join_request_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Join Requests</span>
+                                </a>
+                            </li>
+                            <li class="side-nav-item">
+                                <a href="{% url 'website:newsletter_list' %}" class="side-nav-link">
+                                    <span class="menu-text">Newsletter Subscribers</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</div>

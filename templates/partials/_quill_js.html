@@ -1,0 +1,47 @@
+{% load static %}
+<!-- Quill Editor JS -->
+<script src="{% static 'paces/plugins/quill/quill.js' %}"></script>
+<script src="{% static 'paces/js/pages/form-quilljs.js' %}"></script>
+<script>
+(function() {
+    // Initialize Quill on all .quill-editor containers
+    document.querySelectorAll('.quill-editor').forEach(function(container) {
+        var hiddenInput = document.getElementById(container.dataset.input);
+        var quill = new Quill(container, {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{font: []}],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{color: []}, {background: []}],
+                    [{script: 'super'}, {script: 'sub'}],
+                    [{header: [false, 1, 2, 3, 4, 5, 6]}],
+                    ['blockquote', 'code-block'],
+                    [{list: 'ordered'}, {list: 'bullet'}, {indent: '-1'}, {indent: '+1'}],
+                    [{align: []}],
+                    ['link', 'image', 'video'],
+                    ['clean']
+                ]
+            }
+        });
+
+        // Load existing content into editor
+        if (hiddenInput.value) {
+            quill.root.innerHTML = hiddenInput.value;
+        }
+
+        // Sync editor content to hidden input on text change
+        quill.on('text-change', function() {
+            hiddenInput.value = quill.root.innerHTML;
+        });
+
+        // Also sync on form submit to catch any edge cases
+        var form = container.closest('form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                hiddenInput.value = quill.root.innerHTML;
+            });
+        }
+    });
+})();
+</script>

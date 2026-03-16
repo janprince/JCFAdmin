@@ -1,0 +1,120 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if form.instance.pk %}Edit{% else %}Add{% endif %} Contact | JCF Management{% endblock %}
+{% block page_title %}{% if form.instance.pk %}Edit {{ form.instance.full_name }}{% else %}Add New Contact{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'members:contact_list' %}">Contacts</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{% if form.instance.pk %}Edit Record{% else %}New Contact{% endif %}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-0 mb-3">Personal Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.full_name.id_for_label }}" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            {{ form.full_name }}
+                            {% if form.full_name.errors %}<div class="text-danger fs-12 mt-1">{{ form.full_name.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.gender.id_for_label }}" class="form-label">Gender</label>
+                            {{ form.gender }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">Date of Birth</label>
+                            {{ form.date_of_birth }}
+                        </div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Contact Information</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">Phone <span class="text-danger">*</span></label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}<div class="text-danger fs-12 mt-1">{{ form.phone.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.telephone.id_for_label }}" class="form-label">Telephone</label>
+                            {{ form.telephone }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Location</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3"><label class="form-label">Residence</label>{{ form.residence }}</div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Hometown</label>{{ form.hometown }}</div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Country</label>{{ form.country }}</div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Other Details</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3"><label class="form-label">Profession</label>{{ form.profession }}</div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Religion</label>{{ form.religion }}</div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Referral</label>{{ form.referral }}</div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Family</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label">Father's Name</label>{{ form.father_name }}</div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Mother's Name</label>{{ form.mother_name }}</div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Roles</h5>
+                    <div class="row">
+                        <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_member }}<label class="form-check-label" for="{{ form.is_member.id_for_label }}">Member</label></div></div>
+                        <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_student }}<label class="form-check-label" for="{{ form.is_student.id_for_label }}">Student</label></div></div>
+                        <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_initiate }}<label class="form-check-label" for="{{ form.is_initiate.id_for_label }}">Initiate</label></div></div>
+                    </div>
+
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Attachments</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Upload Files</label>
+                            <input type="file" name="datafiles" class="form-control" multiple />
+                            <small class="text-muted">You can select multiple files.</small>
+                        </div>
+                    </div>
+
+                    {% if form.instance.pk and form.instance.datafiles.all %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Existing Files</label>
+                            <ul class="list-group">
+                                {% for file in form.instance.datafiles.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <a href="{{ file.file.url }}" target="_blank">{{ file.file.name|cut:"data-files/" }} ({{ file.filesize }})</a>
+                                    <a href="{% url 'members:delete_datafile' file.pk %}" class="btn btn-sm btn-soft-danger" onclick="return confirm('Delete this file?')"><i class="ti ti-trash"></i></a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>{% if form.instance.pk %}Update Record{% else %}Save Record{% endif %}</button>
+                            <a href="{% url 'members:contact_list' %}" class="btn btn-outline-secondary ms-1">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

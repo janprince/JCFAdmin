@@ -1,0 +1,1 @@
+document.addEventListener("DOMContentLoaded",function(){var e=document.getElementById("select-all-email");let t=document.querySelectorAll(".email-item-check");e&&0!==t.length?e.addEventListener("change",function(){t.forEach(e=>{e.checked=this.checked})}):console.error("Apps Email: Required elements not found.")});

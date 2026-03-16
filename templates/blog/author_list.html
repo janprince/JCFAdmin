@@ -1,0 +1,93 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Blog Authors | JCF Management{% endblock %}
+{% block page_title %}Blog Authors{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'blog:post_list' %}">Blog Posts</a></li>
+<li class="breadcrumb-item active">Authors</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">All Authors</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Posts</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for author in authors %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if author.avatar %}
+                                    <img src="{{ author.avatar.url }}" alt="{{ author.name }}" class="rounded-circle me-2" width="32" height="32" />
+                                    {% endif %}
+                                    <span class="fw-semibold">{{ author.name }}</span>
+                                </td>
+                                <td>{{ author.role }}</td>
+                                <td><span class="badge bg-primary-subtle text-primary">{{ author.posts.count }}</span></td>
+                                <td class="text-end">
+                                    <a href="{% url 'blog:author_update' author.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
+                                        <i class="ti ti-pencil"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No authors yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Add New Author</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'blog:author_create' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.role.id_for_label }}" class="form-label">Role <span class="text-danger">*</span></label>
+                        {{ form.role }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.avatar.id_for_label }}" class="form-label">Avatar</label>
+                        {{ form.avatar }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.bio.id_for_label }}" class="form-label">Bio</label>
+                        {{ form.bio }}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ti ti-plus me-1"></i>Add Author
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

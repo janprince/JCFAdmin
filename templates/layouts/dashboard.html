@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block body %}
+<!-- Begin page -->
+<div class="wrapper">
+    {% include "partials/_topbar.html" %}
+    {% include "partials/_sidebar.html" %}
+
+    <div class="content-page">
+        <div class="container-fluid">
+
+            <!-- Page Title -->
+            <div class="page-title-head d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h4 class="page-main-title m-0">{% block page_title %}Dashboard{% endblock %}</h4>
+                </div>
+                <div class="text-end">
+                    <ol class="breadcrumb m-0 py-0">
+                        <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">JCF</a></li>
+                        {% block breadcrumb %}
+                        <li class="breadcrumb-item active">Dashboard</li>
+                        {% endblock %}
+                    </ol>
+                </div>
+            </div>
+
+            {% block content %}{% endblock %}
+
+        </div>
+
+        {% include "partials/_footer.html" %}
+    </div>
+</div>
+<!-- END wrapper -->
+
+{% include "partials/_messages.html" %}
+{% endblock %}

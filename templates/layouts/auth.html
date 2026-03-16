@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body %}
+<div class="position-absolute top-0 end-0">
+    <img src="{% static 'paces/images/auth-card-bg.svg' %}" class="auth-card-bg-img" alt="auth-card-bg" />
+</div>
+<div class="position-absolute bottom-0 start-0" style="transform: rotate(180deg)">
+    <img src="{% static 'paces/images/auth-card-bg.svg' %}" class="auth-card-bg-img" alt="auth-card-bg" />
+</div>
+<div class="auth-box d-flex align-items-center">
+    <div class="container-xxl">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-xl-10">
+                <div class="card">
+                    <div class="row justify-content-between g-0">
+                        <div class="col-lg-6">
+                            <div class="card-body">
+                                {% block auth_content %}{% endblock %}
+
+                                <p class="text-center text-muted mt-4 mb-0">
+                                    &copy;
+                                    <script>document.write(new Date().getFullYear())</script>
+                                    JCF Management &mdash;
+                                    <span class="fw-bold">Jan Cosmic Foundation</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6 d-none d-lg-block">
+                            <div class="h-100 position-relative card-side-img rounded-end overflow-hidden" style="background-image: url({% static 'paces/images/auth.jpg' %})">
+                                <div class="p-4 card-img-overlay rounded-end auth-overlay d-flex align-items-end justify-content-center"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include "partials/_messages.html" %}
+{% endblock %}

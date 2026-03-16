@@ -1,0 +1,90 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Gallery | JCF Management{% endblock %}
+{% block page_title %}Gallery{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Gallery</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Gallery Items</h5>
+                <a href="{% url 'website:gallery_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> Add Item
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Filter tabs -->
+                <ul class="nav nav-tabs nav-bordered mb-3">
+                    <li class="nav-item">
+                        <a class="nav-link {% if not active_category %}active{% endif %}" href="{% url 'website:gallery_list' %}">All</a>
+                    </li>
+                    {% for value, label in categories %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_category == value %}active{% endif %}" href="?category={{ value }}">{{ label }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- Gallery grid -->
+                <div class="row">
+                    {% for item in items %}
+                    <div class="col-sm-6 col-md-4 col-xl-3 mb-3">
+                        <div class="card border shadow-none mb-0 h-100">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.title }}" style="height: 180px; object-fit: cover;">
+                            {% elif item.type == 'video' %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <i class="ti ti-video fs-1 text-muted"></i>
+                            </div>
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                                <i class="ti ti-photo fs-1 text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body p-2">
+                                <h6 class="card-title mb-1">{{ item.title }}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary-subtle text-primary">{{ item.get_category_display }}</span>
+                                    {% if not item.is_published %}
+                                    <span class="badge bg-warning-subtle text-warning">Draft</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ item.date|date:"M d, Y" }}</small>
+                            </div>
+                            <div class="card-footer bg-transparent p-2 text-end">
+                                <a href="{% url 'website:gallery_update' item.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
+                                    <i class="ti ti-pencil"></i>
+                                </a>
+                                <a href="{% url 'website:gallery_delete' item.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this gallery item?');">
+                                    <i class="ti ti-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-center text-muted py-4">No gallery items yet.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if is_paginated %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if active_category %}&category={{ active_category }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if active_category %}&category={{ active_category }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if active_category %}&category={{ active_category }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
