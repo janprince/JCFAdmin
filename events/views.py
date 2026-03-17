@@ -43,6 +43,10 @@ class EventListView(LoginRequiredMixin, ListView):
         context['current_category'] = self.request.GET.get('category', '')
         context['categories'] = EventCategory.objects.all()
         context['category_form'] = EventCategoryForm()
+        today = timezone.now().date()
+        context['total_count'] = Event.objects.count()
+        context['upcoming_count'] = Event.objects.filter(date__gte=today).count()
+        context['past_count'] = Event.objects.filter(date__lt=today).count()
         return context
 
 

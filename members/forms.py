@@ -9,7 +9,7 @@ class ContactForm(forms.ModelForm):
             'full_name', 'gender', 'date_of_birth', 'phone', 'telephone',
             'email', 'profession', 'religion', 'residence', 'hometown',
             'country', 'father_name', 'mother_name', 'referral',
-            'is_member', 'is_student', 'is_initiate',
+            'is_member', 'is_student', 'is_active',
         ]
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}),
@@ -28,5 +28,5 @@ class ContactForm(forms.ModelForm):
             'referral': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Referred by'}),
             'is_member': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'is_student': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'is_initiate': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

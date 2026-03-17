@@ -20,18 +20,28 @@ class ContactListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
+        status = self.request.GET.get('status')
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_type'] = 'contacts'
         context['search_query'] = self.request.GET.get('q', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['total_count'] = Contact.objects.count()
+        context['active_count'] = Contact.objects.filter(is_active=True).count()
+        context['member_count'] = Contact.objects.filter(is_member=True).count()
+        context['student_count'] = Contact.objects.filter(is_student=True).count()
         return context
 
 
 class MemberListView(LoginRequiredMixin, ListView):
     model = Contact
-    template_name = 'members/contact_list.html'
+    template_name = 'members/member_list.html'
     context_object_name = 'contacts'
     paginate_by = 50
 
@@ -40,18 +50,29 @@ class MemberListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
+        status = self.request.GET.get('status')
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_type'] = 'members'
         context['search_query'] = self.request.GET.get('q', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        total = Contact.objects.filter(is_member=True).count()
+        active = Contact.objects.filter(is_member=True, is_active=True).count()
+        context['total_count'] = total
+        context['active_count'] = active
+        context['inactive_count'] = total - active
         return context
 
 
 class StudentListView(LoginRequiredMixin, ListView):
     model = Contact
-    template_name = 'members/contact_list.html'
+    template_name = 'members/student_list.html'
     context_object_name = 'contacts'
     paginate_by = 50
 
@@ -60,12 +81,23 @@ class StudentListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
+        status = self.request.GET.get('status')
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'inactive':
+            qs = qs.filter(is_active=False)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_type'] = 'students'
         context['search_query'] = self.request.GET.get('q', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        total = Contact.objects.filter(is_student=True).count()
+        active = Contact.objects.filter(is_student=True, is_active=True).count()
+        context['total_count'] = total
+        context['active_count'] = active
+        context['inactive_count'] = total - active
         return context
 
 

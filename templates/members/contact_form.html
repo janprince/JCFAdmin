@@ -74,11 +74,11 @@
                         <div class="col-md-6 mb-3"><label class="form-label">Mother's Name</label>{{ form.mother_name }}</div>
                     </div>
 
-                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Roles</h5>
+                    <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Status & Roles</h5>
                     <div class="row">
+                        <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_active }}<label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label></div></div>
                         <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_member }}<label class="form-check-label" for="{{ form.is_member.id_for_label }}">Member</label></div></div>
                         <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_student }}<label class="form-check-label" for="{{ form.is_student.id_for_label }}">Student</label></div></div>
-                        <div class="col-md-3 mb-3"><div class="form-check">{{ form.is_initiate }}<label class="form-check-label" for="{{ form.is_initiate.id_for_label }}">Initiate</label></div></div>
                     </div>
 
                     <h5 class="text-uppercase bg-light bg-opacity-50 p-2 mt-2 mb-3">Attachments</h5>

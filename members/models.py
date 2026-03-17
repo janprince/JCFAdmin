@@ -24,7 +24,7 @@ class Contact(models.Model):
     referral = models.CharField(max_length=255, blank=True)
     is_member = models.BooleanField(default=False)
     is_student = models.BooleanField(default=False)
-    is_initiate = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True, help_text='Active member of the foundation')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

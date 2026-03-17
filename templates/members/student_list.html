@@ -1,62 +1,17 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}Contacts | JCF Management{% endblock %}
-{% block page_title %}Contacts{% endblock %}
+{% block title %}Students | JCF Management{% endblock %}
+{% block page_title %}Students{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item active">Contacts</li>
+<li class="breadcrumb-item active">Students</li>
 {% endblock %}
 
 {% block content %}
 <!-- Stat Cards -->
 <div class="row mt-3">
-    <div class="col-md-6 col-xxl-3">
-        <div class="card card-h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="avatar-md flex-shrink-0">
-                        <span class="avatar-title text-bg-light rounded-circle fs-22"><i class="ti ti-address-book"></i></span>
-                    </div>
-                    <div>
-                        <h5 class="text-muted fs-sm text-uppercase mb-1">Total Contacts</h5>
-                        <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xxl-3">
-        <div class="card card-h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="avatar-md flex-shrink-0">
-                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-success"><i class="ti ti-user-check"></i></span>
-                    </div>
-                    <div>
-                        <h5 class="text-muted fs-sm text-uppercase mb-1">Active</h5>
-                        <h3 class="mb-0 fw-bold">{{ active_count }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xxl-3">
-        <div class="card card-h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="avatar-md flex-shrink-0">
-                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-primary"><i class="ti ti-users"></i></span>
-                    </div>
-                    <div>
-                        <h5 class="text-muted fs-sm text-uppercase mb-1">Members</h5>
-                        <h3 class="mb-0 fw-bold">{{ member_count }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 col-xxl-3">
+    <div class="col-md-6 col-xxl-4">
         <div class="card card-h-100">
             <div class="card-body">
                 <div class="d-flex align-items-center gap-2">
@@ -64,8 +19,38 @@
                         <span class="avatar-title text-bg-light rounded-circle fs-22 text-info"><i class="ti ti-school"></i></span>
                     </div>
                     <div>
-                        <h5 class="text-muted fs-sm text-uppercase mb-1">Students</h5>
-                        <h3 class="mb-0 fw-bold">{{ student_count }}</h3>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">Total Students</h5>
+                        <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xxl-4">
+        <div class="card card-h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-md flex-shrink-0">
+                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-success"><i class="ti ti-user-check"></i></span>
+                    </div>
+                    <div>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">Active Students</h5>
+                        <h3 class="mb-0 fw-bold">{{ active_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xxl-4">
+        <div class="card card-h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-md flex-shrink-0">
+                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-warning"><i class="ti ti-user-x"></i></span>
+                    </div>
+                    <div>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">Inactive</h5>
+                        <h3 class="mb-0 fw-bold">{{ inactive_count }}</h3>
                     </div>
                 </div>
             </div>
@@ -73,23 +58,22 @@
     </div>
 </div>
 
-<!-- Contact List -->
+<!-- Student List -->
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">All Contacts</h5>
+                <h5 class="card-title mb-0">Foundation Students</h5>
                 <a href="{% url 'members:contact_create' %}" class="btn btn-primary btn-sm">
                     <i class="ti ti-plus me-1"></i> Add Contact
                 </a>
             </div>
             <div class="card-body">
-                <!-- Search & Filters -->
                 <form method="get" class="mb-3">
                     <div class="row g-2 align-items-center">
                         <div class="col-md-4">
                             <div class="app-search">
-                                <input type="search" name="q" class="form-control" placeholder="Search by name..." value="{{ search_query }}" />
+                                <input type="search" name="q" class="form-control" placeholder="Search students..." value="{{ search_query }}" />
                                 <i class="ti ti-search app-search-icon text-muted"></i>
                             </div>
                         </div>
@@ -106,7 +90,7 @@
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary">Search</button>
                             {% if search_query or status_filter %}
-                            <a href="{% url 'members:contact_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            <a href="{% url 'members:student_list' %}" class="btn btn-outline-secondary">Clear</a>
                             {% endif %}
                         </div>
                     </div>
@@ -120,9 +104,9 @@
                                 <th>Full Name</th>
                                 <th>Phone</th>
                                 <th>Email</th>
-                                <th>Country</th>
+                                <th>Religion</th>
+                                <th>Referral</th>
                                 <th>Status</th>
-                                <th>Roles</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -133,14 +117,18 @@
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="avatar-xs flex-shrink-0">
-                                            <span class="avatar-title bg-primary-subtle text-primary fw-bold rounded-circle">{{ contact.full_name|make_list|first }}</span>
+                                            <span class="avatar-title bg-info-subtle text-info fw-bold rounded-circle">{{ contact.full_name|make_list|first }}</span>
                                         </div>
-                                        <a href="{% url 'members:contact_detail' contact.pk %}" class="fw-semibold text-reset">{{ contact.full_name }}</a>
+                                        <div>
+                                            <a href="{% url 'members:contact_detail' contact.pk %}" class="fw-semibold text-reset">{{ contact.full_name }}</a>
+                                            {% if contact.is_member %}<br><span class="text-muted fs-xs">Also a member</span>{% endif %}
+                                        </div>
                                     </div>
                                 </td>
                                 <td>{{ contact.phone }}</td>
                                 <td>{{ contact.email|default:"-" }}</td>
-                                <td>{{ contact.country }}</td>
+                                <td>{{ contact.religion|default:"-" }}</td>
+                                <td>{{ contact.referral|default:"-" }}</td>
                                 <td>
                                     {% if contact.is_active %}
                                     <span class="badge bg-success-subtle text-success p-1">Active</span>
@@ -148,18 +136,13 @@
                                     <span class="badge bg-danger-subtle text-danger p-1">Inactive</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    {% if contact.is_member %}<span class="badge bg-primary-subtle text-primary me-1">Member</span>{% endif %}
-                                    {% if contact.is_student %}<span class="badge bg-info-subtle text-info me-1">Student</span>{% endif %}
-                                    {% if not contact.is_member and not contact.is_student %}<span class="text-muted">-</span>{% endif %}
-                                </td>
                                 <td class="text-end">
                                     <a href="{% url 'members:contact_detail' contact.pk %}" class="text-muted fs-20" title="View"><i class="ti ti-eye"></i></a>
                                     <a href="{% url 'members:contact_update' contact.pk %}" class="text-muted fs-20 ms-1" title="Edit"><i class="ti ti-edit"></i></a>
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="8" class="text-center text-muted py-4">No contacts found.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-4">No students found.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

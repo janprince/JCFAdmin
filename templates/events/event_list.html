@@ -12,38 +12,34 @@
 <div class="row mt-3">
     <div class="col-xl-9">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">All Events</h5>
-                <a href="{% url 'events:event_create' %}" class="btn btn-primary btn-sm">
+            <div class="card-header border-light justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Search -->
+                    <form method="get" class="d-flex gap-2 mb-0">
+                        {% if current_filter %}<input type="hidden" name="filter" value="{{ current_filter }}">{% endif %}
+                        {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
+                        <div class="app-search">
+                            <input type="search" name="q" class="form-control" placeholder="Search events..." value="{{ search_query }}" />
+                            <i class="ti ti-search app-search-icon text-muted"></i>
+                        </div>
+                        {% if search_query %}
+                        <a href="{% url 'events:event_list' %}{% if current_filter %}?filter={{ current_filter }}{% endif %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="ti ti-x"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+                <a href="{% url 'events:event_create' %}" class="btn btn-primary">
                     <i class="ti ti-plus me-1"></i>Add Event
                 </a>
             </div>
-            <div class="card-body">
-                <!-- Search -->
-                <form method="get" class="mb-3">
-                    {% if current_filter %}<input type="hidden" name="filter" value="{{ current_filter }}">{% endif %}
-                    {% if current_category %}<input type="hidden" name="category" value="{{ current_category }}">{% endif %}
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="app-search">
-                                <input type="search" name="q" class="form-control" placeholder="Search events..." value="{{ search_query }}" />
-                                <i class="ti ti-search app-search-icon text-muted"></i>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            {% if search_query %}
-                            <a href="{% url 'events:event_list' %}{% if current_filter %}?filter={{ current_filter }}{% endif %}" class="btn btn-outline-secondary">Clear</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </form>
 
+            <div class="card-body pb-1">
                 <!-- Filter Tabs -->
                 <ul class="nav nav-tabs nav-bordered mb-3">
                     <li class="nav-item">
                         <a class="nav-link {% if not current_filter %}active{% endif %}" href="{% url 'events:event_list' %}{% if search_query %}?q={{ search_query }}{% endif %}">
-                            All
+                            All <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ total_count|default:"0" }}</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -60,85 +56,103 @@
 
                 <!-- Category Filter -->
                 {% if categories %}
-                <div class="mb-3">
-                    <span class="me-2 text-muted small">Category:</span>
-                    <a href="{% url 'events:event_list' %}{% if current_filter %}?filter={{ current_filter }}{% endif %}{% if search_query %}{% if current_filter %}&{% else %}?{% endif %}q={{ search_query }}{% endif %}" class="badge {% if not current_category %}bg-primary{% else %}bg-light text-dark{% endif %} me-1 text-decoration-none">All</a>
+                <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted fw-semibold small">Category:</span>
+                    <a href="{% url 'events:event_list' %}{% if current_filter %}?filter={{ current_filter }}{% endif %}{% if search_query %}{% if current_filter %}&{% else %}?{% endif %}q={{ search_query }}{% endif %}" class="badge rounded-pill {% if not current_category %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none">All</a>
                     {% for cat in categories %}
-                    <a href="{% url 'events:event_list' %}?category={{ cat.pk }}{% if current_filter %}&filter={{ current_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="badge {% if current_category == cat.pk|stringformat:'d' %}bg-primary{% else %}bg-light text-dark{% endif %} me-1 text-decoration-none">{{ cat.name }}</a>
+                    <a href="{% url 'events:event_list' %}?category={{ cat.pk }}{% if current_filter %}&filter={{ current_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="badge rounded-pill {% if current_category == cat.pk|stringformat:'d' %}bg-primary{% else %}bg-light text-dark border{% endif %} text-decoration-none">{{ cat.name }}</a>
                     {% endfor %}
                 </div>
                 {% endif %}
+            </div>
 
-                <div class="table-responsive">
-                    <table class="table table-hover table-centered mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th>#</th>
-                                <th>Title</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Location</th>
-                                <th>Category</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for event in events %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    <span class="fw-semibold">{{ event.title }}</span>
+            <div class="table-responsive">
+                <table class="table table-custom table-centered table-hover w-100 mb-0">
+                    <thead class="bg-light bg-opacity-25 thead-sm">
+                        <tr class="text-uppercase fs-xxs">
+                            <th style="width: 3%">#</th>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                        <tr>
+                            <td class="text-muted">{{ forloop.counter }}</td>
+                            <td>
+                                <div>
+                                    <h5 class="mb-0 lh-base fs-base">
+                                        <a href="{% url 'events:event_update' event.pk %}" class="link-reset">{{ event.title }}</a>
+                                    </h5>
                                     {% if event.description %}
-                                    <br><small class="text-muted">{{ event.description|truncatewords:10 }}</small>
+                                    <p class="text-muted fs-xs mb-0 mt-1">{{ event.description|truncatewords:12 }}</p>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    {{ event.date|date:"M d, Y" }}
+                                </div>
+                            </td>
+                            <td class="text-nowrap">
+                                <div>
+                                    <span class="fw-medium">{{ event.date|date:"M d, Y" }}</span>
                                     {% if event.end_date %}
-                                    <br><small class="text-muted">to {{ event.end_date|date:"M d, Y" }}</small>
+                                    <p class="text-muted fs-xs mb-0">to {{ event.end_date|date:"M d, Y" }}</p>
                                     {% endif %}
-                                </td>
-                                <td>{{ event.time|time:"g:i A" }}</td>
-                                <td>{{ event.location }}</td>
-                                <td>
-                                    {% if event.category %}
-                                    <span class="badge bg-primary-subtle text-primary">{{ event.category.name }}</span>
-                                    {% else %}
-                                    <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if event.is_published %}
-                                    <span class="badge bg-success-subtle text-success">Published</span>
-                                    {% else %}
-                                    <span class="badge bg-warning-subtle text-warning">Draft</span>
-                                    {% endif %}
-                                    {% if event.is_past %}
-                                    <span class="badge bg-secondary-subtle text-secondary">Past</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <a href="{% url 'events:event_update' event.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
-                                        <i class="ti ti-pencil"></i>
+                                    <p class="text-muted fs-xs mb-0">
+                                        <i class="ti ti-clock me-1"></i>{{ event.time|time:"g:i A" }}
+                                    </p>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-1">
+                                    <i class="ti ti-map-pin text-muted fs-lg"></i>
+                                    <span>{{ event.location|truncatewords:5 }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if event.category %}
+                                <span class="badge bg-info-subtle text-info badge-label">{{ event.category.name }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if event.is_past %}
+                                <span class="badge bg-secondary-subtle text-secondary badge-label">Past</span>
+                                {% elif event.is_published %}
+                                <span class="badge bg-success-subtle text-success badge-label">Published</span>
+                                {% else %}
+                                <span class="badge bg-warning-subtle text-warning badge-label">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <a href="{% url 'events:event_update' event.pk %}" class="btn btn-default btn-icon btn-sm rounded" title="Edit">
+                                        <i class="ti ti-edit fs-lg"></i>
                                     </a>
-                                    <a href="{% url 'events:event_delete' event.pk %}" class="btn btn-sm btn-soft-danger ms-1" title="Delete" onclick="return confirm('Delete this event?')">
-                                        <i class="ti ti-trash"></i>
+                                    <a href="{% url 'events:event_delete' event.pk %}" class="btn btn-default btn-icon btn-sm rounded text-danger" title="Delete" onclick="return confirm('Delete this event?')">
+                                        <i class="ti ti-trash fs-lg"></i>
                                     </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No events found.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="ti ti-calendar-off fs-2 d-block mb-2 text-muted opacity-50"></i>
+                                No events found.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                <!-- Pagination -->
-                {% if is_paginated %}
-                <nav class="mt-3">
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="card-footer border-light">
+                <nav>
                     <ul class="pagination pagination-rounded justify-content-end mb-0">
                         {% if page_obj.has_previous %}
                         <li class="page-item">
@@ -161,8 +175,8 @@
                         {% endif %}
                     </ul>
                 </nav>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 
@@ -177,23 +191,59 @@
                     {% csrf_token %}
                     <div class="input-group mb-3">
                         {{ category_form.name }}
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary btn-sm">
                             <i class="ti ti-plus"></i>
                         </button>
                     </div>
                 </form>
                 <ul class="list-group list-group-flush">
                     {% for cat in categories %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>{{ cat.name }}</span>
-                        <a href="{% url 'events:category_delete' cat.pk %}" class="text-danger" title="Delete" onclick="return confirm('Delete this category?')">
-                            <i class="ti ti-x"></i>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="ti ti-tag text-muted"></i>
+                            <span>{{ cat.name }}</span>
+                        </div>
+                        <a href="{% url 'events:category_delete' cat.pk %}" class="text-danger opacity-50" title="Delete" onclick="return confirm('Delete this category?')">
+                            <i class="ti ti-x fs-lg"></i>
                         </a>
                     </li>
                     {% empty %}
-                    <li class="list-group-item text-muted text-center">No categories yet.</li>
+                    <li class="list-group-item text-muted text-center px-0">No categories yet.</li>
                     {% endfor %}
                 </ul>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar avatar-md bg-primary-subtle rounded">
+                        <i class="ti ti-calendar-event text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 fs-xs text-uppercase">Total Events</p>
+                        <h4 class="mb-0">{{ total_count|default:"0" }}</h4>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="avatar avatar-md bg-success-subtle rounded">
+                        <i class="ti ti-calendar-check text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 fs-xs text-uppercase">Upcoming</p>
+                        <h4 class="mb-0">{{ upcoming_count|default:"0" }}</h4>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="avatar avatar-md bg-secondary-subtle rounded">
+                        <i class="ti ti-history text-secondary fs-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-0 fs-xs text-uppercase">Past</p>
+                        <h4 class="mb-0">{{ past_count|default:"0" }}</h4>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

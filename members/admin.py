@@ -4,8 +4,8 @@ from .models import Contact, DataFile, Inquiry
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'phone', 'is_member', 'is_student', 'is_initiate', 'country')
-    list_filter = ('is_member', 'is_student', 'is_initiate', 'gender', 'country')
+    list_display = ('full_name', 'phone', 'is_member', 'is_student', 'is_active', 'country')
+    list_filter = ('is_member', 'is_student', 'is_active', 'gender', 'country')
     search_fields = ('full_name', 'phone')
 
 
