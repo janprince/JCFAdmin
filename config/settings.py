@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     # Third-party
     'rest_framework',
     'corsheaders',
+    'storages',
     'phonenumber_field',
     # Existing apps
     'accounts',
@@ -97,15 +98,44 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if not DEBUG:
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# ---------------------------------------------------------------------------
+# Cloudflare R2 Storage (S3-compatible)
+# ---------------------------------------------------------------------------
+CLOUDFLARE_R2_BUCKET = env('CLOUDFLARE_R2_BUCKET', default='')
+
+if CLOUDFLARE_R2_BUCKET:
     STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+            'OPTIONS': {
+                'access_key': env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+                'secret_key': env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+                'bucket_name': CLOUDFLARE_R2_BUCKET,
+                'endpoint_url': env('CLOUDFLARE_R2_ENDPOINT'),
+                'custom_domain': env('CLOUDFLARE_R2_PUBLIC_DOMAIN', default=''),
+                'default_acl': None,
+                'querystring_auth': False,
+                'object_parameters': {
+                    'CacheControl': 'public, max-age=31536000, immutable',
+                },
+                'file_overwrite': False,
+            },
+        },
         'staticfiles': {
             'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
         },
     }
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+    MEDIA_URL = f'https://{env("CLOUDFLARE_R2_PUBLIC_DOMAIN", default="")}/'
+else:
+    MEDIA_URL = '/media/'
+    if not DEBUG:
+        STORAGES = {
+            'staticfiles': {
+                'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+            },
+        }
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
