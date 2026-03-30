@@ -2,8 +2,14 @@
 Public API endpoints for the JCF website.
 All endpoints are read-only (GET) unless noted otherwise.
 """
+import json
+import logging
+
 from django.urls import path
-from rest_framework import generics
+from django.utils import timezone
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from events.models import Event
 from events.serializers import EventSerializer
@@ -152,6 +158,141 @@ class NewsletterSubscribeAPIView(generics.CreateAPIView):
     serializer_class = NewsletterSubscriberSerializer
 
 
+# --- Donations (Paystack) ---
+
+logger = logging.getLogger(__name__)
+
+
+class DonationVerifyAPIView(APIView):
+    """
+    POST /api/donations/verify/
+    Frontend calls this after a successful Paystack payment.
+    We verify the transaction with Paystack's API, then create a Donation record.
+    """
+
+    def post(self, request):
+        reference = request.data.get('reference', '').strip()
+        cause_id = request.data.get('cause_id')
+
+        if not reference:
+            return Response(
+                {'error': 'reference is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Prevent duplicate processing
+        from causes.models import Donation
+        if Donation.objects.filter(paystack_reference=reference).exists():
+            return Response({'status': 'already_processed'})
+
+        # Verify with Paystack
+        from causes.paystack import verify_transaction
+        tx = verify_transaction(reference)
+        if tx is None:
+            return Response(
+                {'error': 'Payment verification failed'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Amount from Paystack is in pesewas (smallest unit) — convert to GHS
+        amount_major = tx['amount'] / 100
+        customer = tx.get('customer', {})
+
+        # Resolve cause
+        cause = None
+        if cause_id:
+            from causes.models import Cause
+            cause = Cause.objects.filter(id=cause_id, is_active=True).first()
+
+        donation = Donation.objects.create(
+            cause=cause,
+            donor_name=customer.get('first_name', '') or customer.get('email', ''),
+            donor_email=customer.get('email', ''),
+            amount=amount_major,
+            currency=tx.get('currency', 'GHS'),
+            method=Donation.Method.ONLINE,
+            status=Donation.Status.COMPLETED,
+            paystack_reference=reference,
+            donated_at=tx.get('paid_at') or timezone.now(),
+        )
+
+        return Response({
+            'status': 'success',
+            'donation_id': donation.id,
+            'amount': str(donation.amount),
+            'currency': donation.currency,
+        }, status=status.HTTP_201_CREATED)
+
+
+class PaystackWebhookAPIView(APIView):
+    """
+    POST /api/webhook/paystack/
+    Paystack sends webhook events here as a safety net.
+    We verify the signature, then process charge.success events.
+    """
+
+    def post(self, request):
+        signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE', '')
+        if not signature:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        from causes.paystack import validate_webhook_signature
+        if not validate_webhook_signature(request.body, signature):
+            logger.warning('Paystack webhook: invalid signature')
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = json.loads(request.body)
+        except json.JSONDecodeError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        event = payload.get('event')
+        if event != 'charge.success':
+            # Acknowledge but ignore non-charge events
+            return Response({'status': 'ignored'})
+
+        data = payload.get('data', {})
+        reference = data.get('reference', '')
+
+        if not reference:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        from causes.models import Donation, Cause
+
+        # Idempotency: skip if already recorded
+        if Donation.objects.filter(paystack_reference=reference).exists():
+            return Response({'status': 'already_processed'})
+
+        amount_major = data.get('amount', 0) / 100
+        customer = data.get('customer', {})
+
+        # Try to resolve cause from metadata
+        cause = None
+        metadata = data.get('metadata', {})
+        custom_fields = metadata.get('custom_fields', [])
+        for field in custom_fields:
+            if field.get('variable_name') == 'cause_id':
+                cause = Cause.objects.filter(
+                    id=field['value'], is_active=True,
+                ).first()
+                break
+
+        Donation.objects.create(
+            cause=cause,
+            donor_name=customer.get('first_name', '') or customer.get('email', ''),
+            donor_email=customer.get('email', ''),
+            amount=amount_major,
+            currency=data.get('currency', 'GHS'),
+            method=Donation.Method.ONLINE,
+            status=Donation.Status.COMPLETED,
+            paystack_reference=reference,
+            donated_at=data.get('paid_at') or timezone.now(),
+        )
+
+        logger.info('Paystack webhook: recorded donation ref=%s', reference)
+        return Response({'status': 'success'})
+
+
 # --- URL patterns ---
 
 app_name = 'api'
@@ -185,4 +326,8 @@ urlpatterns = [
     path('volunteer-apply/', VolunteerApplicationCreateAPIView.as_view(), name='volunteer_apply'),
     path('join-centre/', JoinCentreRequestCreateAPIView.as_view(), name='join_centre'),
     path('newsletter/', NewsletterSubscribeAPIView.as_view(), name='newsletter_subscribe'),
+
+    # Donations (Paystack)
+    path('donations/verify/', DonationVerifyAPIView.as_view(), name='donation_verify'),
+    path('webhook/paystack/', PaystackWebhookAPIView.as_view(), name='paystack_webhook'),
 ]
