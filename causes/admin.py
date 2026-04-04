@@ -11,8 +11,8 @@ class CauseCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Cause)
 class CauseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'goal_amount', 'raised_amount', 'is_active', 'created_at')
-    list_filter = ('is_active', 'category', 'currency')
+    list_display = ('title', 'type', 'category', 'goal_amount', 'raised_amount', 'is_active', 'created_at')
+    list_filter = ('is_active', 'type', 'category', 'currency')
     search_fields = ('title', 'description')
     prepopulated_fields = {'slug': ('title',)}
     readonly_fields = ('created_at', 'updated_at')

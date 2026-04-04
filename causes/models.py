@@ -21,14 +21,23 @@ class CauseCategory(models.Model):
 
 
 class Cause(models.Model):
+    class CauseType(models.TextChoices):
+        SPECIFIC = 'specific', 'Specific (has a funding goal)'
+        ONGOING = 'ongoing', 'Ongoing (no fixed goal)'
+
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True)
     description = models.TextField(help_text='Short summary for listing cards.')
     content = models.TextField(help_text='Full cause details (rich text).')
     image = models.ImageField(upload_to='causes/', blank=True)
     gallery = models.JSONField(default=list, blank=True, help_text='List of additional image paths.')
-    goal_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    type = models.CharField(max_length=10, choices=CauseType.choices, default=CauseType.SPECIFIC,
+                            help_text='Specific causes show a progress bar; ongoing causes focus on impact.')
+    goal_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                      help_text='Set to 0 for ongoing causes.')
     currency = models.CharField(max_length=3, default='GHS')
+    impact_statement = models.CharField(max_length=255, blank=True,
+                                        help_text='Short impact line for ongoing causes (e.g. "Reaching seekers across the world").')
     category = models.ForeignKey(CauseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='causes')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -19,9 +19,9 @@ class CauseSerializer(serializers.ModelSerializer):
         model = Cause
         fields = [
             'id', 'title', 'slug', 'description', 'content', 'image', 'image_url',
-            'gallery', 'goal_amount', 'currency', 'category', 'category_name',
+            'gallery', 'type', 'goal_amount', 'currency', 'category', 'category_name',
             'is_active', 'raised_amount', 'donors_count', 'progress_percent',
-            'created_at', 'updated_at',
+            'impact_statement', 'created_at', 'updated_at',
         ]
 
     def get_image_url(self, obj):
@@ -43,8 +43,9 @@ class CauseListSerializer(serializers.ModelSerializer):
         model = Cause
         fields = [
             'id', 'title', 'slug', 'description', 'image_url',
-            'goal_amount', 'currency', 'category_name',
+            'type', 'goal_amount', 'currency', 'category_name',
             'is_active', 'raised_amount', 'progress_percent',
+            'impact_statement',
         ]
 
     def get_image_url(self, obj):
