@@ -17,7 +17,8 @@ class CauseForm(forms.ModelForm):
         model = Cause
         fields = [
             'title', 'slug', 'description', 'content', 'image', 'gallery',
-            'goal_amount', 'currency', 'category', 'is_active',
+            'type', 'goal_amount', 'currency', 'impact_statement',
+            'category', 'is_active',
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cause title'}),
@@ -26,8 +27,10 @@ class CauseForm(forms.ModelForm):
             'content': forms.HiddenInput(),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'gallery': forms.HiddenInput(),
+            'type': forms.Select(attrs={'class': 'form-select'}),
             'goal_amount': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.01'}),
             'currency': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'GHS'}),
+            'impact_statement': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Reaching seekers across the world'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

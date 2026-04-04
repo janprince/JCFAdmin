@@ -36,6 +36,13 @@
                             </select>
                         </div>
                         <div class="col-md-2">
+                            <select name="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="specific" {% if selected_type == "specific" %}selected{% endif %}>Specific</option>
+                                <option value="ongoing" {% if selected_type == "ongoing" %}selected{% endif %}>Ongoing</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <select name="status" class="form-select">
                                 <option value="">All Statuses</option>
                                 <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
@@ -44,7 +51,7 @@
                         </div>
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary">Filter</button>
-                            {% if search_query or selected_category or selected_status %}
+                            {% if search_query or selected_category or selected_type or selected_status %}
                             <a href="{% url 'causes:cause_list' %}" class="btn btn-outline-secondary">Clear</a>
                             {% endif %}
                         </div>
@@ -57,8 +64,9 @@
                             <tr>
                                 <th>#</th>
                                 <th>Title</th>
+                                <th>Type</th>
                                 <th>Category</th>
-                                <th>Goal</th>
+                                <th>Goal / Impact</th>
                                 <th>Raised</th>
                                 <th style="min-width: 140px;">Progress</th>
                                 <th>Status</th>
@@ -74,21 +82,38 @@
                                     <br><small class="text-muted">{{ cause.description|truncatewords:10 }}</small>
                                 </td>
                                 <td>
+                                    {% if cause.type == "ongoing" %}
+                                    <span class="badge bg-warning-subtle text-warning">Ongoing</span>
+                                    {% else %}
+                                    <span class="badge bg-info-subtle text-info">Specific</span>
+                                    {% endif %}
+                                </td>
+                                <td>
                                     {% if cause.category %}
                                     <span class="badge bg-primary-subtle text-primary">{{ cause.category.name }}</span>
                                     {% else %}
                                     <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ cause.currency }} {{ cause.goal_amount|floatformat:2 }}</td>
+                                <td>
+                                    {% if cause.type == "ongoing" %}
+                                    <small class="text-muted fst-italic">{{ cause.impact_statement|default:"No fixed goal" }}</small>
+                                    {% else %}
+                                    {{ cause.currency }} {{ cause.goal_amount|floatformat:2 }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }}</td>
                                 <td>
+                                    {% if cause.type == "ongoing" %}
+                                    <span class="text-muted fs-12">N/A</span>
+                                    {% else %}
                                     <div class="d-flex align-items-center">
                                         <div class="progress flex-grow-1" style="height: 6px;">
                                             <div class="progress-bar {% if cause.progress_percent >= 100 %}bg-success{% elif cause.progress_percent >= 50 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ cause.progress_percent }}%;"></div>
                                         </div>
                                         <span class="ms-2 text-muted fs-12">{{ cause.progress_percent }}%</span>
                                     </div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if cause.is_active %}
@@ -111,7 +136,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">No causes found.</td>
+                                <td colspan="9" class="text-center text-muted py-4">No causes found.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -121,9 +146,9 @@
                 {% if is_paginated %}
                 <nav class="mt-3">
                     <ul class="pagination justify-content-end mb-0">
-                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
-                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a></li>{% endfor %}
-                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
                     </ul>
                 </nav>
                 {% endif %}

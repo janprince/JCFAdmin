@@ -20,18 +20,36 @@
                 <h4 class="mb-1">{{ cause.title }}</h4>
                 <p class="text-muted">{{ cause.description }}</p>
                 <div class="mb-3">
-                    {% if cause.is_active %}
-                    <span class="badge bg-success-subtle text-success">Active</span>
+                    {% if cause.type == "ongoing" %}
+                    <span class="badge bg-warning-subtle text-warning">Ongoing</span>
                     {% else %}
-                    <span class="badge bg-secondary-subtle text-secondary">Inactive</span>
+                    <span class="badge bg-info-subtle text-info">Specific</span>
+                    {% endif %}
+                    {% if cause.is_active %}
+                    <span class="badge bg-success-subtle text-success ms-1">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive</span>
                     {% endif %}
                     {% if cause.category %}
                     <span class="badge bg-primary-subtle text-primary ms-1">{{ cause.category.name }}</span>
                     {% endif %}
                 </div>
 
-                <!-- Progress -->
+                {% if cause.impact_statement %}
+                <div class="alert alert-warning border-0 py-2 mb-3">
+                    <small><i class="ti ti-sparkles me-1"></i>{{ cause.impact_statement }}</small>
+                </div>
+                {% endif %}
+
+                <!-- Fundraising -->
                 <div class="mb-3">
+                    {% if cause.type == "ongoing" %}
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold">{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }} raised</span>
+                        <span class="text-muted">No fixed goal</span>
+                    </div>
+                    <small class="text-muted">{{ cause.donors_count }} supporter{{ cause.donors_count|pluralize }}</small>
+                    {% else %}
                     <div class="d-flex justify-content-between mb-1">
                         <span class="fw-semibold">{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }} raised</span>
                         <span class="text-muted">of {{ cause.currency }} {{ cause.goal_amount|floatformat:2 }}</span>
@@ -40,6 +58,7 @@
                         <div class="progress-bar {% if cause.progress_percent >= 100 %}bg-success{% elif cause.progress_percent >= 50 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ cause.progress_percent }}%;"></div>
                     </div>
                     <small class="text-muted">{{ cause.progress_percent }}% funded &middot; {{ cause.donors_count }} donor{{ cause.donors_count|pluralize }}</small>
+                    {% endif %}
                 </div>
 
                 <table class="table table-sm table-borderless mb-3">

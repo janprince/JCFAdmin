@@ -46,17 +46,33 @@
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
+                            <label for="{{ form.type.id_for_label }}" class="form-label">Type <span class="text-danger">*</span></label>
+                            {{ form.type }}
+                            <small class="text-muted">Specific causes show a progress bar; ongoing causes focus on impact.</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
                             {{ form.category }}
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label for="{{ form.goal_amount.id_for_label }}" class="form-label">Goal Amount <span class="text-danger">*</span></label>
-                            {{ form.goal_amount }}
-                            {% if form.goal_amount.errors %}<div class="text-danger fs-12 mt-1">{{ form.goal_amount.errors.0 }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4 mb-3">
                             <label for="{{ form.currency.id_for_label }}" class="form-label">Currency</label>
                             {{ form.currency }}
+                        </div>
+                    </div>
+                    <div class="row" id="specific-fields">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.goal_amount.id_for_label }}" class="form-label">Goal Amount</label>
+                            {{ form.goal_amount }}
+                            {% if form.goal_amount.errors %}<div class="text-danger fs-12 mt-1">{{ form.goal_amount.errors.0 }}</div>{% endif %}
+                            <small class="text-muted">Set to 0 for ongoing causes.</small>
+                        </div>
+                    </div>
+                    <div class="row" id="ongoing-fields">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.impact_statement.id_for_label }}" class="form-label">Impact Statement</label>
+                            {{ form.impact_statement }}
+                            {% if form.impact_statement.errors %}<div class="text-danger fs-12 mt-1">{{ form.impact_statement.errors.0 }}</div>{% endif %}
+                            <small class="text-muted">Short impact line for ongoing causes (e.g. &ldquo;Reaching seekers across the world&rdquo;).</small>
                         </div>
                     </div>
                     <div class="row">
@@ -85,4 +101,22 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}{% include "partials/_quill_js.html" %}{% endblock %}
+{% block extra_js %}
+{% include "partials/_quill_js.html" %}
+<script>
+(function () {
+    const typeSelect = document.getElementById('{{ form.type.id_for_label }}');
+    const specificFields = document.getElementById('specific-fields');
+    const ongoingFields = document.getElementById('ongoing-fields');
+
+    function toggleFields() {
+        const isOngoing = typeSelect.value === 'ongoing';
+        specificFields.style.display = isOngoing ? 'none' : '';
+        ongoingFields.style.display = isOngoing ? '' : 'none';
+    }
+
+    typeSelect.addEventListener('change', toggleFields);
+    toggleFields();
+})();
+</script>
+{% endblock %}

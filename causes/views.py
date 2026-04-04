@@ -26,6 +26,9 @@ class CauseListView(LoginRequiredMixin, ListView):
         category = self.request.GET.get('category')
         if category:
             qs = qs.filter(category_id=category)
+        cause_type = self.request.GET.get('type')
+        if cause_type in ('specific', 'ongoing'):
+            qs = qs.filter(type=cause_type)
         status = self.request.GET.get('status')
         if status == 'active':
             qs = qs.filter(is_active=True)
@@ -37,6 +40,7 @@ class CauseListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
         context['selected_category'] = self.request.GET.get('category', '')
+        context['selected_type'] = self.request.GET.get('type', '')
         context['selected_status'] = self.request.GET.get('status', '')
         context['categories'] = CauseCategory.objects.all()
         return context
