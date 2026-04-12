@@ -34,7 +34,14 @@ class Centre(models.Model):
 
     @property
     def member_count(self):
+        # If set by .annotate(), use that; otherwise query
+        if hasattr(self, '_member_count'):
+            return self._member_count
         return self.members.count()
+
+    @member_count.setter
+    def member_count(self, value):
+        self._member_count = value
 
     def __str__(self):
         return f'{self.name} ({self.country})'
