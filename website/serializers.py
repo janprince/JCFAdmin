@@ -1,6 +1,7 @@
 import phonenumbers
 
 from rest_framework import serializers
+from centres.models import Centre
 from .models import (
     GalleryItem, VolunteerOpportunity, Testimonial, TeamMember,
     ImpactStat, ContactSubmission, VolunteerApplication,
@@ -132,6 +133,10 @@ class VolunteerApplicationSerializer(serializers.ModelSerializer):
 
 class JoinCentreRequestSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(required=False, allow_blank=True, default='')
+    centre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Centre.objects.all(),
+    )
 
     class Meta:
         model = JoinCentreRequest
