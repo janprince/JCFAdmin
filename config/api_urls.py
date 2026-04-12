@@ -17,6 +17,8 @@ from events.serializers import EventSerializer
 from blog.models import Post
 from blog.serializers import PostSerializer, PostListSerializer
 
+from django.db.models import Count
+
 from centres.models import Centre
 from centres.serializers import CentreSerializer, CentreListSerializer
 
@@ -81,12 +83,16 @@ class PostDetailAPIView(generics.RetrieveAPIView):
 
 class CentreListAPIView(generics.ListAPIView):
     serializer_class = CentreListSerializer
-    queryset = Centre.objects.filter(is_active=True)
+    queryset = Centre.objects.filter(is_active=True).annotate(
+        member_count=Count('members'),
+    )
 
 
 class CentreDetailAPIView(generics.RetrieveAPIView):
     serializer_class = CentreSerializer
-    queryset = Centre.objects.filter(is_active=True)
+    queryset = Centre.objects.filter(is_active=True).annotate(
+        member_count=Count('members'),
+    )
     lookup_field = 'slug'
 
 

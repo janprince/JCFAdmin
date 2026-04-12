@@ -1,3 +1,5 @@
+import phonenumbers
+
 from rest_framework import serializers
 from .models import (
     GalleryItem, VolunteerOpportunity, Testimonial, TeamMember,
@@ -116,6 +118,17 @@ class VolunteerApplicationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at']
 
+    def validate_phone(self, value):
+        if not value:
+            return value
+        try:
+            parsed = phonenumbers.parse(value, 'GH')
+            if not phonenumbers.is_valid_number(parsed):
+                raise serializers.ValidationError('Enter a valid phone number.')
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        except phonenumbers.NumberParseException:
+            raise serializers.ValidationError('Enter a valid phone number.')
+
 
 class JoinCentreRequestSerializer(serializers.ModelSerializer):
     phone = serializers.CharField(required=False, allow_blank=True, default='')
@@ -127,6 +140,17 @@ class JoinCentreRequestSerializer(serializers.ModelSerializer):
             'message', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate_phone(self, value):
+        if not value:
+            return value
+        try:
+            parsed = phonenumbers.parse(value, 'GH')
+            if not phonenumbers.is_valid_number(parsed):
+                raise serializers.ValidationError('Enter a valid phone number.')
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        except phonenumbers.NumberParseException:
+            raise serializers.ValidationError('Enter a valid phone number.')
 
 
 class NewsletterSubscriberSerializer(serializers.ModelSerializer):

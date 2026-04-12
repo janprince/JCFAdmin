@@ -1,4 +1,8 @@
+import logging
+
 from django.contrib import messages
+
+logger = logging.getLogger(__name__)
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
@@ -370,11 +374,42 @@ class JoinCentreRequestListView(LoginRequiredMixin, ListView):
 
 @login_required
 def update_join_request_status(request, pk, status):
+    from members.models import Contact
+    from .notifications import send_approval_notification
+
     join_request = get_object_or_404(JoinCentreRequest, pk=pk)
-    if status in dict(JoinCentreRequest.Status.choices):
-        join_request.status = status
-        join_request.save()
-        messages.success(request, f'Request from {join_request.name} marked as {join_request.get_status_display()}.')
+    if status not in dict(JoinCentreRequest.Status.choices):
+        return redirect('website:join_request_list')
+
+    join_request.status = status
+    join_request.save()
+
+    if status == 'approved' and join_request.centre:
+        # Deduplicate by phone number
+        contact = Contact.objects.filter(phone=join_request.phone).first()
+        if contact:
+            contact.centre = join_request.centre
+            contact.is_member = True
+            contact.is_active = True
+            if join_request.email and not contact.email:
+                contact.email = join_request.email
+            contact.save()
+        else:
+            contact = Contact.objects.create(
+                full_name=join_request.name,
+                phone=join_request.phone,
+                email=join_request.email,
+                centre=join_request.centre,
+                is_member=True,
+                is_active=True,
+            )
+
+        try:
+            send_approval_notification(join_request, contact)
+        except Exception:
+            logger.exception('Failed to send approval notification for %s', join_request.name)
+
+    messages.success(request, f'Request from {join_request.name} marked as {join_request.get_status_display()}.')
     return redirect('website:join_request_list')
 
 

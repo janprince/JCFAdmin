@@ -6,13 +6,15 @@ class CentreSerializer(serializers.ModelSerializer):
     leader = serializers.SerializerMethodField()
     coordinates = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    member_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Centre
         fields = [
             'id', 'name', 'slug', 'location', 'address', 'country',
             'image_url', 'description', 'leader', 'contact_email',
-            'contact_phone', 'coordinates', 'member_count', 'is_active',
+            'contact_phone', 'whatsapp_link', 'telegram_link',
+            'coordinates', 'member_count', 'is_active',
             'created_at', 'updated_at',
         ]
 
@@ -47,12 +49,14 @@ class CentreListSerializer(serializers.ModelSerializer):
     leader = serializers.SerializerMethodField()
     coordinates = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    member_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Centre
         fields = [
             'id', 'name', 'slug', 'location', 'country', 'image_url',
-            'leader', 'coordinates', 'member_count', 'is_active',
+            'leader', 'whatsapp_link', 'telegram_link',
+            'coordinates', 'member_count', 'is_active',
         ]
 
     def get_leader(self, obj):

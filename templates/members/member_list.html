@@ -77,7 +77,7 @@
                                 <i class="ti ti-search app-search-icon text-muted"></i>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="app-search">
                                 <select name="status" class="form-select form-control" onchange="this.form.submit()">
                                     <option value="">All Status</option>
@@ -87,9 +87,20 @@
                                 <i class="ti ti-filter app-search-icon text-muted"></i>
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <div class="app-search">
+                                <select name="centre" class="form-select form-control" onchange="this.form.submit()">
+                                    <option value="">All Centres</option>
+                                    {% for c in centres %}
+                                    <option value="{{ c.pk }}" {% if centre_filter == c.pk|stringformat:"d" %}selected{% endif %}>{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <i class="ti ti-building app-search-icon text-muted"></i>
+                            </div>
+                        </div>
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary">Search</button>
-                            {% if search_query or status_filter %}
+                            {% if search_query or status_filter or centre_filter %}
                             <a href="{% url 'members:member_list' %}" class="btn btn-outline-secondary">Clear</a>
                             {% endif %}
                         </div>
@@ -103,6 +114,7 @@
                                 <th>#</th>
                                 <th>Full Name</th>
                                 <th>Phone</th>
+                                <th>Centre</th>
                                 <th>Residence</th>
                                 <th>Profession</th>
                                 <th>Status</th>
@@ -126,6 +138,7 @@
                                     </div>
                                 </td>
                                 <td>{{ contact.phone }}</td>
+                                <td>{{ contact.centre.name|default:"-" }}</td>
                                 <td>{{ contact.residence|default:"-" }}</td>
                                 <td>{{ contact.profession|default:"-" }}</td>
                                 <td>
@@ -142,7 +155,7 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="8" class="text-center text-muted py-4">No members found.</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-4">No members found.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -151,9 +164,9 @@
                 {% if is_paginated %}
                 <nav class="mt-3">
                     <ul class="pagination justify-content-end mb-0">
-                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
-                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a></li>{% endfor %}
-                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if centre_filter %}&centre={{ centre_filter }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if centre_filter %}&centre={{ centre_filter }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if centre_filter %}&centre={{ centre_filter }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
                     </ul>
                 </nav>
                 {% endif %}

@@ -44,6 +44,7 @@
                 <div class="mb-2"><i class="ti ti-phone me-2 text-muted"></i><span>{{ contact.phone }}</span></div>
                 {% if contact.telephone %}<div class="mb-2"><i class="ti ti-phone-call me-2 text-muted"></i><span>{{ contact.telephone }}</span></div>{% endif %}
                 {% if contact.email %}<div class="mb-2"><i class="ti ti-mail me-2 text-muted"></i><span>{{ contact.email }}</span></div>{% endif %}
+                {% if contact.centre %}<div class="mb-2"><i class="ti ti-building me-2 text-muted"></i><span>{{ contact.centre.name }}</span></div>{% endif %}
                 <div class="mb-2"><i class="ti ti-map-pin me-2 text-muted"></i><span>{{ contact.residence|default:"-" }}, {{ contact.country }}</span></div>
                 <div class="mb-2"><i class="ti ti-home me-2 text-muted"></i><span>Hometown: {{ contact.hometown|default:"-" }}</span></div>
             </div>

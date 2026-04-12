@@ -143,6 +143,21 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+PHONENUMBER_DEFAULT_REGION = 'GH'
+
+# Email (Google SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='JCF <noreply@jancosmicfoundation.org>')
+
+# Arkesel SMS
+ARKESEL_API_KEY = env('ARKESEL_API_KEY', default='')
+ARKESEL_SENDER_ID = env('ARKESEL_SENDER_ID', default='JCF')
+
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

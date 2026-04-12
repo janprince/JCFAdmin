@@ -8,8 +8,8 @@ class CentreForm(forms.ModelForm):
         fields = [
             'name', 'location', 'address', 'country', 'image',
             'description', 'leader_name', 'leader_title', 'leader_avatar',
-            'contact_email', 'contact_phone', 'latitude', 'longitude',
-            'member_count', 'is_active',
+            'contact_email', 'contact_phone', 'whatsapp_link', 'telegram_link',
+            'latitude', 'longitude', 'is_active',
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Centre Name'}),
@@ -23,8 +23,9 @@ class CentreForm(forms.ModelForm):
             'leader_avatar': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'contact_email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'contact@example.com'}),
             'contact_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+233...'}),
+            'whatsapp_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://chat.whatsapp.com/...'}),
+            'telegram_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://t.me/...'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': 'e.g. 5.614818'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.000001', 'placeholder': 'e.g. -0.205874'}),
-            'member_count': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

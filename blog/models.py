@@ -61,6 +61,7 @@ class Post(models.Model):
     excerpt = models.TextField(help_text='Short summary for listing cards.')
     content = models.TextField(help_text='Full article body (rich text).')
     image = models.ImageField(upload_to='blog/posts/', blank=True)
+    video_link = models.URLField(blank=True, help_text='YouTube video URL associated with this article.')
     author = models.ForeignKey(Author, on_delete=models.SET_NULL, null=True, related_name='posts')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
     tags = models.ManyToManyField(Tag, blank=True, related_name='posts')

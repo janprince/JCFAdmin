@@ -25,6 +25,14 @@ class Contact(models.Model):
     is_member = models.BooleanField(default=False)
     is_student = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True, help_text='Active member of the foundation')
+    centre = models.ForeignKey(
+        'centres.Centre',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='members',
+        help_text='Centre this contact belongs to.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

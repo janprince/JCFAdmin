@@ -8,7 +8,7 @@ class PostForm(forms.ModelForm):
     class Meta:
         model = Post
         fields = [
-            'title', 'slug', 'excerpt', 'content', 'image',
+            'title', 'slug', 'excerpt', 'content', 'image', 'video_link',
             'author', 'category', 'tags', 'status', 'published_date',
         ]
         widgets = {
@@ -16,6 +16,7 @@ class PostForm(forms.ModelForm):
             'excerpt': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Short summary for listing cards'}),
             'content': forms.HiddenInput(),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'video_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://youtube.com/watch?v=...'}),
             'author': forms.Select(attrs={'class': 'form-select'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'tags': forms.CheckboxSelectMultiple(),

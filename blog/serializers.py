@@ -42,7 +42,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             'id', 'title', 'slug', 'excerpt', 'content',
-            'image_url', 'author', 'category_name', 'tags',
+            'image_url', 'video_link', 'author', 'category_name', 'tags',
             'status', 'published_date', 'read_time',
             'created_at', 'updated_at',
         ]
@@ -68,7 +68,7 @@ class PostListSerializer(serializers.ModelSerializer):
         model = Post
         fields = [
             'id', 'title', 'slug', 'excerpt',
-            'image_url', 'author', 'category_name', 'tags',
+            'image_url', 'video_link', 'author', 'category_name', 'tags',
             'status', 'published_date', 'read_time',
         ]
 

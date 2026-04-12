@@ -16,9 +16,10 @@ class Centre(models.Model):
     leader_avatar = models.ImageField(upload_to='centres/leaders/', blank=True)
     contact_email = models.EmailField()
     contact_phone = PhoneNumberField()
+    whatsapp_link = models.URLField(blank=True, help_text='WhatsApp group invite link.')
+    telegram_link = models.URLField(blank=True, help_text='Telegram group invite link.')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
-    member_count = models.PositiveIntegerField(default=0, help_text='Approximate number of members.')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -30,6 +31,10 @@ class Centre(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    @property
+    def member_count(self):
+        return self.members.count()
 
     def __str__(self):
         return f'{self.name} ({self.country})'

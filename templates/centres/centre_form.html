@@ -54,16 +54,10 @@
                         {{ form.image }}
                         {% if form.image.errors %}<div class="text-danger fs-12 mt-1">{{ form.image.errors.0 }}</div>{% endif %}
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.member_count.id_for_label }}" class="form-label">Member Count</label>
-                            {{ form.member_count }}
-                        </div>
-                        <div class="col-md-6 mb-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
-                                {{ form.is_active }}
-                                <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
-                            </div>
+                    <div class="mb-3 d-flex align-items-end">
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label for="{{ form.is_active.id_for_label }}" class="form-check-label">Active</label>
                         </div>
                     </div>
                 </div>
@@ -113,6 +107,26 @@
                         <label for="{{ form.contact_phone.id_for_label }}" class="form-label">Phone <span class="text-danger">*</span></label>
                         {{ form.contact_phone }}
                         {% if form.contact_phone.errors %}<div class="text-danger fs-12 mt-1">{{ form.contact_phone.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="ti ti-message-circle me-1"></i>Group Links
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.whatsapp_link.id_for_label }}" class="form-label">WhatsApp Group Link</label>
+                        {{ form.whatsapp_link }}
+                        {% if form.whatsapp_link.errors %}<div class="text-danger fs-12 mt-1">{{ form.whatsapp_link.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.telegram_link.id_for_label }}" class="form-label">Telegram Group Link</label>
+                        {{ form.telegram_link }}
+                        {% if form.telegram_link.errors %}<div class="text-danger fs-12 mt-1">{{ form.telegram_link.errors.0 }}</div>{% endif %}
                     </div>
                 </div>
             </div>

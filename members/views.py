@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
 
+from centres.models import Centre
 from .forms import ContactForm
 from .models import Contact, DataFile, Inquiry
 
@@ -16,7 +17,7 @@ class ContactListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Contact.objects.all().order_by('-id')
+        qs = Contact.objects.select_related('centre').order_by('-id')
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
@@ -25,6 +26,9 @@ class ContactListView(LoginRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
+        centre = self.request.GET.get('centre')
+        if centre:
+            qs = qs.filter(centre_id=centre)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -32,6 +36,8 @@ class ContactListView(LoginRequiredMixin, ListView):
         context['page_type'] = 'contacts'
         context['search_query'] = self.request.GET.get('q', '')
         context['status_filter'] = self.request.GET.get('status', '')
+        context['centre_filter'] = self.request.GET.get('centre', '')
+        context['centres'] = Centre.objects.filter(is_active=True).order_by('name')
         context['total_count'] = Contact.objects.count()
         context['active_count'] = Contact.objects.filter(is_active=True).count()
         context['member_count'] = Contact.objects.filter(is_member=True).count()
@@ -46,7 +52,7 @@ class MemberListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Contact.objects.filter(is_member=True).order_by('-id')
+        qs = Contact.objects.filter(is_member=True).select_related('centre').order_by('-id')
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
@@ -55,6 +61,9 @@ class MemberListView(LoginRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
+        centre = self.request.GET.get('centre')
+        if centre:
+            qs = qs.filter(centre_id=centre)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -62,6 +71,8 @@ class MemberListView(LoginRequiredMixin, ListView):
         context['page_type'] = 'members'
         context['search_query'] = self.request.GET.get('q', '')
         context['status_filter'] = self.request.GET.get('status', '')
+        context['centre_filter'] = self.request.GET.get('centre', '')
+        context['centres'] = Centre.objects.filter(is_active=True).order_by('name')
         total = Contact.objects.filter(is_member=True).count()
         active = Contact.objects.filter(is_member=True, is_active=True).count()
         context['total_count'] = total
@@ -77,7 +88,7 @@ class StudentListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Contact.objects.filter(is_student=True).order_by('-id')
+        qs = Contact.objects.filter(is_student=True).select_related('centre').order_by('-id')
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(full_name__icontains=q)
@@ -86,6 +97,9 @@ class StudentListView(LoginRequiredMixin, ListView):
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
             qs = qs.filter(is_active=False)
+        centre = self.request.GET.get('centre')
+        if centre:
+            qs = qs.filter(centre_id=centre)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -93,6 +107,8 @@ class StudentListView(LoginRequiredMixin, ListView):
         context['page_type'] = 'students'
         context['search_query'] = self.request.GET.get('q', '')
         context['status_filter'] = self.request.GET.get('status', '')
+        context['centre_filter'] = self.request.GET.get('centre', '')
+        context['centres'] = Centre.objects.filter(is_active=True).order_by('name')
         total = Contact.objects.filter(is_student=True).count()
         active = Contact.objects.filter(is_student=True, is_active=True).count()
         context['total_count'] = total
