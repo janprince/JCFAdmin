@@ -52,7 +52,7 @@ def verify_transaction(reference: str) -> dict | None:
 
 def validate_webhook_signature(payload: bytes, signature: str) -> bool:
     """
-    Validate the X-Paystack-Signature header using HMAC SHA-512.
+    Validate the X-Paystack-Signature header using HMAC SHA-512
     """
     expected = hmac.new(
         _get_secret_key().encode(),
