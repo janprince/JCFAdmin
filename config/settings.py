@@ -119,6 +119,9 @@ if CLOUDFLARE_R2_BUCKET:
                 'secret_key': env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
                 'bucket_name': CLOUDFLARE_R2_BUCKET,
                 'endpoint_url': env('CLOUDFLARE_R2_ENDPOINT'),
+                # R2 requires a region; 'auto' avoids malformed SigV4 requests
+                # (without it recent botocore sends a bad HeadObject → 400).
+                'region_name': 'auto',
                 'custom_domain': env('CLOUDFLARE_R2_PUBLIC_DOMAIN', default=''),
                 'default_acl': None,
                 'querystring_auth': False,
