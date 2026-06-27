@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'centres',
     'causes',
     'website',
+    # Mobile app API
+    'mobile_api',
 ]
 
 MIDDLEWARE = [

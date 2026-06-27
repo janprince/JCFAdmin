@@ -22,6 +22,8 @@ path('staff/', include('staff_mgmt.urls')),
     path('website/', include('website.urls')),
     # Public API for Next.js website
     path('api/', include('config.api_urls')),
+    # Mobile app API (versioned)
+    path('api/mobile/v1/', include('mobile_api.urls')),
     path('admin/', admin.site.urls),
 ]
 
