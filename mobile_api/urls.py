@@ -3,6 +3,7 @@ from django.urls import path
 
 from . import views
 from . import content
+from . import payments
 
 app_name = 'mobile_api'
 
@@ -18,4 +19,11 @@ urlpatterns = [
     path('teachings/<slug:slug>/', content.TeachingDetailView.as_view(), name='teaching_detail'),
     path('series/', content.SeriesListView.as_view(), name='series_list'),
     path('series/<slug:slug>/', content.SeriesDetailView.as_view(), name='series_detail'),
+
+    # Payments — causes + Paystack donations
+    path('payments/config/', payments.PaymentConfigView.as_view(), name='payment_config'),
+    path('causes/', payments.CauseListView.as_view(), name='cause_list'),
+    path('causes/<slug:slug>/', payments.CauseDetailView.as_view(), name='cause_detail'),
+    path('donations/verify/', payments.DonationVerifyView.as_view(), name='donation_verify'),
+    path('donations/mine/', payments.MyDonationsView.as_view(), name='my_donations'),
 ]

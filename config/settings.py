@@ -186,3 +186,6 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Paystack
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')
+# Public key is safe to ship to clients; served to the app at runtime so it can
+# rotate without an app release.
+PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')

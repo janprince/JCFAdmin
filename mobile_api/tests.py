@@ -1,8 +1,11 @@
+from unittest.mock import patch
+
 from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
+from causes.models import Cause, Donation
 from members.models import Contact
 from teachings.models import Teaching, TeachingSeries
 from .models import LoginCode, MobileToken
@@ -184,3 +187,83 @@ class ContentTierTests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data['teaching_count'], 2)
         self.assertEqual(len(resp.data['teachings']), 2)
+
+
+_FAKE_TX = {
+    'amount': 5000,  # pesewas -> GHS 50.00
+    'currency': 'GHS',
+    'customer': {'email': 'donor@example.com', 'first_name': 'Ama'},
+    'paid_at': None,
+}
+
+
+class DonationTests(APITestCase):
+    def setUp(self):
+        self.cause = Cause.objects.create(
+            title='Build a Centre', description='d', content='c',
+            goal_amount=10000, is_active=True,
+        )
+        self.member = Contact.objects.create(
+            full_name='Giver', phone='+233200000050',
+            email='giver@example.com', is_active=True, is_member=True,
+        )
+
+    @override_settings(PAYSTACK_PUBLIC_KEY='pk_test_abc')
+    def test_payment_config_returns_public_key(self):
+        resp = self.client.get(reverse('mobile_api:payment_config'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['paystack_public_key'], 'pk_test_abc')
+        self.assertEqual(resp.data['currency'], 'GHS')
+
+    def test_cause_list(self):
+        resp = self.client.get(reverse('mobile_api:cause_list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['results'][0]['slug'], 'build-a-centre')
+
+    @patch('mobile_api.payments.verify_transaction', return_value=_FAKE_TX)
+    def test_guest_donation_verify_creates_donation(self, _mock):
+        resp = self.client.post(
+            reverse('mobile_api:donation_verify'),
+            {'reference': 'JCF-REF-1', 'cause_id': self.cause.id},
+        )
+        self.assertEqual(resp.status_code, 201)
+        d = Donation.objects.get(paystack_reference='JCF-REF-1')
+        self.assertEqual(str(d.amount), '50.00')
+        self.assertEqual(d.cause, self.cause)
+        self.assertIsNone(d.contact)
+
+    @patch('mobile_api.payments.verify_transaction', return_value=_FAKE_TX)
+    def test_donation_verify_is_idempotent(self, _mock):
+        url = reverse('mobile_api:donation_verify')
+        self.client.post(url, {'reference': 'JCF-REF-2'})
+        resp = self.client.post(url, {'reference': 'JCF-REF-2'})
+        self.assertEqual(resp.data['status'], 'already_processed')
+        self.assertEqual(Donation.objects.filter(paystack_reference='JCF-REF-2').count(), 1)
+
+    @patch('mobile_api.payments.verify_transaction', return_value=None)
+    def test_donation_verify_failure(self, _mock):
+        resp = self.client.post(
+            reverse('mobile_api:donation_verify'), {'reference': 'bad'}
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    @patch('mobile_api.payments.verify_transaction', return_value=_FAKE_TX)
+    def test_member_donation_is_attributed_and_listed(self, _mock):
+        token = MobileToken.issue(self.member)
+        auth = {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
+        self.client.post(
+            reverse('mobile_api:donation_verify'),
+            {'reference': 'JCF-REF-3', 'cause_id': self.cause.id}, **auth,
+        )
+        d = Donation.objects.get(paystack_reference='JCF-REF-3')
+        self.assertEqual(d.contact, self.member)
+        self.assertEqual(d.donor_name, 'Giver')
+
+        mine = self.client.get(reverse('mobile_api:my_donations'), **auth)
+        self.assertEqual(mine.status_code, 200)
+        self.assertEqual(len(mine.data['results']), 1)
+
+    def test_my_donations_requires_auth(self):
+        self.assertEqual(
+            self.client.get(reverse('mobile_api:my_donations')).status_code, 401
+        )
