@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'centres',
     'causes',
     'website',
+    'programs',
     # Mobile app API
     'mobile_api',
 ]

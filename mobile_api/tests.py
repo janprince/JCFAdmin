@@ -7,8 +7,15 @@ from rest_framework.test import APITestCase
 
 from causes.models import Cause, Donation
 from members.models import Contact
+from programs.models import AccommodationTier, CostLineItem, Program, Registration
 from teachings.models import Teaching, TeachingSeries
 from .models import LoginCode, MobileToken
+
+# Keep media (QR codes) off R2/disk during tests.
+_INMEM_STORAGE = {
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
 
 
 @override_settings(DEBUG=True)  # so request-code returns dev_code for the flow
@@ -267,3 +274,140 @@ class DonationTests(APITestCase):
         self.assertEqual(
             self.client.get(reverse('mobile_api:my_donations')).status_code, 401
         )
+
+
+@override_settings(STORAGES=_INMEM_STORAGE)
+class ProgramTests(APITestCase):
+    def setUp(self):
+        self.member = Contact.objects.create(
+            full_name='Member One', phone='+233200000060',
+            email='member1@example.com', is_active=True, is_member=True,
+        )
+        self.nonmember = Contact.objects.create(
+            full_name='Plain Contact', phone='+233200000061',
+            email='plain@example.com', is_active=True,
+        )
+
+        self.public = Program.objects.create(
+            title='Open Day', year=2026, audience=Program.Audience.PUBLIC,
+            requires_payment=False, is_published=True,
+        )
+        self.retreat = Program.objects.create(
+            title='Annual Retreat', year=2026, audience=Program.Audience.MEMBERS,
+            requires_payment=True, is_published=True,
+        )
+        CostLineItem.objects.create(program=self.retreat, label='Registration', amount=400, unit=CostLineItem.Unit.FLAT)
+        self.tier = AccommodationTier.objects.create(
+            program=self.retreat, name='Windy Lodge', price_per_person=1000,
+            total_rooms=1, rooms_confirmed=0,
+        )
+
+    def _auth(self, contact):
+        token = MobileToken.issue(contact)
+        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
+
+    # --- listing / eligibility ---
+    def test_guest_sees_only_public_programs(self):
+        resp = self.client.get(reverse('mobile_api:program_list'))
+        slugs = [p['slug'] for p in resp.data['results']]
+        self.assertIn('open-day-2026', slugs)
+        self.assertNotIn('annual-retreat-2026', slugs)
+
+    def test_member_sees_members_programs(self):
+        resp = self.client.get(reverse('mobile_api:program_list'), **self._auth(self.member))
+        slugs = [p['slug'] for p in resp.data['results']]
+        self.assertIn('annual-retreat-2026', slugs)
+
+    def test_guest_blocked_from_members_detail(self):
+        resp = self.client.get(reverse('mobile_api:program_detail', args=['annual-retreat-2026']))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_member_detail_includes_tiers_and_costs(self):
+        resp = self.client.get(
+            reverse('mobile_api:program_detail', args=['annual-retreat-2026']),
+            **self._auth(self.member),
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data['accommodation_tiers']), 1)
+        self.assertEqual(len(resp.data['cost_line_items']), 1)
+
+    # --- registration ---
+    def test_register_free_public_program_confirms_immediately(self):
+        resp = self.client.post(
+            reverse('mobile_api:program_register', args=['open-day-2026']),
+            {'quantity': 1}, **self._auth(self.member), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertFalse(resp.data['requires_payment'])
+        reg = resp.data['registration']
+        self.assertEqual(reg['status'], 'confirmed')
+        self.assertTrue(reg['reference'].startswith('JCF-2026-'))
+        self.assertTrue(reg['qr_url'])
+
+    def test_register_paid_program_is_pending_with_computed_amount(self):
+        resp = self.client.post(
+            reverse('mobile_api:program_register', args=['annual-retreat-2026']),
+            {'quantity': 2, 'accommodation_tier_id': self.tier.id},
+            **self._auth(self.member), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(resp.data['requires_payment'])
+        # flat 400 + tier 1000 * 2 = 2400
+        self.assertEqual(resp.data['amount'], '2400.00')
+        self.assertEqual(resp.data['registration']['status'], 'pending')
+
+    def test_non_member_cannot_register_members_program(self):
+        resp = self.client.post(
+            reverse('mobile_api:program_register', args=['annual-retreat-2026']),
+            {'quantity': 1}, **self._auth(self.nonmember), format='json',
+        )
+        self.assertEqual(resp.status_code, 403)
+
+    def test_register_requires_auth(self):
+        resp = self.client.post(
+            reverse('mobile_api:program_register', args=['open-day-2026']), {'quantity': 1}, format='json'
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    # --- verify + room allocation ---
+    @patch('mobile_api.programs_api.verify_transaction',
+           return_value={'amount': 240000, 'currency': 'GHS', 'customer': {}, 'paid_at': None})
+    def test_verify_confirms_and_allocates_room(self, _mock):
+        reg = Registration.objects.create(
+            program=self.retreat, contact=self.member, quantity=2,
+            accommodation_tier=self.tier, amount=2400, currency='GHS',
+        )
+        reg.assign_reference()
+        resp = self.client.post(
+            reverse('mobile_api:registration_verify', args=[reg.reference]),
+            {'paystack_reference': 'PSK-1'}, **self._auth(self.member), format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'confirmed')
+        self.tier.refresh_from_db()
+        self.assertEqual(self.tier.rooms_confirmed, 1)
+
+    @patch('mobile_api.programs_api.verify_transaction',
+           return_value={'amount': 240000, 'currency': 'GHS', 'customer': {}, 'paid_at': None})
+    def test_room_sold_out_returns_409(self, _mock):
+        self.tier.rooms_confirmed = 1  # already full (total_rooms=1)
+        self.tier.save()
+        reg = Registration.objects.create(
+            program=self.retreat, contact=self.member, quantity=1,
+            accommodation_tier=self.tier, amount=1400, currency='GHS',
+        )
+        reg.assign_reference()
+        resp = self.client.post(
+            reverse('mobile_api:registration_verify', args=[reg.reference]),
+            {'paystack_reference': 'PSK-2'}, **self._auth(self.member), format='json',
+        )
+        self.assertEqual(resp.status_code, 409)
+
+    def test_my_registrations_lists_own(self):
+        reg = Registration.objects.create(
+            program=self.public, contact=self.member, amount=0, currency='GHS',
+        )
+        reg.assign_reference()
+        resp = self.client.get(reverse('mobile_api:my_registrations'), **self._auth(self.member))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data['results']), 1)
