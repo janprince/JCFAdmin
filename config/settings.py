@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'causes',
     'website',
     'programs',
+    'engagement',
     # Mobile app API
     'mobile_api',
 ]
@@ -184,6 +185,9 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://127.0.0.1:3000',
 ])
 CORS_ALLOW_CREDENTIALS = True
+
+# Firebase Cloud Messaging (push). Off until a service account is provisioned.
+FCM_ENABLED = env.bool('FCM_ENABLED', default=False)
 
 # Paystack
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')

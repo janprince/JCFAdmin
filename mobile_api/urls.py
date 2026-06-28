@@ -5,6 +5,7 @@ from . import views
 from . import content
 from . import payments
 from . import programs_api
+from . import engagement_api
 
 app_name = 'mobile_api'
 
@@ -34,4 +35,13 @@ urlpatterns = [
     path('programs/<slug:slug>/register/', programs_api.RegisterView.as_view(), name='program_register'),
     path('registrations/mine/', programs_api.MyRegistrationsView.as_view(), name='my_registrations'),
     path('registrations/<str:reference>/verify/', programs_api.VerifyRegistrationView.as_view(), name='registration_verify'),
+
+    # Engagement — announcements, push devices, notifications, appointments
+    path('announcements/', engagement_api.AnnouncementListView.as_view(), name='announcement_list'),
+    path('devices/register/', engagement_api.DeviceRegisterView.as_view(), name='device_register'),
+    path('devices/<str:token>/', engagement_api.DeviceUnregisterView.as_view(), name='device_unregister'),
+    path('notifications/', engagement_api.NotificationListView.as_view(), name='notification_list'),
+    path('notifications/<int:pk>/read/', engagement_api.NotificationReadView.as_view(), name='notification_read'),
+    path('appointments/', engagement_api.AppointmentListView.as_view(), name='appointment_list'),
+    path('appointments/book/', engagement_api.AppointmentCreateView.as_view(), name='appointment_book'),
 ]

@@ -6,6 +6,8 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from causes.models import Cause, Donation
+from consultations.models import Consultation
+from engagement.models import Announcement, DeviceToken, Notification
 from members.models import Contact
 from programs.models import AccommodationTier, CostLineItem, Program, Registration
 from teachings.models import Teaching, TeachingSeries
@@ -411,3 +413,99 @@ class ProgramTests(APITestCase):
         resp = self.client.get(reverse('mobile_api:my_registrations'), **self._auth(self.member))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data['results']), 1)
+
+
+class EngagementTests(APITestCase):
+    def setUp(self):
+        self.member = Contact.objects.create(
+            full_name='Eng Member', phone='+233200000070',
+            email='eng@example.com', is_active=True, is_member=True,
+        )
+        self.pub = Announcement.objects.create(
+            title='Public News', body='hi', audience=Announcement.Audience.PUBLIC,
+        )
+        self.mem = Announcement.objects.create(
+            title='Members Only', body='secret', audience=Announcement.Audience.MEMBERS,
+        )
+
+    def _auth(self, contact=None):
+        token = MobileToken.issue(contact or self.member)
+        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
+
+    # announcements
+    def test_guest_sees_only_public_announcements(self):
+        resp = self.client.get(reverse('mobile_api:announcement_list'))
+        titles = [a['title'] for a in resp.data['results']]
+        self.assertIn('Public News', titles)
+        self.assertNotIn('Members Only', titles)
+
+    def test_member_sees_members_announcements(self):
+        resp = self.client.get(reverse('mobile_api:announcement_list'), **self._auth())
+        titles = [a['title'] for a in resp.data['results']]
+        self.assertIn('Members Only', titles)
+
+    # device tokens
+    def test_register_device_links_member(self):
+        resp = self.client.post(
+            reverse('mobile_api:device_register'),
+            {'token': 'fcm-abc', 'platform': 'android'}, **self._auth(), format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        dt = DeviceToken.objects.get(token='fcm-abc')
+        self.assertEqual(dt.contact, self.member)
+        self.assertTrue(dt.is_active)
+
+    def test_register_device_invalid_platform(self):
+        resp = self.client.post(
+            reverse('mobile_api:device_register'),
+            {'token': 'x', 'platform': 'windows'}, format='json',
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_unregister_device_deactivates(self):
+        DeviceToken.objects.create(token='fcm-z', platform='ios', contact=self.member)
+        resp = self.client.delete(reverse('mobile_api:device_unregister', args=['fcm-z']))
+        self.assertEqual(resp.status_code, 204)
+        self.assertFalse(DeviceToken.objects.get(token='fcm-z').is_active)
+
+    # notifications
+    def test_notifications_list_and_mark_read(self):
+        n = Notification.objects.create(contact=self.member, title='Hello')
+        listed = self.client.get(reverse('mobile_api:notification_list'), **self._auth())
+        self.assertEqual(len(listed.data['results']), 1)
+        self.assertFalse(listed.data['results'][0]['is_read'])
+
+        read = self.client.post(reverse('mobile_api:notification_read', args=[n.id]), **self._auth())
+        self.assertTrue(read.data['updated'])
+        n.refresh_from_db()
+        self.assertTrue(n.is_read)
+
+    def test_notifications_require_auth(self):
+        self.assertEqual(
+            self.client.get(reverse('mobile_api:notification_list')).status_code, 401
+        )
+
+    # appointments
+    def test_book_appointment_creates_requested_consultation(self):
+        resp = self.client.post(
+            reverse('mobile_api:appointment_book'),
+            {'mode': 'Remote', 'scheduled_date': '2026-08-01', 'note': 'Guidance'},
+            **self._auth(), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        c = Consultation.objects.get(contact=self.member)
+        self.assertEqual(c.status, Consultation.Status.REQUESTED)
+        self.assertEqual(c.note, 'Guidance')
+
+    def test_appointments_mine_lists_only_own(self):
+        Consultation.objects.create(contact=self.member, mode='Onsite', scheduled_date='2026-08-02')
+        resp = self.client.get(reverse('mobile_api:appointment_list'), **self._auth())
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data['results']), 1)
+
+    def test_book_requires_auth(self):
+        resp = self.client.post(
+            reverse('mobile_api:appointment_book'),
+            {'mode': 'Remote', 'scheduled_date': '2026-08-01'}, format='json',
+        )
+        self.assertEqual(resp.status_code, 401)
