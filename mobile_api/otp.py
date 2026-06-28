@@ -1,16 +1,19 @@
 """
 Helpers to resolve a Contact from a phone/email identifier and deliver the
-one-time login code. Delivery reuses the existing Arkesel SMS + email helpers
-and is best-effort (failures are logged, not fatal, so dev works without keys).
+one-time login code BY EMAIL.
+
+A member may identify themselves by phone or email, but the verification code is
+always emailed to the address on their Contact record. Delivery failures are
+logged (never fatal). Requires EMAIL_HOST_USER / EMAIL_HOST_PASSWORD in the
+environment to actually send (see .env.example).
 """
 import logging
 
-from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import send_mail
 from django.db.models import Q
 
 from members.models import Contact
-from website.notifications import send_sms_arkesel
 from .models import LoginCode
 
 logger = logging.getLogger(__name__)
@@ -41,29 +44,30 @@ def find_contact(identifier: str):
     return qs.first()
 
 
-def send_code(contact, identifier: str):
-    """Issue and deliver a login code. Returns (LoginCode, plaintext_code)."""
-    identifier = normalize(identifier)
-    is_email = looks_like_email(identifier)
-    channel = LoginCode.Channel.EMAIL if is_email else LoginCode.Channel.SMS
-    login_code, code = LoginCode.issue(contact, channel, identifier)
+def send_code(contact):
+    """Issue a login code and email it to the contact's address.
 
-    message = f'Your JCF verification code is {code}. It expires in 10 minutes.'
+    Returns (LoginCode, plaintext_code), or (None, None) if the contact has no
+    email on file (so they can't receive a code).
+    """
+    email = (contact.email or '').strip()
+    if not email:
+        logger.warning('Contact %s has no email on file; cannot send OTP.', contact.pk)
+        return None, None
+
+    login_code, code = LoginCode.issue(contact, LoginCode.Channel.EMAIL, email)
+    subject = 'Your JCF verification code'
+    message = (
+        f'Hello {contact.full_name},\n\n'
+        f'Your JCF verification code is {code}. It expires in 10 minutes.\n\n'
+        f'If you did not request this, you can ignore this email.'
+    )
     try:
-        if is_email:
-            send_mail(
-                'Your JCF login code',
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [identifier],
-                fail_silently=True,
-            )
-        else:
-            send_sms_arkesel(identifier, message)
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
     except Exception:  # pragma: no cover - delivery must never 500 the request
-        logger.exception('Failed to deliver login code to %s', identifier)
+        logger.exception('Failed to email login code to %s', email)
 
     if settings.DEBUG:
-        logger.info('DEBUG login code for %s: %s', identifier, code)
+        logger.info('DEBUG login code for %s: %s', email, code)
 
     return login_code, code

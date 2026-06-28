@@ -11,7 +11,7 @@ from .otp import find_contact, send_code, normalize
 from .serializers import MemberSerializer
 
 # Generic response so we never reveal which phones/emails exist.
-_GENERIC = {'detail': 'If the account exists, a verification code has been sent.'}
+_GENERIC = {'detail': 'If the account exists, a verification code has been emailed.'}
 
 
 class RequestCodeView(APIView):
@@ -31,8 +31,8 @@ class RequestCodeView(APIView):
         contact = find_contact(identifier)
         payload = dict(_GENERIC)
         if contact:
-            _, code = send_code(contact, identifier)
-            if settings.DEBUG:
+            _, code = send_code(contact)
+            if code and settings.DEBUG:
                 payload['dev_code'] = code  # convenience for local dev only
         return Response(payload)
 

@@ -1,3 +1,4 @@
+from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -28,6 +29,27 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn('dev_code', resp.data)
         self.assertEqual(LoginCode.objects.filter(contact=self.contact).count(), 1)
+        # Code is delivered by email.
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['member@example.com'])
+        self.assertIn(resp.data['dev_code'], mail.outbox[0].body)
+
+    def test_phone_identifier_still_emails_the_code(self):
+        resp = self._request_code('+233200000000')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('dev_code', resp.data)
+        # Even when identifying by phone, the code goes to the email on file.
+        self.assertEqual(mail.outbox[0].to, ['member@example.com'])
+
+    def test_contact_without_email_gets_no_code(self):
+        Contact.objects.create(
+            full_name='No Email', phone='+233200000099', is_active=True, is_member=True,
+        )
+        resp = self._request_code('+233200000099')
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn('dev_code', resp.data)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(LoginCode.objects.count(), 0)
 
     def test_request_code_for_unknown_identifier_is_generic_and_silent(self):
         resp = self._request_code('nobody@example.com')
