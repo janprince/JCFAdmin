@@ -277,6 +277,23 @@ class DonationTests(APITestCase):
             self.client.get(reverse('mobile_api:my_donations')).status_code, 401
         )
 
+    @patch('mobile_api.payments.initialize_transaction',
+           return_value={'authorization_url': 'https://psk/checkout', 'reference': 'PSK-INIT-1'})
+    def test_donation_initialize_returns_url(self, _m):
+        resp = self.client.post(
+            reverse('mobile_api:donation_initialize'),
+            {'amount': '50', 'email': 'd@e.com'}, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['authorization_url'], 'https://psk/checkout')
+        self.assertEqual(resp.data['reference'], 'PSK-INIT-1')
+
+    def test_donation_initialize_requires_amount(self):
+        resp = self.client.post(
+            reverse('mobile_api:donation_initialize'), {'email': 'd@e.com'}, format='json'
+        )
+        self.assertEqual(resp.status_code, 400)
+
 
 @override_settings(STORAGES=_INMEM_STORAGE)
 class ProgramTests(APITestCase):
@@ -413,6 +430,22 @@ class ProgramTests(APITestCase):
         resp = self.client.get(reverse('mobile_api:my_registrations'), **self._auth(self.member))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data['results']), 1)
+
+    @patch('mobile_api.programs_api.initialize_transaction',
+           return_value={'authorization_url': 'https://psk/checkout', 'reference': 'PSK-REG-1'})
+    def test_registration_initialize_stores_reference(self, _m):
+        reg = Registration.objects.create(
+            program=self.retreat, contact=self.member, quantity=1, amount=400, currency='GHS',
+        )
+        reg.assign_reference()
+        resp = self.client.post(
+            reverse('mobile_api:registration_initialize', args=[reg.reference]),
+            **self._auth(self.member), format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['authorization_url'], 'https://psk/checkout')
+        reg.refresh_from_db()
+        self.assertEqual(reg.paystack_reference, 'PSK-REG-1')
 
 
 class EngagementTests(APITestCase):

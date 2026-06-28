@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from django.conf import settings
-from causes.paystack import verify_transaction
+from causes.paystack import initialize_transaction, verify_transaction
 from programs.models import AccommodationTier, CostLineItem, Program, Registration
 from programs.services import RoomSoldOut, confirm_registration
 from .authentication import IsMember, MobileTokenAuthentication
@@ -209,6 +209,38 @@ class RegisterView(APIView):
         )
 
 
+class InitializeRegistrationPaymentView(APIView):
+    """POST registrations/<reference>/initialize/ -> Paystack authorization_url."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMember]
+
+    def post(self, request, reference):
+        registration = generics.get_object_or_404(
+            Registration, reference=reference, contact=request.auth.contact
+        )
+        if registration.status == Registration.Status.CONFIRMED:
+            raise ValidationError('This registration is already confirmed.')
+        email = registration.contact.email or ''
+        if not email:
+            raise ValidationError('Your membership record has no email for the receipt.')
+
+        data = initialize_transaction(
+            email,
+            int(registration.amount * 100),
+            metadata={'registration_reference': registration.reference},
+        )
+        if data is None:
+            return Response({'detail': 'Could not start payment.'},
+                            status=status.HTTP_502_BAD_GATEWAY)
+        registration.paystack_reference = data['reference']
+        registration.save(update_fields=['paystack_reference'])
+        return Response({
+            'authorization_url': data['authorization_url'],
+            'reference': data['reference'],
+        })
+
+
 class VerifyRegistrationView(APIView):
     """POST registrations/<reference>/verify/ {paystack_reference} -> confirm."""
 
@@ -223,7 +255,10 @@ class VerifyRegistrationView(APIView):
             return Response({'status': 'already_confirmed',
                              'registration': RegistrationSerializer(registration).data})
 
-        paystack_reference = str(request.data.get('paystack_reference', '')).strip()
+        paystack_reference = (
+            str(request.data.get('paystack_reference', '')).strip()
+            or registration.paystack_reference
+        )
         if not paystack_reference:
             raise ValidationError('paystack_reference is required.')
 

@@ -14,8 +14,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from decimal import Decimal, InvalidOperation
+
 from causes.models import Cause, Donation
-from causes.paystack import verify_transaction
+from causes.paystack import initialize_transaction, verify_transaction
 from causes.serializers import CauseListSerializer, CauseSerializer, DonationSerializer
 from .authentication import IsMember, MobileTokenAuthentication
 
@@ -46,6 +48,44 @@ class CauseDetailView(generics.RetrieveAPIView):
     serializer_class = CauseSerializer
     lookup_field = 'slug'
     queryset = Cause.objects.filter(is_active=True).select_related('category')
+
+
+class DonationInitializeView(APIView):
+    """POST {amount, email, cause_id?} -> Paystack authorization_url + reference."""
+
+    authentication_classes = [MobileTokenAuthentication]  # optional
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = str(request.data.get('email', '')).strip()
+        if request.auth and not email:
+            email = request.auth.contact.email or ''
+        if not email:
+            return Response({'email': 'This field is required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            amount = Decimal(str(request.data.get('amount', '0')))
+        except (InvalidOperation, TypeError):
+            amount = Decimal('0')
+        if amount <= 0:
+            return Response({'amount': 'Enter a valid amount.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        metadata = {}
+        cause_id = request.data.get('cause_id')
+        if cause_id:
+            metadata['custom_fields'] = [
+                {'display_name': 'Cause', 'variable_name': 'cause_id', 'value': cause_id}
+            ]
+
+        data = initialize_transaction(email, int(amount * 100), metadata=metadata)
+        if data is None:
+            return Response({'detail': 'Could not start payment.'},
+                            status=status.HTTP_502_BAD_GATEWAY)
+        return Response({
+            'authorization_url': data['authorization_url'],
+            'reference': data['reference'],
+        })
 
 
 class DonationVerifyView(APIView):

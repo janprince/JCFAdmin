@@ -22,6 +22,46 @@ def _get_secret_key():
     return key
 
 
+def initialize_transaction(email, amount_pesewas, reference=None,
+                           metadata=None, callback_url=None) -> dict | None:
+    """
+    Initialize a Paystack transaction (server-side; secret stays here).
+    Returns {authorization_url, access_code, reference} on success, else None.
+    https://paystack.com/docs/api/transaction/#initialize
+    """
+    payload = {
+        'email': email,
+        'amount': int(amount_pesewas),
+        'currency': 'GHS',
+    }
+    if reference:
+        payload['reference'] = reference
+    if metadata:
+        payload['metadata'] = metadata
+    if callback_url:
+        payload['callback_url'] = callback_url
+
+    req = Request(
+        f'{PAYSTACK_API_BASE}/transaction/initialize',
+        data=json.dumps(payload).encode(),
+        method='POST',
+    )
+    req.add_header('Authorization', f'Bearer {_get_secret_key()}')
+    req.add_header('Content-Type', 'application/json')
+
+    try:
+        with urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read())
+    except (URLError, json.JSONDecodeError):
+        logger.exception('Paystack initialize failed')
+        return None
+
+    if body.get('status') is True:
+        return body['data']
+    logger.warning('Paystack initialize: %s', body.get('message'))
+    return None
+
+
 def verify_transaction(reference: str) -> dict | None:
     """
     Verify a transaction with Paystack.
