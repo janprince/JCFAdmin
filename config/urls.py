@@ -20,6 +20,8 @@ path('staff/', include('staff_mgmt.urls')),
     path('centres/', include('centres.urls')),
     path('causes/', include('causes.urls')),
     path('website/', include('website.urls')),
+    # Innerspace student platform (drbaffourjan.com)
+    path('innerspace/', include('innerspace.urls')),
     # Public API for Next.js website
     path('api/', include('config.api_urls')),
     path('admin/', admin.site.urls),

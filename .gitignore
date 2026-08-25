@@ -11,3 +11,6 @@ build/
 .vscode/
 staticfiles/
 cookies.txt
+.DS_Store
+*.dump
+.claude/settings.local.json

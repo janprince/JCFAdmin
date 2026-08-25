@@ -76,6 +76,15 @@
                     </a>
                 </li>
 
+                <li class="side-nav-title mt-2">Innerspace</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'innerspace:student_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-certificate"></i></span>
+                        <span class="menu-text">Students</span>
+                    </a>
+                </li>
+
                 {% if perms.staff_mgmt.view_worker %}
                 <li class="side-nav-title mt-2">Administration</li>
 

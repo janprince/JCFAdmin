@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'centres',
     'causes',
     'website',
+    # Innerspace student platform (separate, Prisma-owned database)
+    'innerspace',
 ]
 
 MIDDLEWARE = [
@@ -77,8 +79,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres://localhost:5432/jcf_management')
+    'default': env.db('DATABASE_URL', default='postgres://localhost:5432/jcf_management'),
 }
+
+# ---------------------------------------------------------------------------
+# Innerspace platform database (drbaffourjan.com)
+#
+# Owned by Prisma, hosted separately. Django reads and writes it but never
+# migrates it — InnerspaceRouter.allow_migrate refuses every operation against
+# this alias, so `manage.py migrate` cannot touch the schema.
+#
+# Point INNERSPACE_DATABASE_URL at Supabase's *session* pooler or the direct
+# connection. Do not set OPTIONS['server_side_binding'] = True: Django's
+# default client-side binding is what lets Postgres coerce our plain strings
+# into its native enum types (MembershipStatus, PaymentProvider).
+# ---------------------------------------------------------------------------
+INNERSPACE_DATABASE_URL = env('INNERSPACE_DATABASE_URL', default='')
+
+if INNERSPACE_DATABASE_URL:
+    DATABASES['innerspace'] = env.db_url_config(INNERSPACE_DATABASE_URL)
+    DATABASES['innerspace'].update({
+        'CONN_MAX_AGE': 0,
+        # Transaction-pooled connections do not support named cursors.
+        'DISABLE_SERVER_SIDE_CURSORS': True,
+    })
+
+DATABASE_ROUTERS = ['innerspace.routers.InnerspaceRouter']
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

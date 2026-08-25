@@ -1,0 +1,35 @@
+{% comment %}
+Shared body for the grant and extend modals. Both post to different URLs but
+collect the same information: how long, how much, and what receipt it came from.
+{% endcomment %}
+<div class="mb-3">
+    <label class="form-label">Duration</label>
+    {{ form.duration }}
+</div>
+
+<div class="mb-3 d-none" data-custom-date>
+    <label class="form-label">{{ form.custom_expires_at.label }}</label>
+    {{ form.custom_expires_at }}
+</div>
+
+<div class="row">
+    <div class="col-7 mb-3">
+        <label class="form-label">{{ form.amount.label }}</label>
+        {{ form.amount }}
+        <small class="text-muted fs-xs">{{ form.amount.help_text }}</small>
+    </div>
+    <div class="col-5 mb-3">
+        <label class="form-label">Currency</label>
+        {{ form.currency }}
+    </div>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">{{ form.receipt_ref.label }}</label>
+    {{ form.receipt_ref }}
+</div>
+
+<div class="mb-0">
+    <label class="form-label">Note</label>
+    {{ form.note }}
+</div>

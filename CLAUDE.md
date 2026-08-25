@@ -30,6 +30,7 @@ inquiries/           # Inquiry — inline on member detail page (subject, remark
 staff_mgmt/          # Worker, Representative — foundation staff & reps
 teachings/           # Teaching — spiritual content tracking (topic, format, language, status)
 dashboard/           # Analytics view with ApexCharts
+innerspace/          # Innerspace student platform — SECOND, Prisma-owned database
 templates/           # Project-level templates
   base.html          # HTML skeleton (CSS/JS)
   layouts/           # dashboard.html (topbar+sidebar+footer), auth.html (login)
@@ -67,6 +68,7 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py shell
 python manage.py check
+python manage.py innerspace_check   # verify the Innerspace DB mapping
 ```
 
 ## URL Structure
@@ -98,11 +100,54 @@ python manage.py check
 | `/teachings/` | TeachingListView | teachings |
 | `/teachings/add/` | TeachingCreateView | teachings |
 | `/teachings/<pk>/edit/` | TeachingUpdateView | teachings |
+| `/innerspace/students/` | StudentListView | innerspace |
+| `/innerspace/students/<pk>/` | StudentDetailView | innerspace |
+| `/innerspace/students/<pk>/grant/` | GrantAccessView | innerspace |
+| `/innerspace/students/<pk>/extend/` | ExtendAccessView | innerspace |
+| `/innerspace/students/<pk>/revoke/` | RevokeAccessView | innerspace |
 | `/admin/` | Django Admin | admin |
 
 ## Database
 
 PostgreSQL database `jcf_management`. Connection configured via `DATABASE_URL` in `.env`.
+
+### Second database: Innerspace (`innerspace` alias)
+
+The `innerspace` app reads and writes the **drbaffourjan.com** student platform
+database — a separate Supabase Postgres instance whose schema is owned by
+Prisma, in `/Users/kami/Projects/Kami/JIVA/drbaffourjan/prisma/schema.prisma`.
+
+**Django never migrates that database.** `InnerspaceRouter.allow_migrate`
+returns `False` for every operation against the alias, and all its models are
+`managed = False`. Schema changes are made in the drbaffourjan repo with
+`prisma migrate deploy`, then mirrored by hand into `innerspace/models.py`.
+
+Run `python manage.py innerspace_check` after any Prisma migration — it
+compares model fields against the live columns and reports drift.
+
+Mapping rules that are easy to get wrong:
+
+- **Table names are case-sensitive.** Only `User` is `@@map`ped (to `users`);
+  `Membership` and `Payment` keep their capitals.
+- **Column naming is inconsistent.** `users` is snake_case except `accessLevel`;
+  `Membership` and `Payment` are camelCase throughout. Always set `db_column`.
+- **`id` columns are TEXT with no database default.** Prisma generates cuids in
+  the app layer, so `innerspace/cuid.py` does too.
+- **`updatedAt` is NOT NULL with no default.** Every write must set it.
+- **Timestamps are `timestamp(3)`, not `timestamptz`.** Use
+  `PrismaDateTimeField` (`innerspace/fields.py`), which converts naive UTC from
+  the database into aware datetimes and back.
+- **Statuses are native Postgres enums.** They work as `CharField` only because
+  Django's psycopg3 backend binds parameters client-side. Never set
+  `OPTIONS['server_side_binding'] = True` on this alias.
+
+All writes go through `innerspace/services.py`, which stamps `updatedAt`,
+records a `CASH` payment, and writes an `AccessGrantLog` entry (stored in JCF's
+own database, so the audit trail is independent of the student platform).
+
+Revoking access takes effect on the student's next sign-in, not immediately —
+the website carries `hasMembership` in a JWT and only re-reads the database when
+that flag is false.
 
 ## Environment Variables (`.env`)
 
@@ -110,6 +155,9 @@ PostgreSQL database `jcf_management`. Connection configured via `DATABASE_URL` i
 DEBUG=True
 SECRET_KEY=<secret>
 DATABASE_URL=postgres://localhost:5432/jcf_management
+# Innerspace platform DB. Supabase session pooler or direct connection —
+# not the transaction pooler. Blank disables the Innerspace pages.
+INNERSPACE_DATABASE_URL=postgres://...
 ```
 
 ## Template Pattern
