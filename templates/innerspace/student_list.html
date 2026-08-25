@@ -1,0 +1,180 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Innerspace Students | JCF Management{% endblock %}
+{% block page_title %}Innerspace Students{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Innerspace Students</li>
+{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row mt-3">
+    <div class="col-md-6 col-xxl-4">
+        <div class="card card-h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-md flex-shrink-0">
+                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-primary"><i class="ti ti-users"></i></span>
+                    </div>
+                    <div>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">Registered Accounts</h5>
+                        <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xxl-4">
+        <div class="card card-h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-md flex-shrink-0">
+                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-success"><i class="ti ti-lock-open"></i></span>
+                    </div>
+                    <div>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">Active Access</h5>
+                        <h3 class="mb-0 fw-bold">{{ active_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xxl-4">
+        <div class="card card-h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="avatar-md flex-shrink-0">
+                        <span class="avatar-title text-bg-light rounded-circle fs-22 text-warning"><i class="ti ti-lock"></i></span>
+                    </div>
+                    <div>
+                        <h5 class="text-muted fs-sm text-uppercase mb-1">No Membership</h5>
+                        <h3 class="mb-0 fw-bold">{{ no_access_count }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-1">Accounts on drbaffourjan.com</h5>
+                <p class="text-muted fs-xs mb-0">
+                    Students who paid at the office should sign up on the website first — then search
+                    their email here and grant them access.
+                </p>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <div class="app-search">
+                                <input type="search" name="q" class="form-control" placeholder="Search by email, name or phone..." value="{{ search_query }}" autofocus />
+                                <i class="ti ti-search app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="app-search">
+                                <select name="access" class="form-select form-control" onchange="this.form.submit()">
+                                    <option value="">All Students</option>
+                                    <option value="active" {% if access_filter == 'active' %}selected{% endif %}>Active access</option>
+                                    <option value="lapsed" {% if access_filter == 'lapsed' %}selected{% endif %}>Lapsed or revoked</option>
+                                    <option value="none" {% if access_filter == 'none' %}selected{% endif %}>No membership</option>
+                                </select>
+                                <i class="ti ti-filter app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            {% if search_query or access_filter %}
+                            <a href="{% url 'innerspace:student_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered table-nowrap mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr class="text-uppercase fs-xxs">
+                                <th>Student</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Access</th>
+                                <th>Expires</th>
+                                <th>Signed Up</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-xs flex-shrink-0">
+                                            <span class="avatar-title bg-primary-subtle text-primary fw-bold rounded-circle">{{ student.initial }}</span>
+                                        </div>
+                                        <a href="{% url 'innerspace:student_detail' student.pk %}" class="fw-semibold text-reset">
+                                            {{ student.display_name|default:"—" }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>{{ student.email|default:"—" }}</td>
+                                <td>{{ student.phone|default:"—" }}</td>
+                                <td>
+                                    {% if student.membership.is_active %}
+                                        {% if student.membership.is_lifetime %}
+                                        <span class="badge bg-success-subtle text-success p-1">Lifetime</span>
+                                        {% else %}
+                                        <span class="badge bg-success-subtle text-success p-1">Active</span>
+                                        {% endif %}
+                                    {% elif student.membership %}
+                                    <span class="badge bg-danger-subtle text-danger p-1">{{ student.membership.get_status_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-light text-muted p-1">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if student.membership.expires_at %}{{ student.membership.expires_at|date:"d M Y" }}
+                                    {% elif student.membership %}<span class="text-muted">Never</span>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>{{ student.created_at|date:"d M Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'innerspace:student_detail' student.pk %}" class="text-muted fs-20" title="View"><i class="ti ti-eye"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    {% if search_query %}
+                                    No account matches “{{ search_query }}”.<br>
+                                    <span class="fs-xs">Ask them to finish signing up on drbaffourjan.com, then search again.</span>
+                                    {% else %}
+                                    No students found.
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if access_filter %}&access={{ access_filter }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if access_filter %}&access={{ access_filter }}{% endif %}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if access_filter %}&access={{ access_filter }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
