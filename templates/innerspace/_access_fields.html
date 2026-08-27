@@ -7,6 +7,19 @@ collect the same information: how long, how much, and what receipt it came from.
     {{ form.duration }}
 </div>
 
+<div class="mb-3">
+    <label class="form-label">
+        {{ form.access_level.label }}
+        {% if student %}
+        <span class="badge bg-primary-subtle text-primary p-1 ms-1">
+            now {{ student.get_access_level_display }}
+        </span>
+        {% endif %}
+    </label>
+    {{ form.access_level }}
+    <small class="text-muted fs-xs">{{ form.access_level.help_text }}</small>
+</div>
+
 <div class="mb-3 d-none" data-custom-date>
     <label class="form-label">{{ form.custom_expires_at.label }}</label>
     {{ form.custom_expires_at }}

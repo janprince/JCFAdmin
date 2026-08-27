@@ -1,6 +1,7 @@
 from django import forms
 from django.utils import timezone
 
+from .models import AccessLevel
 from .services import add_months, end_of_day
 
 CURRENCY_CHOICES = [
@@ -20,7 +21,38 @@ DURATION_CHOICES = [
 ]
 
 
-class AccessForm(forms.Form):
+class AccessLevelMixin(forms.Form):
+    """Where on the path this student sits.
+
+    Students who buy through the website are set to ADVANCED automatically, so
+    this is the main place a level is ever chosen.
+    """
+
+    access_level = forms.ChoiceField(
+        choices=[('', 'Leave unchanged')] + list(AccessLevel.choices),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Access level',
+        help_text='Which courses they can open. Higher levels include the ones below.',
+    )
+
+    def __init__(self, *args, current_level=None, **kwargs):
+        """`current_level` names the student's present level in the default
+        option, so staff can see what they are changing from without leaving
+        the modal. Blank stays the default so nothing changes by accident."""
+        super().__init__(*args, **kwargs)
+        self.current_level = current_level
+        if current_level:
+            label = AccessLevel(current_level).label
+            self.fields['access_level'].choices = [
+                ('', f'Leave unchanged — {label}'),
+            ] + [
+                (value, f'{text} (current)' if value == current_level else text)
+                for value, text in AccessLevel.choices
+            ]
+
+
+class AccessForm(AccessLevelMixin):
     """Shared fields for granting and extending access at the office desk."""
 
     duration = forms.ChoiceField(
@@ -82,6 +114,29 @@ class AccessForm(forms.Form):
         if duration == 'custom':
             return end_of_day(self.cleaned_data['custom_expires_at'])
         return add_months(base or timezone.now(), int(duration))
+
+
+class ReviewRequestForm(forms.Form):
+    note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2,
+                                     'placeholder': 'Optional note kept with the request'}),
+        label='Note',
+    )
+
+
+class SetLevelForm(forms.Form):
+    access_level = forms.ChoiceField(
+        choices=AccessLevel.choices,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Access level',
+    )
+    note = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2,
+                                     'placeholder': 'Why is the level changing?'}),
+        label='Reason',
+    )
 
 
 class RevokeForm(forms.Form):

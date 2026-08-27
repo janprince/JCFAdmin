@@ -21,11 +21,15 @@ from django.utils import timezone
 
 from .models import (
     AccessGrantLog,
+    AccessLevel,
+    AccessRequest,
+    AccessRequestStatus,
     Membership,
     MembershipStatus,
     Payment,
     PaymentProvider,
     PaymentStatus,
+    outranks,
 )
 
 INNERSPACE_DB = 'innerspace'
@@ -88,13 +92,45 @@ def _log(student, action, actor, previous_status, membership, amount=None,
     )
 
 
+def _apply_level(student, access_level, now):
+    """Move a student to `access_level`, if one was chosen.
+
+    Honours the choice in both directions. Staff pick a level explicitly from a
+    dropdown that shows the current one, so a lower selection is a correction,
+    not an accident — and silently ignoring it (as this used to) is worse than
+    applying it, because nothing on screen would say it had been refused.
+
+    Returns the level held before the call, so the caller can log the change.
+    """
+    previous_level = student.access_level
+    if access_level and access_level != previous_level:
+        student.access_level = access_level
+        student.updated_at = now
+        student.save(update_fields=['access_level', 'updated_at'])
+    return previous_level
+
+
+def _log_level_change(entry, previous_level, student):
+    """Fold a level change into an existing audit entry."""
+    if student.access_level != previous_level:
+        entry.previous_level = previous_level
+        entry.new_level = student.access_level
+        entry.save(update_fields=['previous_level', 'new_level'])
+    return entry
+
+
 def grant_access(student, actor, expires_at=None, amount=None, currency='GHS',
-                 receipt_ref='', note=''):
+                 receipt_ref='', note='', access_level=None):
     """Give a student active access, recording any cash taken for it.
 
     `expires_at=None` means lifetime access, matching how the website reads a
     null `expiresAt`. Used for a first grant and for reactivating a lapsed or
     revoked membership alike.
+
+    `access_level` places the student on the path — which courses they can
+    open. This is the main way levels are ever set: students who buy through
+    the website are given ADVANCED outright, so tiering exists for the people
+    the office enrols by hand. Passing None leaves their current level alone.
     """
     now = timezone.now()
     existing = Membership.objects.filter(student=student).first()
@@ -117,19 +153,25 @@ def grant_access(student, actor, expires_at=None, amount=None, currency='GHS',
         )
         _record_payment(student, amount, currency, receipt_ref)
 
+    previous_level = _apply_level(student, access_level, now)
+
     action = AccessGrantLog.Action.REACTIVATE if existing else AccessGrantLog.Action.GRANT
-    _log(student, action, actor, previous_status, membership,
-         amount=amount, currency=currency, receipt_ref=receipt_ref, note=note)
+    entry = _log(student, action, actor, previous_status, membership,
+                 amount=amount, currency=currency, receipt_ref=receipt_ref, note=note)
+    _log_level_change(entry, previous_level, student)
     return membership
 
 
 def extend_access(student, actor, months=None, expires_at=None, amount=None,
-                  currency='GHS', receipt_ref='', note=''):
+                  currency='GHS', receipt_ref='', note='', access_level=None):
     """Push an existing membership's expiry further out.
 
     Extending by months counts from the current expiry when the membership is
     still running, and from today when it has already lapsed — so a student
     who renews late gets a full period rather than losing the gap.
+
+    `access_level` works exactly as it does in `grant_access` — a renewal is a
+    natural moment to move someone further along the path.
     """
     now = timezone.now()
     membership = Membership.objects.filter(student=student).first()
@@ -153,8 +195,11 @@ def extend_access(student, actor, months=None, expires_at=None, amount=None,
         ])
         _record_payment(student, amount, currency, receipt_ref)
 
-    _log(student, AccessGrantLog.Action.EXTEND, actor, previous_status, membership,
-         amount=amount, currency=currency, receipt_ref=receipt_ref, note=note)
+    previous_level = _apply_level(student, access_level, now)
+
+    entry = _log(student, AccessGrantLog.Action.EXTEND, actor, previous_status, membership,
+                 amount=amount, currency=currency, receipt_ref=receipt_ref, note=note)
+    _log_level_change(entry, previous_level, student)
     return membership
 
 
@@ -180,3 +225,97 @@ def revoke_access(student, actor, note=''):
 
     _log(student, AccessGrantLog.Action.REVOKE, actor, previous_status, membership, note=note)
     return membership
+
+
+# ---------------------------------------------------------------------------
+# Access level requests
+# ---------------------------------------------------------------------------
+
+def approve_access_request(access_request, actor, note=''):
+    """Grant the level a student asked for.
+
+    Takes effect immediately — unlike `revoke_access`, there is no session to
+    wait on. The website reads `accessLevel` from the database on every render,
+    so the student sees the newly opened courses on their next navigation
+    without signing out.
+    """
+    now = timezone.now()
+    student = access_request.student
+    previous_level = student.access_level
+
+    if not outranks(access_request.requested_level, previous_level):
+        raise ValueError(
+            f'{student.email or student.pk} is already on the '
+            f'{student.get_access_level_display()} path — approving this would '
+            f'not raise their access.'
+        )
+
+    with transaction.atomic(using=INNERSPACE_DB):
+        student.access_level = access_request.requested_level
+        student.updated_at = now
+        student.save(update_fields=['access_level', 'updated_at'])
+
+        access_request.status = AccessRequestStatus.APPROVED
+        access_request.reviewed_at = now
+        access_request.reviewed_by = _actor_name(actor)
+        access_request.review_note = note or ''
+        access_request.updated_at = now
+        access_request.save(update_fields=[
+            'status', 'reviewed_at', 'reviewed_by', 'review_note', 'updated_at',
+        ])
+
+    entry = _log(student, AccessGrantLog.Action.LEVEL_GRANT, actor, '', None, note=note)
+    entry.previous_level = previous_level
+    entry.new_level = student.access_level
+    entry.save(update_fields=['previous_level', 'new_level'])
+    return access_request
+
+
+def decline_access_request(access_request, actor, note=''):
+    """Turn a request down. Never touches the student's level."""
+    now = timezone.now()
+    student = access_request.student
+
+    with transaction.atomic(using=INNERSPACE_DB):
+        access_request.status = AccessRequestStatus.DECLINED
+        access_request.reviewed_at = now
+        access_request.reviewed_by = _actor_name(actor)
+        access_request.review_note = note or ''
+        access_request.updated_at = now
+        access_request.save(update_fields=[
+            'status', 'reviewed_at', 'reviewed_by', 'review_note', 'updated_at',
+        ])
+
+    entry = _log(student, AccessGrantLog.Action.LEVEL_DECLINE, actor, '', None, note=note)
+    entry.previous_level = student.access_level
+    entry.new_level = student.access_level
+    entry.save(update_fields=['previous_level', 'new_level'])
+    return access_request
+
+
+def set_access_level(student, actor, access_level, note=''):
+    """Move a student to a level directly, without a request.
+
+    Allows lowering, which the request flow deliberately does not.
+    """
+    now = timezone.now()
+    previous_level = student.access_level
+    if access_level == previous_level:
+        return student
+
+    with transaction.atomic(using=INNERSPACE_DB):
+        student.access_level = access_level
+        student.updated_at = now
+        student.save(update_fields=['access_level', 'updated_at'])
+
+    entry = _log(student, AccessGrantLog.Action.LEVEL_GRANT, actor, '', None, note=note)
+    entry.previous_level = previous_level
+    entry.new_level = access_level
+    entry.save(update_fields=['previous_level', 'new_level'])
+    return student
+
+
+def _actor_name(actor):
+    if actor is None:
+        return ''
+    return getattr(actor, 'email', '') or actor.get_username()

@@ -30,7 +30,12 @@
                     <dd class="col-7">{{ student.country|default:"—" }}</dd>
 
                     <dt class="col-5 text-muted fw-normal">Access level</dt>
-                    <dd class="col-7">{{ student.get_access_level_display }}</dd>
+                    <dd class="col-7">
+                        <span class="badge bg-primary-subtle text-primary p-1">{{ student.get_access_level_display }}</span>
+                        {% if can_manage %}
+                        <a href="#" class="ms-1 text-muted fs-xs" data-bs-toggle="modal" data-bs-target="#setLevelModal">change</a>
+                        {% endif %}
+                    </dd>
 
                     <dt class="col-5 text-muted fw-normal">Email verified</dt>
                     <dd class="col-7">
@@ -50,6 +55,19 @@
 
     <!-- Access -->
     <div class="col-lg-8">
+        {% if pending_request %}
+        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+            <div>
+                <i class="ti ti-arrow-up-circle me-1"></i>
+                Asking to move from {{ pending_request.get_current_level_display }} to
+                <strong>{{ pending_request.get_requested_level_display }}</strong>
+                &middot; {{ pending_request.created_at|date:"d M Y" }}
+                {% if pending_request.message %}<br><span class="fs-xs">“{{ pending_request.message }}”</span>{% endif %}
+            </div>
+            <a href="{% url 'innerspace:request_list' %}" class="btn btn-sm btn-warning">Review</a>
+        </div>
+        {% endif %}
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Programme Access</h5>
@@ -165,7 +183,7 @@
                     <table class="table table-sm table-centered table-nowrap mb-0">
                         <thead class="bg-light bg-opacity-50">
                             <tr class="text-uppercase fs-xxs">
-                                <th>When</th><th>Action</th><th>By</th><th>Amount</th><th>Note</th>
+                                <th>When</th><th>Action</th><th>By</th><th>Level</th><th>Amount</th><th>Note</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -174,6 +192,13 @@
                                 <td>{{ entry.created_at|date:"d M Y, H:i" }}</td>
                                 <td>{{ entry.get_action_display }}</td>
                                 <td>{{ entry.performed_by.email|default:"—" }}</td>
+                                <td class="text-nowrap">
+                                    {% if entry.new_level and entry.new_level != entry.previous_level %}
+                                        <span class="text-muted fs-xs">{{ entry.previous_level|default:"—" }}</span>
+                                        <i class="ti ti-arrow-right mx-1 text-muted fs-xs"></i>
+                                        <span class="fw-semibold fs-xs">{{ entry.new_level }}</span>
+                                    {% else %}—{% endif %}
+                                </td>
                                 <td>{% if entry.amount %}{{ entry.currency }} {{ entry.amount|floatformat:2 }}{% else %}—{% endif %}</td>
                                 <td class="text-wrap">{{ entry.note|default:"—" }}</td>
                             </tr>
@@ -239,6 +264,39 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Set Level Modal -->
+<div class="modal fade" id="setLevelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'innerspace:set_level' student.pk %}">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title">Change access level</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted fs-sm">
+                        Which courses {{ student.email }} can open. Higher levels include
+                        everything below them. Takes effect on their next page load.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">{{ set_level_form.access_level.label }}</label>
+                        {{ set_level_form.access_level }}
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">{{ set_level_form.note.label }}</label>
+                        {{ set_level_form.note }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>

@@ -11,10 +11,17 @@ migration — and in CI if you like — to find out before a member of staff doe
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connections
 
-from innerspace.models import InnerspaceModel, Membership, MembershipStatus, Payment, Student
+from innerspace.models import (
+    AccessRequest,
+    InnerspaceModel,
+    Membership,
+    MembershipStatus,
+    Payment,
+    Student,
+)
 from innerspace.routers import INNERSPACE_DB
 
-MODELS = [Student, Membership, Payment]
+MODELS = [Student, Membership, Payment, AccessRequest]
 
 # Columns we deliberately do not map. Password hashes have no business being
 # loaded into an admin page, and nothing here needs to read them.

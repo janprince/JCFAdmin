@@ -8,8 +8,17 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
 from . import services
-from .forms import AccessForm, RevokeForm
-from .models import AccessGrantLog, Membership, MembershipStatus, Payment, Student
+from .forms import AccessForm, ReviewRequestForm, RevokeForm, SetLevelForm
+from .models import (
+    AccessGrantLog,
+    AccessLevel,
+    AccessRequest,
+    AccessRequestStatus,
+    Membership,
+    MembershipStatus,
+    Payment,
+    Student,
+)
 from .routers import INNERSPACE_DB
 
 MANAGE_PERM = 'innerspace.manage_innerspace_access'
@@ -91,6 +100,9 @@ class StudentListView(LoginRequiredMixin, InnerspaceDatabaseMixin, ListView):
         context['total_count'] = total
         context['active_count'] = active
         context['no_access_count'] = total - Membership.objects.count()
+        context['pending_requests'] = AccessRequest.objects.filter(
+            status=AccessRequestStatus.PENDING,
+        ).count()
         return context
 
 
@@ -110,8 +122,18 @@ class StudentDetailView(LoginRequiredMixin, InnerspaceDatabaseMixin, DetailView)
         context['history'] = AccessGrantLog.objects.filter(
             student_id=student.pk,
         ).select_related('performed_by')[:20]
-        context['access_form'] = AccessForm(initial={'duration': 'lifetime', 'currency': 'GHS'})
+        context['access_form'] = AccessForm(
+            current_level=student.access_level,
+            initial={'duration': 'lifetime', 'currency': 'GHS'},
+        )
         context['revoke_form'] = RevokeForm()
+        context['set_level_form'] = SetLevelForm(initial={
+            'access_level': student.access_level,
+        })
+        context['access_requests'] = AccessRequest.objects.filter(student=student)
+        context['pending_request'] = AccessRequest.objects.filter(
+            student=student, status=AccessRequestStatus.PENDING,
+        ).first()
         context['can_manage'] = self.request.user.has_perm(MANAGE_PERM)
         return context
 
@@ -142,27 +164,32 @@ class AccessActionView(LoginRequiredMixin, PermissionRequiredMixin, InnerspaceDa
 class GrantAccessView(AccessActionView):
 
     def perform(self, request, student):
-        form = AccessForm(request.POST)
+        form = AccessForm(request.POST, current_level=student.access_level)
         if not form.is_valid():
             messages.error(request, _form_errors(form))
             return
 
+        previous_level = student.access_level
         membership = services.grant_access(
             student,
             actor=request.user,
+            access_level=form.cleaned_data.get('access_level') or None,
             expires_at=form.expires_at(),
             amount=form.cleaned_data.get('amount'),
             currency=form.cleaned_data.get('currency') or 'GHS',
             receipt_ref=form.cleaned_data.get('receipt_ref', ''),
             note=form.cleaned_data.get('note', ''),
         )
-        messages.success(request, _granted_message(student, membership))
+        messages.success(
+            request,
+            _granted_message(student, membership, previous_level=previous_level),
+        )
 
 
 class ExtendAccessView(AccessActionView):
 
     def perform(self, request, student):
-        form = AccessForm(request.POST)
+        form = AccessForm(request.POST, current_level=student.access_level)
         if not form.is_valid():
             messages.error(request, _form_errors(form))
             return
@@ -175,9 +202,11 @@ class ExtendAccessView(AccessActionView):
             # 'lifetime' leaves both None, which clears the expiry.
             months, expires_at = form.months, None
 
+        previous_level = student.access_level
         membership = services.extend_access(
             student,
             actor=request.user,
+            access_level=form.cleaned_data.get('access_level') or None,
             months=months,
             expires_at=expires_at,
             amount=form.cleaned_data.get('amount'),
@@ -185,7 +214,12 @@ class ExtendAccessView(AccessActionView):
             receipt_ref=form.cleaned_data.get('receipt_ref', ''),
             note=form.cleaned_data.get('note', ''),
         )
-        messages.success(request, _granted_message(student, membership, verb='extended to'))
+        messages.success(
+            request,
+            _granted_message(
+                student, membership, verb='extended to', previous_level=previous_level,
+            ),
+        )
 
 
 class RevokeAccessView(AccessActionView):
@@ -210,8 +244,154 @@ def _form_errors(form):
     )
 
 
-def _granted_message(student, membership, verb='granted to'):
+def _granted_message(student, membership, verb='granted to', previous_level=None):
     who = student.email or student.display_name or 'student'
+
     if membership.expires_at is None:
-        return f'Lifetime access {verb} {who}.'
-    return f'Access {verb} {who} until {timezone.localtime(membership.expires_at):%d %b %Y}.'
+        message = f'Lifetime access {verb} {who}.'
+    else:
+        message = (
+            f'Access {verb} {who} until '
+            f'{timezone.localtime(membership.expires_at):%d %b %Y}.'
+        )
+
+    # Say the level out loud when it moved. A change staff cannot see happen is
+    # a change they cannot trust.
+    if previous_level and previous_level != student.access_level:
+        message += (
+            f' Moved from the {AccessLevel(previous_level).label} path to '
+            f'{student.get_access_level_display()} — this takes effect on their '
+            f'next page load.'
+        )
+    return message
+
+
+class AccessRequestListView(LoginRequiredMixin, InnerspaceDatabaseMixin, ListView):
+    """The approval queue: students asking to move up a level."""
+
+    model = AccessRequest
+    template_name = 'innerspace/access_request_list.html'
+    context_object_name = 'requests'
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = AccessRequest.objects.select_related('student')
+        status = self.request.GET.get('status', AccessRequestStatus.PENDING)
+        if status and status != 'all':
+            qs = qs.filter(status=status)
+        # Oldest first — nobody should wait longer because someone asked later.
+        return qs.order_by('created_at' if status == AccessRequestStatus.PENDING else '-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_filter'] = self.request.GET.get('status', AccessRequestStatus.PENDING)
+        context['statuses'] = AccessRequestStatus.choices
+        context['pending_count'] = AccessRequest.objects.filter(
+            status=AccessRequestStatus.PENDING,
+        ).count()
+        context['can_manage'] = self.request.user.has_perm(MANAGE_PERM)
+        context['review_form'] = ReviewRequestForm()
+        return context
+
+
+class RequestActionView(LoginRequiredMixin, PermissionRequiredMixin,
+                        InnerspaceDatabaseMixin, DetailView):
+    """POST-only approve/decline on a single request."""
+
+    model = AccessRequest
+    permission_required = MANAGE_PERM
+    raise_exception = True
+    http_method_names = ['post']
+
+    def get_queryset(self):
+        return AccessRequest.objects.select_related('student')
+
+    def post(self, request, *args, **kwargs):
+        access_request = self.get_object()
+        form = ReviewRequestForm(request.POST)
+        form.is_valid()
+        note = form.cleaned_data.get('note', '')
+
+        try:
+            self.perform(request, access_request, note)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        except DatabaseError as exc:
+            messages.error(request, f'Could not reach the Innerspace database: {exc}')
+
+        return redirect(request.POST.get('next') or reverse('innerspace:request_list'))
+
+    def perform(self, request, access_request, note):
+        raise NotImplementedError
+
+
+class ApproveRequestView(RequestActionView):
+
+    def perform(self, request, access_request, note):
+        services.approve_access_request(access_request, actor=request.user, note=note)
+        student = access_request.student
+        messages.success(
+            request,
+            f'{student.email or student.display_name} is now on the '
+            f'{student.get_access_level_display()} path. It takes effect the next '
+            f'time they open a page — no need for them to sign out.',
+        )
+        _notify_student(request, access_request, approved=True)
+
+
+class DeclineRequestView(RequestActionView):
+
+    def perform(self, request, access_request, note):
+        services.decline_access_request(access_request, actor=request.user, note=note)
+        messages.warning(
+            request,
+            f'Request from {access_request.student.email or access_request.student.display_name} '
+            f'declined. Their access level is unchanged.',
+        )
+        _notify_student(request, access_request, approved=False)
+
+
+class SetLevelView(LoginRequiredMixin, PermissionRequiredMixin,
+                   InnerspaceDatabaseMixin, DetailView):
+    """Change a student's level directly, without going through a request."""
+
+    model = Student
+    permission_required = MANAGE_PERM
+    raise_exception = True
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        student = self.get_object()
+        form = SetLevelForm(request.POST)
+
+        if not form.is_valid():
+            messages.error(request, _form_errors(form))
+        else:
+            level = form.cleaned_data['access_level']
+            try:
+                services.set_access_level(
+                    student, actor=request.user, access_level=level,
+                    note=form.cleaned_data.get('note', ''),
+                )
+                messages.success(
+                    request,
+                    f'{student.email or student.display_name} moved to the '
+                    f'{AccessLevel(level).label} path.',
+                )
+            except DatabaseError as exc:
+                messages.error(request, f'Could not reach the Innerspace database: {exc}')
+
+        return redirect(reverse('innerspace:student_detail', args=[student.pk]))
+
+
+def _notify_student(request, access_request, approved):
+    """Tell the student what happened. Never block the decision on email."""
+    from .notifications import send_access_request_decision
+
+    try:
+        send_access_request_decision(access_request, approved=approved)
+    except Exception as exc:  # noqa: BLE001 - the decision is already committed
+        messages.warning(
+            request,
+            f'The change was saved, but the notification email failed to send: {exc}',
+        )
