@@ -68,6 +68,27 @@ class AccessLevel(models.TextChoices):
     ADVANCED = 'ADVANCED', 'Advanced'
 
 
+class AccessRequestStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    APPROVED = 'APPROVED', 'Approved'
+    DECLINED = 'DECLINED', 'Declined'
+    CANCELED = 'CANCELED', 'Canceled'
+
+
+# Higher rank unlocks everything at or below it. Mirrors ACCESS_LEVEL_RANK in
+# drbaffourjan/src/lib/access-levels.ts — keep the two in step.
+ACCESS_LEVEL_RANK = {
+    AccessLevel.BEGINNER: 0,
+    AccessLevel.INTERMEDIATE: 1,
+    AccessLevel.ADVANCED: 2,
+}
+
+
+def outranks(level, other):
+    """Is `level` strictly above `other`?"""
+    return ACCESS_LEVEL_RANK.get(level, -1) > ACCESS_LEVEL_RANK.get(other, -1)
+
+
 class Student(InnerspaceModel):
     """A registered account on drbaffourjan.com (Prisma model `User`)."""
 
@@ -189,6 +210,64 @@ class Payment(InnerspaceModel):
         return f'{self.currency} {self.amount} ({self.provider})'
 
 
+class AccessRequest(InnerspaceModel):
+    """A student asking to be moved up to a higher access level.
+
+    Created by the website when someone opens a course above their level;
+    resolved here. Approving writes both this row and `users.accessLevel`.
+
+    Unlike a membership change, a level change takes effect on the student's
+    very next page load — the website reads `accessLevel` from the database on
+    every render rather than caching it in their session token.
+    """
+
+    id = models.CharField(primary_key=True, max_length=32, default=cuid, editable=False)
+    student = models.ForeignKey(
+        Student, db_column='user_id', on_delete=models.DO_NOTHING,
+        related_name='access_requests',
+    )
+
+    requested_level = models.CharField(
+        db_column='requested_level', max_length=20, choices=AccessLevel.choices,
+    )
+    current_level = models.CharField(
+        db_column='current_level', max_length=20, choices=AccessLevel.choices,
+        help_text='The level the student held when they asked.',
+    )
+
+    course_id = models.CharField(db_column='course_id', max_length=32, null=True, blank=True)
+    course_slug = models.CharField(db_column='course_slug', max_length=255, null=True, blank=True)
+    message = models.TextField(db_column='message', null=True, blank=True)
+
+    status = models.CharField(
+        db_column='status', max_length=20, choices=AccessRequestStatus.choices,
+        default=AccessRequestStatus.PENDING,
+    )
+
+    reviewed_at = PrismaDateTimeField(db_column='reviewed_at', null=True, blank=True)
+    reviewed_by = models.CharField(db_column='reviewed_by', max_length=255, null=True, blank=True)
+    review_note = models.TextField(db_column='review_note', null=True, blank=True)
+
+    created_at = PrismaDateTimeField(db_column='created_at', default=timezone.now)
+    updated_at = PrismaDateTimeField(db_column='updated_at', default=timezone.now)
+
+    class Meta(InnerspaceModel.Meta):
+        db_table = 'access_requests'
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'{self.student_id}: {self.current_level} -> {self.requested_level}'
+
+    @property
+    def is_pending(self):
+        return self.status == AccessRequestStatus.PENDING
+
+    @property
+    def is_upgrade(self):
+        """False if the student has since reached or passed the level asked for."""
+        return outranks(self.requested_level, self.student.access_level)
+
+
 # ---------------------------------------------------------------------------
 # JCF-side models. These live in the default database and migrate normally.
 # ---------------------------------------------------------------------------
@@ -206,6 +285,8 @@ class AccessGrantLog(models.Model):
         EXTEND = 'extend', 'Extended access'
         REVOKE = 'revoke', 'Revoked access'
         REACTIVATE = 'reactivate', 'Reactivated access'
+        LEVEL_GRANT = 'level_grant', 'Raised access level'
+        LEVEL_DECLINE = 'level_decline', 'Declined level request'
 
     # Not a ForeignKey — the student lives in another database. The email is
     # denormalised so the log stays readable even if the account is deleted.
@@ -220,6 +301,10 @@ class AccessGrantLog(models.Model):
 
     previous_status = models.CharField(max_length=20, blank=True)
     new_status = models.CharField(max_length=20, blank=True)
+
+    # Only set for the level actions.
+    previous_level = models.CharField(max_length=20, blank=True)
+    new_level = models.CharField(max_length=20, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
 
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)

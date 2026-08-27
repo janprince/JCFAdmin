@@ -1,0 +1,165 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Access Requests | JCF Management{% endblock %}
+{% block page_title %}Access Requests{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'innerspace:student_list' %}">Innerspace</a></li>
+<li class="breadcrumb-item active">Access Requests</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-1">Students asking to move up</h5>
+                        <p class="text-muted fs-xs mb-0">
+                            Approving takes effect the next time the student opens a page —
+                            they do not need to sign out.
+                        </p>
+                    </div>
+                    {% if pending_count %}
+                    <span class="badge bg-warning-subtle text-warning p-2">{{ pending_count }} waiting</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2 align-items-center">
+                        <div class="col-md-3">
+                            <div class="app-search">
+                                <select name="status" class="form-select form-control" onchange="this.form.submit()">
+                                    <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+                                    {% for value, label in statuses %}
+                                        {% if value != 'PENDING' %}
+                                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                                </select>
+                                <i class="ti ti-filter app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr class="text-uppercase fs-xxs">
+                                <th>Student</th>
+                                <th>Asked for</th>
+                                <th>Course</th>
+                                <th>Their note</th>
+                                <th>When</th>
+                                <th class="text-end">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in requests %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'innerspace:student_detail' req.student.pk %}" class="fw-semibold text-reset">
+                                        {{ req.student.display_name|default:req.student.email }}
+                                    </a>
+                                    <br><span class="text-muted fs-xs">{{ req.student.email }}</span>
+                                </td>
+                                <td class="text-nowrap">
+                                    <span class="text-muted">{{ req.get_current_level_display }}</span>
+                                    <i class="ti ti-arrow-right mx-1 text-muted"></i>
+                                    <span class="fw-semibold">{{ req.get_requested_level_display }}</span>
+                                </td>
+                                <td>{{ req.course_slug|default:"—" }}</td>
+                                <td class="text-wrap" style="max-width: 260px;">{{ req.message|default:"—" }}</td>
+                                <td class="text-nowrap">{{ req.created_at|date:"d M Y" }}</td>
+                                <td class="text-end text-nowrap">
+                                    {% if req.status == 'PENDING' %}
+                                        {% if can_manage %}
+                                            {% if req.is_upgrade %}
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal{{ req.pk }}">
+                                                Review
+                                            </button>
+                                            {% else %}
+                                            <span class="badge bg-light text-muted p-1" title="They have already reached this level by another route.">
+                                                No longer an upgrade
+                                            </span>
+                                            {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-warning-subtle text-warning p-1">Pending</span>
+                                        {% endif %}
+                                    {% elif req.status == 'APPROVED' %}
+                                    <span class="badge bg-success-subtle text-success p-1">Approved</span>
+                                    <br><span class="text-muted fs-xs">by {{ req.reviewed_by|default:"—" }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary p-1">{{ req.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">Nothing here.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if is_paginated %}
+                <nav class="mt-3">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
+                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}&status={{ status_filter }}">{{ num }}</a></li>{% endfor %}
+                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if can_manage %}
+{% for req in requests %}
+{% if req.status == 'PENDING' and req.is_upgrade %}
+<div class="modal fade" id="reviewModal{{ req.pk }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Review request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">
+                    <strong>{{ req.student.display_name|default:req.student.email }}</strong>
+                    is asking to move from {{ req.get_current_level_display }} to
+                    <strong>{{ req.get_requested_level_display }}</strong>.
+                </p>
+                {% if req.message %}
+                <div class="alert alert-light fs-sm mb-3">“{{ req.message }}”</div>
+                {% endif %}
+                <label class="form-label">Note (included in the email to them)</label>
+                <textarea name="note" form="approve{{ req.pk }}" class="form-control" rows="2"
+                          placeholder="Optional — a word of encouragement or a reason"></textarea>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="{% url 'innerspace:decline_request' req.pk %}" class="me-auto">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-outline-danger">Decline</button>
+                </form>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'innerspace:approve_request' req.pk %}" id="approve{{ req.pk }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="btn btn-primary">Approve &amp; open access</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endblock %}

@@ -105,6 +105,10 @@ python manage.py innerspace_check   # verify the Innerspace DB mapping
 | `/innerspace/students/<pk>/grant/` | GrantAccessView | innerspace |
 | `/innerspace/students/<pk>/extend/` | ExtendAccessView | innerspace |
 | `/innerspace/students/<pk>/revoke/` | RevokeAccessView | innerspace |
+| `/innerspace/students/<pk>/level/` | SetLevelView | innerspace |
+| `/innerspace/requests/` | AccessRequestListView | innerspace |
+| `/innerspace/requests/<pk>/approve/` | ApproveRequestView | innerspace |
+| `/innerspace/requests/<pk>/decline/` | DeclineRequestView | innerspace |
 | `/admin/` | Django Admin | admin |
 
 ## Database
@@ -148,6 +152,33 @@ own database, so the audit trail is independent of the student platform).
 Revoking access takes effect on the student's next sign-in, not immediately —
 the website carries `hasMembership` in a JWT and only re-reads the database when
 that flag is false.
+
+### Access levels
+
+`users.accessLevel` (`BEGINNER | INTERMEDIATE | ADVANCED`) decides which courses
+a student can open on the website: their own level and everything below it.
+Courses above stay visible but locked, with a "request access" button that
+writes an `access_requests` row — the queue at `/innerspace/requests/`.
+
+Who gets what:
+
+- **Paid online** → `ADVANCED`, set by the website's checkout and webhook
+  handlers. The membership is sold as "lifetime access to all courses".
+- **Free signup** → `BEGINNER` (the column default).
+- **Enrolled at the office** → whatever staff choose in the grant modal. This
+  is the main reason levels exist.
+
+Unlike a membership change, **a level change takes effect on the student's very
+next page load** — the website reads `accessLevel` from the database on every
+render rather than caching it in the session token. No sign-out needed.
+
+`approve_access_request()` refuses to lower a level; use `set_access_level()`
+for that. Both live in `innerspace/services.py` and write an `AccessGrantLog`
+entry with `previous_level`/`new_level`.
+
+Decision emails to students are sent from Django (`innerspace/notifications.py`)
+— it is the actor and already has a mailer. Sends are best-effort: the decision
+is committed first, and a mail failure surfaces as a warning, never a rollback.
 
 ## Environment Variables (`.env`)
 
