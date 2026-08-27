@@ -3,13 +3,13 @@
     <!-- Brand Logo -->
     <a href="{% url 'dashboard:analytics' %}" class="logo">
         <span class="logo logo-light">
-            <span class="logo-lg"><img src="{% static 'paces/images/logo.png' %}" alt="logo" /></span>
-            <span class="logo-sm"><img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" /></span>
+            <span class="logo-lg">{% include "partials/_brand.html" %}</span>
+            <span class="logo-sm">{% include "partials/_brand_mark.html" %}</span>
         </span>
 
         <span class="logo logo-dark">
-            <span class="logo-lg"><img src="{% static 'paces/images/logo-black.png' %}" alt="dark logo" /></span>
-            <span class="logo-sm"><img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" /></span>
+            <span class="logo-lg">{% include "partials/_brand.html" %}</span>
+            <span class="logo-sm">{% include "partials/_brand_mark.html" %}</span>
         </span>
     </a>
 
@@ -82,6 +82,13 @@
                     <a href="{% url 'innerspace:student_list' %}" class="side-nav-link">
                         <span class="menu-icon"><i class="ti ti-certificate"></i></span>
                         <span class="menu-text">Students</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'innerspace:request_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-arrow-up-circle"></i></span>
+                        <span class="menu-text">Access Requests</span>
                     </a>
                 </li>
 

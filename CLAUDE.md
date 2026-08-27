@@ -191,6 +191,22 @@ DATABASE_URL=postgres://localhost:5432/jcf_management
 INNERSPACE_DATABASE_URL=postgres://...
 ```
 
+## Theme & Branding
+
+- **Skin:** Paces ships ~25 CSS skins selected by `data-skin` on `<html>`. This
+  app is pinned to **`saas`** (Poppins, `#f2f6fb` body, `#0a74ff` primary).
+  `static/paces/js/config.js` restores a cached config from `sessionStorage`, so
+  `base.html` re-pins the skin in an inline script after it runs — changing only
+  the `<html>` attribute would leave existing sessions on the old skin.
+- **Logo is text, not an image.** `templates/partials/_brand.html` (full
+  wordmark) and `_brand_mark.html` (monogram, condensed sidebar) are included in
+  the sidebar, topbar, and login page. Styles live in `static/jcf/css/brand.css`,
+  loaded after `app.min.css`. The `logo.png` / `logo-black.png` / `logo-sm.png`
+  files are no longer referenced.
+- **Login side photo:** `static/paces/images/auth-jcf.jpg` (JCF training
+  programme). `brand.css` also lightens Paces' `.auth-overlay`, which is built
+  for a caption we don't render and otherwise greys the photo out.
+
 ## Template Pattern
 
 All pages extend `layouts/dashboard.html` which extends `base.html`. Override these blocks:
