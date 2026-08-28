@@ -121,10 +121,48 @@ The `innerspace` app reads and writes the **drbaffourjan.com** student platform
 database — a separate Supabase Postgres instance whose schema is owned by
 Prisma, in `/Users/kami/Projects/Kami/JIVA/drbaffourjan/prisma/schema.prisma`.
 
-**Django never migrates that database.** `InnerspaceRouter.allow_migrate`
-returns `False` for every operation against the alias, and all its models are
-`managed = False`. Schema changes are made in the drbaffourjan repo with
-`prisma migrate deploy`, then mirrored by hand into `innerspace/models.py`.
+> ### NEVER run migrations against the Innerspace database from Django
+>
+> That schema belongs to Prisma. A Django migration touching it would put the
+> two systems permanently out of step with each other, and `prisma migrate`
+> would then see the difference as drift and offer to reset — destroying live
+> student, membership and payment data.
+>
+> This is enforced, not merely asked for: `InnerspaceRouter.allow_migrate`
+> returns `False` for every operation against the alias, and every remote model
+> is `managed = False`. Do not weaken either. Schema changes are made in the
+> drbaffourjan repo with `prisma migrate deploy`, then mirrored by hand into
+> `innerspace/models.py` and verified with `manage.py innerspace_check`.
+
+#### But `manage.py migrate` is still safe — and still required
+
+The rule above is about the *database*, not the command. The `innerspace` Django
+app owns one ordinary table in **JCF's own database**, and it needs migrating
+like anything else.
+
+The trap is the name. Django prefixes tables with the app label, so the audit
+log is called `innerspace_accessgrantlog` — but it lives in JCF's database, not
+Innerspace's. Anything the router sends to Supabase inherits `InnerspaceModel`
+(`Student`, `Membership`, `Payment`, `AccessRequest`); `AccessGrantLog` is a
+plain `models.Model` and stays local.
+
+So when you see an error like `column innerspace_accessgrantlog.previous_level
+does not exist`, the fix is a normal Django migration:
+
+```bash
+python manage.py migrate innerspace
+```
+
+Which command, which database:
+
+| Change | Run from | Command | Hits |
+|---|---|---|---|
+| Anything in JCF's own tables, incl. `innerspace_accessgrantlog` | `JCF` | `python manage.py migrate` | JCF DB |
+| Anything in the student platform schema | `drbaffourjan` | `npx prisma migrate deploy` | Innerspace DB |
+| Never | `JCF` | — | Innerspace DB |
+
+`manage.py migrate` cannot reach the Innerspace database even if pointed at it —
+the router refuses. Running it is safe.
 
 Run `python manage.py innerspace_check` after any Prisma migration — it
 compares model fields against the live columns and reports drift.

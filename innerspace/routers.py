@@ -48,6 +48,20 @@ class InnerspaceRouter:
         return None
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
+        """Refuse every migration against the Innerspace database.
+
+        This is the hard stop. Prisma owns that schema; a Django migration
+        against it would put the two systems permanently out of step, and
+        `prisma migrate` would then read the difference as drift and offer to
+        reset — destroying live student, membership and payment data.
+
+        Never relax this. If a migration seems to need to get through, the
+        change belongs in drbaffourjan/prisma/schema.prisma instead.
+
+        Returning None for every other alias leaves normal Django models —
+        including this app's own AccessGrantLog, which lives in JCF's database
+        despite its `innerspace_` table prefix — migrating as usual.
+        """
         if db == INNERSPACE_DB:
             return False
         return None
