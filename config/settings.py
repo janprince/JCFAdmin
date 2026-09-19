@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'website',
     'programs',
     'engagement',
+    'groups',
     # Mobile app API
     'mobile_api',
     # Innerspace student platform (separate, Prisma-owned database)

@@ -1,0 +1,51 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Group | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Group{% else %}New Group{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'groups:group_list' %}">Groups</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}New{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        {{ form.name }}
+                        {{ form.name.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                        {{ form.description.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Centre</label>
+                        {{ form.centre }}
+                        {{ form.centre.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacity</label>
+                        {{ form.capacity }}
+                        <div class="form-text">Leave blank for no member limit.</div>
+                        {{ form.capacity.errors }}
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.is_active }}
+                        <label class="form-check-label">Active (visible in the app)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'groups:group_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

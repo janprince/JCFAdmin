@@ -6,6 +6,7 @@ from . import content
 from . import payments
 from . import programs_api
 from . import engagement_api
+from . import groups_api
 
 app_name = 'mobile_api'
 
@@ -46,4 +47,9 @@ urlpatterns = [
     path('notifications/<int:pk>/read/', engagement_api.NotificationReadView.as_view(), name='notification_read'),
     path('appointments/', engagement_api.AppointmentListView.as_view(), name='appointment_list'),
     path('appointments/book/', engagement_api.AppointmentCreateView.as_view(), name='appointment_book'),
+
+    # Groups — browse + approval-gated join requests
+    path('groups/', groups_api.GroupListView.as_view(), name='group_list'),
+    path('groups/mine/', groups_api.MyGroupsView.as_view(), name='my_groups'),
+    path('groups/<int:pk>/join/', groups_api.JoinRequestView.as_view(), name='group_join'),
 ]

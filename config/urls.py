@@ -14,6 +14,7 @@ urlpatterns = [
     path('consultations/', include('consultations.urls')),
 path('staff/', include('staff_mgmt.urls')),
     path('teachings/', include('teachings.urls')),
+    path('groups/', include('groups.urls')),
     # Public website content management
     path('events/', include('events.urls')),
     path('blog/', include('blog.urls')),
