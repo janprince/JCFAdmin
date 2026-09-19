@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en" data-skin="vivid">
+<html lang="en" data-skin="saas">
 <head>
     <meta charset="utf-8" />
     <title>{% block title %}JCF Management{% endblock %}</title>
@@ -14,11 +14,31 @@
     <!-- Theme Config Js -->
     <script src="{% static 'paces/js/config.js' %}"></script>
 
+    <!-- config.js restores a cached config from sessionStorage, which would keep
+         old sessions on whatever skin they were served before. Pin the skin. -->
+    <script>
+        (() => {
+            const html = document.documentElement;
+            html.setAttribute('data-skin', 'saas');
+            if (window.config) { window.config.skin = 'saas'; }
+            try {
+                const cached = JSON.parse(sessionStorage.getItem('__THEME_CONFIG__') || 'null');
+                if (cached && cached.skin !== 'saas') {
+                    cached.skin = 'saas';
+                    sessionStorage.setItem('__THEME_CONFIG__', JSON.stringify(cached));
+                }
+            } catch (e) { /* private mode / malformed cache — the attribute above is enough */ }
+        })();
+    </script>
+
     <!-- Vendor css -->
     <link href="{% static 'paces/css/vendors.min.css' %}" rel="stylesheet" type="text/css" />
 
     <!-- App css -->
     <link id="app-style" href="{% static 'paces/css/app.min.css' %}" rel="stylesheet" type="text/css" />
+
+    <!-- JCF brand (text logo) -->
+    <link href="{% static 'jcf/css/brand.css' %}" rel="stylesheet" type="text/css" />
 </head>
 
 <body>

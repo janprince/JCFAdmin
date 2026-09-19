@@ -6,10 +6,10 @@
 {% block auth_content %}
 <div class="auth-brand text-center mb-4 position-relative">
     <a href="{% url 'login' %}" class="logo-dark">
-        <img src="{% static 'paces/images/logo-black.png' %}" alt="dark logo" />
+        {% include "partials/_brand.html" with size="auth" %}
     </a>
     <a href="{% url 'login' %}" class="logo-light">
-        <img src="{% static 'paces/images/logo.png' %}" alt="logo" />
+        {% include "partials/_brand.html" with size="auth" %}
     </a>
     <h4 class="fw-bold text-dark mt-3">JCF Management System</h4>
     <p class="text-muted w-lg-75 mx-auto">Enter your email and password to sign in.</p>

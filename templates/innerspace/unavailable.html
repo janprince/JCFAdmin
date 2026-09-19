@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Innerspace unavailable | JCF Management{% endblock %}
+{% block page_title %}Innerspace Students{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Unavailable</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="avatar-lg mx-auto mb-3">
+                    <span class="avatar-title bg-warning-subtle text-warning rounded-circle fs-24">
+                        <i class="ti ti-plug-connected-x"></i>
+                    </span>
+                </div>
+                <h4 class="mb-2">Innerspace is unreachable</h4>
+                <p class="text-muted mb-4">{{ reason }}</p>
+                <p class="fs-xs text-muted mb-4">
+                    Student records live in a separate database from the rest of this admin.
+                    Everything else in JCF continues to work normally.
+                </p>
+                <a href="{% url 'dashboard:analytics' %}" class="btn btn-outline-secondary">Back to dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -5,20 +5,12 @@
             <!-- Topbar Brand Logo -->
             <div class="logo-topbar">
                 <a href="{% url 'dashboard:analytics' %}" class="logo-light">
-                    <span class="logo-lg">
-                        <img src="{% static 'paces/images/logo.png' %}" alt="logo" />
-                    </span>
-                    <span class="logo-sm">
-                        <img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" />
-                    </span>
+                    <span class="logo-lg">{% include "partials/_brand.html" %}</span>
+                    <span class="logo-sm">{% include "partials/_brand_mark.html" %}</span>
                 </a>
                 <a href="{% url 'dashboard:analytics' %}" class="logo-dark">
-                    <span class="logo-lg">
-                        <img src="{% static 'paces/images/logo-black.png' %}" alt="dark logo" />
-                    </span>
-                    <span class="logo-sm">
-                        <img src="{% static 'paces/images/logo-sm.png' %}" alt="small logo" />
-                    </span>
+                    <span class="logo-lg">{% include "partials/_brand.html" %}</span>
+                    <span class="logo-sm">{% include "partials/_brand_mark.html" %}</span>
                 </a>
             </div>
 
