@@ -51,9 +51,9 @@ class TeachingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teaching
         fields = [
-            'id', 'slug', 'topic', 'author', 'format', 'language', 'tier',
-            'media_kind', 'duration_seconds', 'thumbnail_url', 'series',
-            'is_locked', 'view_count',
+            'id', 'slug', 'topic', 'author', 'description', 'format',
+            'language', 'tier', 'media_kind', 'duration_seconds',
+            'thumbnail_url', 'series', 'is_locked', 'view_count',
         ]
 
     def get_is_locked(self, obj):
@@ -68,7 +68,7 @@ class TeachingDetailSerializer(TeachingListSerializer):
 
     class Meta(TeachingListSerializer.Meta):
         fields = TeachingListSerializer.Meta.fields + [
-            'description', 'youtube_url', 'media_url', 'created_at',
+            'youtube_url', 'media_url', 'created_at',
         ]
 
     def get_media_url(self, obj):

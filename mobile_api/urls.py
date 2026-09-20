@@ -55,6 +55,7 @@ urlpatterns = [
 
     # Daily inspiration (Home hero, design 19/22)
     path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
+    path('inspiration/recent/', engagement_api.InspirationRecentView.as_view(), name='inspiration_recent'),
 
     # Practices (design 27)
     path('practices/', practices_api.PracticeListView.as_view(), name='practice_list'),

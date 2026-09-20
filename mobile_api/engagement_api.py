@@ -205,3 +205,21 @@ class InspirationTodayView(APIView):
         if entry is None:
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response(InspirationSerializer(entry).data)
+
+
+class InspirationRecentView(APIView):
+    """The last few published inspirations, newest first — the Home hero
+    carousel (design 19). Public."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        entries = (
+            DailyInspiration.objects.filter(
+                is_published=True, date__lte=timezone.localdate())
+            .select_related('related_teaching')
+            .order_by('-date')[:3]
+        )
+        return Response(
+            {'results': [InspirationSerializer(e).data for e in entries]})

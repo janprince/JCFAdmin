@@ -191,3 +191,28 @@ class AnnouncementReadTests(APITestCase):
         res = self.client.post(
             f'/api/mobile/v1/announcements/{self.announcement.pk}/read/')
         self.assertEqual(res.status_code, 401)
+
+
+class InspirationRecentTests(APITestCase):
+    """Home hero carousel (design 19): the last three published entries."""
+
+    def test_recent_returns_newest_three_published(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from .models import DailyInspiration
+        today = timezone.localdate()
+        for delta in range(1, 5):
+            DailyInspiration.objects.create(
+                date=today - timedelta(days=delta), quote=f'Quote {delta}')
+        DailyInspiration.objects.create(
+            date=today + timedelta(days=1), quote='Tomorrow (hidden)')
+        DailyInspiration.objects.create(
+            date=today, quote='Draft (hidden)', is_published=False)
+
+        api = self.client.get('/api/mobile/v1/inspiration/recent/')
+        quotes = [e['quote'] for e in api.data['results']]
+        self.assertEqual(quotes, ['Quote 1', 'Quote 2', 'Quote 3'])
+
+    def test_empty_gives_empty_list(self):
+        api = self.client.get('/api/mobile/v1/inspiration/recent/')
+        self.assertEqual(api.data['results'], [])
