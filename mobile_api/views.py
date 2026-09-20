@@ -3,23 +3,27 @@ from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .authentication import IsMember, MobileTokenAuthentication
 from .models import MAX_CODE_ATTEMPTS, LoginCode, MobileToken
-from .otp import (RESEND_COOLDOWN_SECONDS, find_contact, looks_like_email,
-                  mask_email, mask_phone, normalize, send_code)
+from .otp import (RESEND_COOLDOWN_SECONDS, find_any_contact, find_contact,
+                  is_approved, looks_like_email, mask_email, mask_phone,
+                  normalize, send_code)
 from .serializers import MemberSerializer
 
 # Generic response so we never reveal which phones/emails exist.
-_GENERIC = {'detail': 'If the account exists, a verification code has been sent.'}
-
-
 class RequestCodeView(APIView):
-    """POST {identifier} -> sends an OTP if a matching active Contact exists."""
+    """POST {identifier} -> sends an OTP and reports one of three statuses:
+    'sent', 'not_found', or 'pending' (contact exists but access is not yet
+    approved) — the designed UX (designs 15/16). Enumeration risk is
+    mitigated by per-IP throttling (scope 'request_code')."""
 
     authentication_classes = []
     permission_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'request_code'
 
     def post(self, request):
         identifier = normalize(request.data.get('identifier', ''))
@@ -30,7 +34,15 @@ class RequestCodeView(APIView):
             )
 
         contact = find_contact(identifier)
-        payload = dict(_GENERIC)
+        if contact is None:
+            if find_any_contact(identifier) is not None:
+                # Exists but inactive -> awaiting approval (design 16).
+                return Response({'status': 'pending'})
+            return Response({'status': 'not_found'})
+        if not is_approved(contact):
+            return Response({'status': 'pending'})
+
+        payload = {'status': 'sent'}
         if contact:
             prefer_sms = not looks_like_email(identifier)
 

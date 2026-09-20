@@ -213,6 +213,11 @@ ARKESEL_SENDER_ID = env('ARKESEL_SENDER_ID', default='JCF')
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_RATES': {
+        # Anti-enumeration: request-code reveals whether a contact exists
+        # (the designed UX), so lookups are tightly limited per IP.
+        'request_code': '10/min',
+    },
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],

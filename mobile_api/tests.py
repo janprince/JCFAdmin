@@ -25,6 +25,8 @@ _INMEM_STORAGE = {
 @override_settings(DEBUG=True)  # so request-code returns dev_code for the flow
 class AuthFlowTests(APITestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # reset the request-code throttle between tests
         self.contact = Contact.objects.create(
             full_name='Test Member',
             phone='+233200000000',
@@ -101,17 +103,50 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(resp.data['channel'], 'email')
         self.assertEqual(resp.data['masked_destination'], 'm•••@example.com')
 
-    def test_unknown_identifier_reveals_nothing(self):
+    def test_not_found_carries_no_destination_fields(self):
         resp = self._request_code('nobody@nowhere.com')
+        self.assertEqual(resp.data['status'], 'not_found')
         self.assertNotIn('masked_destination', resp.data)
         self.assertNotIn('channel', resp.data)
         self.assertNotIn('retry_after', resp.data)
 
-    def test_request_code_for_unknown_identifier_is_generic_and_silent(self):
+    def test_unknown_identifier_reports_not_found(self):
+        # Designed UX (design 15): the app shows "We couldn't find your
+        # record". Enumeration is mitigated by the per-IP throttle.
         resp = self._request_code('nobody@example.com')
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data['status'], 'not_found')
         self.assertNotIn('dev_code', resp.data)
         self.assertEqual(LoginCode.objects.count(), 0)
+
+    def test_unapproved_contact_reports_pending_and_gets_no_code(self):
+        # Design 16: contact exists but access not approved yet.
+        Contact.objects.create(
+            full_name='Awaiting Approval', phone='+233200000777',
+            email='waiting@example.com', is_active=True,
+            is_member=False, is_student=False,
+        )
+        resp = self._request_code('waiting@example.com')
+        self.assertEqual(resp.data['status'], 'pending')
+        self.assertEqual(LoginCode.objects.count(), 0)
+
+        # Inactive contacts are pending too.
+        Contact.objects.create(
+            full_name='Deactivated', phone='+233200000888',
+            email='off@example.com', is_active=False, is_member=True,
+        )
+        resp = self._request_code('off@example.com')
+        self.assertEqual(resp.data['status'], 'pending')
+
+    def test_known_identifier_reports_sent(self):
+        resp = self._request_code('member@example.com')
+        self.assertEqual(resp.data['status'], 'sent')
+
+    def test_request_code_is_throttled_per_ip(self):
+        for _ in range(10):
+            self._request_code('nobody@example.com')
+        resp = self._request_code('nobody@example.com')
+        self.assertEqual(resp.status_code, 429)
 
     def test_full_login_flow(self):
         code = self._request_code('member@example.com').data['dev_code']

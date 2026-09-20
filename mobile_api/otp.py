@@ -29,6 +29,28 @@ def normalize(identifier: str) -> str:
     return (identifier or '').strip()
 
 
+def find_any_contact(identifier: str):
+    """Find a Contact by email or phone WITHOUT the active/approved filter —
+    used to distinguish 'not found' from 'found but awaiting approval'."""
+    identifier = normalize(identifier)
+    if not identifier:
+        return None
+    if looks_like_email(identifier):
+        qs = Contact.objects.filter(email__iexact=identifier)
+    else:
+        digits = identifier.replace(' ', '')
+        qs = Contact.objects.filter(
+            Q(phone__icontains=digits) | Q(telephone__icontains=digits)
+        )
+    return qs.first()
+
+
+def is_approved(contact) -> bool:
+    """Approved for the app: active AND flagged member or student."""
+    return bool(contact and contact.is_active
+                and (contact.is_member or contact.is_student))
+
+
 def find_contact(identifier: str):
     """Find a single active Contact by email or phone. Returns None if absent/ambiguous."""
     identifier = normalize(identifier)
