@@ -1,0 +1,151 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{{ program.title }} ({{ program.year }}) | JCF Management{% endblock %}
+{% block page_title %}{{ program.title }} ({{ program.year }}){% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'programs:program_list' %}">Programs</a></li>
+<li class="breadcrumb-item active">{{ program.title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">About</h5>
+                <a href="{% url 'programs:program_update' program.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-1"><strong>Status:</strong>
+                        {% if program.is_published %}<span class="badge bg-success">Live in app</span>
+                        {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                    </li>
+                    <li class="mb-1"><strong>Audience:</strong> {{ program.get_audience_display }}</li>
+                    <li class="mb-1"><strong>Dates:</strong>
+                        {% if program.starts_on %}{{ program.starts_on|date:"j M" }} – {{ program.ends_on|date:"j M Y" }}{% else %}—{% endif %}</li>
+                    <li class="mb-1"><strong>Venue:</strong> {{ program.venue|default:"—" }}</li>
+                    <li class="mb-1"><strong>Payment:</strong>
+                        {% if program.requires_payment %}Required ({{ program.currency }}){% else %}Free{% endif %}</li>
+                    <li class="mb-1"><strong>Capacity:</strong> {{ program.capacity|default:"Unlimited" }}</li>
+                    <li><strong>Registrations:</strong>
+                        {{ confirmed_count }} confirmed
+                        {% if pending_count %} · <span class="text-warning">{{ pending_count }} pending payment</span>{% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Fees</h5></div>
+            <div class="card-body">
+                {% for item in cost_items %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ item.label }}{% if not item.is_active %} <span class="badge bg-secondary">off</span>{% endif %}</span>
+                    <span>
+                        {{ program.currency }} {{ item.amount }}{% if item.unit == 'per_person' %}<small class="text-muted"> /person</small>{% endif %}
+                        <form method="post" action="{% url 'programs:cost_item_delete' item.pk %}" class="d-inline"
+                              onsubmit="return confirm('Remove this fee?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1"><i class="ti ti-x"></i></button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}<p class="text-muted">No fees yet.</p>{% endfor %}
+                <hr>
+                <form method="post" action="{% url 'programs:cost_item_add' program.pk %}" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-5">{{ cost_form.label }}</div>
+                    <div class="col-3">{{ cost_form.amount }}</div>
+                    <div class="col-4">{{ cost_form.unit }}</div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add fee</button></div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Accommodation Tiers</h5></div>
+            <div class="card-body">
+                {% for tier in tiers %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ tier.name }}{% if not tier.is_active %} <span class="badge bg-secondary">off</span>{% endif %}
+                        <small class="text-muted">{{ tier.rooms_confirmed }}/{{ tier.total_rooms }} rooms</small>
+                        {% if tier.is_sold_out %}<span class="badge bg-danger">Sold out</span>{% endif %}
+                    </span>
+                    <span>
+                        {{ program.currency }} {{ tier.price_per_person }}<small class="text-muted"> /person</small>
+                        <form method="post" action="{% url 'programs:tier_delete' tier.pk %}" class="d-inline"
+                              onsubmit="return confirm('Remove this tier?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1"><i class="ti ti-x"></i></button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}<p class="text-muted">No accommodation tiers.</p>{% endfor %}
+                <hr>
+                <form method="post" action="{% url 'programs:tier_add' program.pk %}" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-6">{{ tier_form.name }}</div>
+                    <div class="col-3">{{ tier_form.price_per_person }}</div>
+                    <div class="col-3">{{ tier_form.total_rooms }}</div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">Add tier</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Registrations ({{ registrations|length }})</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Reference</th>
+                                <th>Member</th>
+                                <th>People</th>
+                                <th>Tier</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-end"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in registrations %}
+                            <tr>
+                                <td><code>{{ r.reference|default:"—" }}</code></td>
+                                <td><a href="{% url 'members:contact_detail' r.contact.pk %}">{{ r.contact.full_name }}</a></td>
+                                <td>{{ r.quantity }}</td>
+                                <td>{{ r.accommodation_tier.name|default:"—" }}</td>
+                                <td>{{ r.currency }} {{ r.amount }}</td>
+                                <td>
+                                    {% if r.status == 'confirmed' %}<span class="badge bg-success">Confirmed</span>
+                                    {% elif r.status == 'pending' %}<span class="badge bg-warning">Pending payment</span>
+                                    {% else %}<span class="badge bg-secondary">Cancelled</span>{% endif %}
+                                </td>
+                                <td>{{ r.created_at|date:"j M Y" }}</td>
+                                <td class="text-end">
+                                    {% if r.status != 'cancelled' %}
+                                    <form method="post" action="{% url 'programs:registration_cancel' r.pk %}" class="d-inline"
+                                          onsubmit="return confirm('Cancel registration {{ r.reference }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-soft-danger">Cancel</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" class="text-center text-muted py-4">No registrations yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

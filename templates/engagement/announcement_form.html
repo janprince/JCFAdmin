@@ -1,0 +1,51 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Announcement | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Announcement{% else %}New Announcement{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'engagement:announcement_list' %}">Announcements</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}New{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Title <span class="text-danger">*</span></label>
+                        {{ form.title }}{{ form.title.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message <span class="text-danger">*</span></label>
+                        {{ form.body }}{{ form.body.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Audience</label>
+                        {{ form.audience }}{{ form.audience.errors }}
+                        <div class="form-text">Controls who sees it in the app: public shows to guests too.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image (optional)</label>
+                        {{ form.image }}{{ form.image.errors }}
+                    </div>
+                    <div class="form-check mb-2">
+                        {{ form.is_published }}
+                        <label class="form-check-label">Published (visible in the app)</label>
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.pinned }}
+                        <label class="form-check-label">Pinned to the top</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'engagement:announcement_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

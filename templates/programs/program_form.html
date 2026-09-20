@@ -1,0 +1,106 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Program | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Program{% else %}New Program{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'programs:program_list' %}">Programs</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}New{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Title <span class="text-danger">*</span></label>
+                            {{ form.title }}{{ form.title.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Year <span class="text-danger">*</span></label>
+                            {{ form.year }}{{ form.year.errors }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}{{ form.description.errors }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Audience</label>
+                            {{ form.audience }}{{ form.audience.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Starts</label>
+                            {{ form.starts_on }}{{ form.starts_on.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Ends</label>
+                            {{ form.ends_on }}{{ form.ends_on.errors }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Venue</label>
+                            {{ form.venue }}{{ form.venue.errors }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            {{ form.location }}{{ form.location.errors }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Registration opens</label>
+                            {{ form.registration_opens_at }}{{ form.registration_opens_at.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Registration closes</label>
+                            {{ form.registration_closes_at }}{{ form.registration_closes_at.errors }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Capacity</label>
+                            {{ form.capacity }}{{ form.capacity.errors }}
+                        </div>
+                    </div>
+                    <div class="row align-items-end">
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                {{ form.requires_payment }}
+                                <label class="form-check-label">Requires payment</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Currency</label>
+                            {{ form.currency }}{{ form.currency.errors }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Image</label>
+                            {{ form.image }}{{ form.image.errors }}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check">
+                                {{ form.is_published }}
+                                <label class="form-check-label">Published (visible in the app)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.form_schema_text.label }}</label>
+                        {{ form.form_schema_text }}
+                        <div class="form-text">{{ form.form_schema_text.help_text }}</div>
+                        {{ form.form_schema_text.errors }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'programs:program_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

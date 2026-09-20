@@ -119,6 +119,29 @@
                     </a>
                 </li>
 
+                <li class="side-nav-title mt-2">Mobile App</li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'programs:program_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-calendar-star"></i></span>
+                        <span class="menu-text">Programs</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'engagement:announcement_list' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-speakerphone"></i></span>
+                        <span class="menu-text">Announcements</span>
+                    </a>
+                </li>
+
+                <li class="side-nav-item">
+                    <a href="{% url 'engagement:notification_compose' %}" class="side-nav-link">
+                        <span class="menu-icon"><i class="ti ti-bell-ringing"></i></span>
+                        <span class="menu-text">Send Notification</span>
+                    </a>
+                </li>
+
                 <li class="side-nav-item">
                     <a href="{% url 'events:event_list' %}" class="side-nav-link">
                         <span class="menu-icon"><i class="ti ti-calendar-event"></i></span>

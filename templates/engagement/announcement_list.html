@@ -1,0 +1,75 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Announcements | JCF Management{% endblock %}
+{% block page_title %}Announcements{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Announcements</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">App Announcements</h5>
+                <a href="{% url 'engagement:announcement_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> New Announcement
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Announcements appear on the mobile app's Home screen for the chosen audience.</p>
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Title</th>
+                                <th>Audience</th>
+                                <th>Status</th>
+                                <th>Pinned</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in announcements %}
+                            <tr>
+                                <td>
+                                    <strong>{{ a.title }}</strong>
+                                    <div class="text-muted small">{{ a.body|truncatechars:80 }}</div>
+                                </td>
+                                <td>{{ a.get_audience_display }}</td>
+                                <td>
+                                    {% if a.is_published %}<span class="badge bg-success">Live in app</span>
+                                    {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'engagement:announcement_pin' a.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm {% if a.pinned %}btn-warning{% else %}btn-outline-secondary{% endif %}">
+                                            <i class="ti ti-pin"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td>{{ a.created_at|date:"j M Y" }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'engagement:announcement_update' a.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+                                    <form method="post" action="{% url 'engagement:announcement_delete' a.pk %}" class="d-inline"
+                                          onsubmit="return confirm('Delete this announcement?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-soft-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">No announcements yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
