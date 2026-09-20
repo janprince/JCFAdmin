@@ -1,0 +1,59 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Activities | JCF Management{% endblock %}
+{% block page_title %}Activities{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Activities</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Scheduled Activities</h5>
+                <a href="{% url 'activities:activity_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> New Activity
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">The app's Upcoming Activities feed merges these with published Programmes. Members can tap the bell for a reminder.</p>
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Title</th><th>Kind</th><th>When</th>
+                                <th>Venue</th><th>Audience</th><th>Reminders</th><th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in activities %}
+                            <tr>
+                                <td><strong>{{ a.title }}</strong></td>
+                                <td>{{ a.get_kind_display }}</td>
+                                <td>{{ a.starts_at|date:"D, d M Y · H:i" }}</td>
+                                <td>{{ a.venue|default:"Online" }}</td>
+                                <td>{{ a.get_audience_display }}</td>
+                                <td>{{ a.reminders.count }}</td>
+                                <td>
+                                    {% if a.is_active %}<span class="badge bg-success">Live in app</span>
+                                    {% else %}<span class="badge bg-secondary">Off</span>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'activities:activity_update' a.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="8" class="text-center text-muted py-4">No activities scheduled yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

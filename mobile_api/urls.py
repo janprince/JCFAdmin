@@ -8,6 +8,7 @@ from . import programs_api
 from . import engagement_api
 from . import groups_api
 from . import practices_api
+from . import activities_api
 
 app_name = 'mobile_api'
 
@@ -58,6 +59,10 @@ urlpatterns = [
     path('practices/', practices_api.PracticeListView.as_view(), name='practice_list'),
     path('practice/summary/', practices_api.PracticeSummaryView.as_view(), name='practice_summary'),
     path('practice/log/', practices_api.PracticeLogView.as_view(), name='practice_log'),
+
+    # Upcoming Activities feed (design 25)
+    path('activities/upcoming/', activities_api.UpcomingActivitiesView.as_view(), name='activities_upcoming'),
+    path('activities/reminder/', activities_api.ReminderToggleView.as_view(), name='activities_reminder'),
 
     # Groups — browse + approval-gated join requests
     path('groups/', groups_api.GroupListView.as_view(), name='group_list'),
