@@ -7,6 +7,7 @@ from . import payments
 from . import programs_api
 from . import engagement_api
 from . import groups_api
+from . import practices_api
 
 app_name = 'mobile_api'
 
@@ -52,6 +53,11 @@ urlpatterns = [
 
     # Daily inspiration (Home hero, design 19/22)
     path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
+
+    # Practices (design 27)
+    path('practices/', practices_api.PracticeListView.as_view(), name='practice_list'),
+    path('practice/summary/', practices_api.PracticeSummaryView.as_view(), name='practice_summary'),
+    path('practice/log/', practices_api.PracticeLogView.as_view(), name='practice_log'),
 
     # Groups — browse + approval-gated join requests
     path('groups/', groups_api.GroupListView.as_view(), name='group_list'),

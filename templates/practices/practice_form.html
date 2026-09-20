@@ -1,0 +1,70 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Practice | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Practice{% else %}New Practice{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'practices:practice_list' %}">Practices</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}New{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Title <span class="text-danger">*</span></label>
+                        {{ form.title }}{{ form.title.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}{{ form.description.errors }}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Category</label>
+                            {{ form.category }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Minutes</label>
+                            {{ form.minutes }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Audience</label>
+                            {{ form.audience }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Audio file (R2)</label>
+                            {{ form.audio_file }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">or external audio URL</label>
+                            {{ form.audio_url }}{{ form.audio_url.errors }}
+                        </div>
+                    </div>
+                    <div class="row align-items-end">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Order</label>
+                            {{ form.order }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label">Active (in the app)</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'practices:practice_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
