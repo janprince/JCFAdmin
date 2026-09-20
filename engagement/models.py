@@ -26,6 +26,27 @@ class Announcement(models.Model):
         return self.title
 
 
+class AnnouncementRead(models.Model):
+    """A member has opened an announcement — clears its unread dot."""
+
+    contact = models.ForeignKey(
+        'members.Contact', on_delete=models.CASCADE,
+        related_name='announcement_reads')
+    announcement = models.ForeignKey(
+        Announcement, on_delete=models.CASCADE, related_name='reads')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contact', 'announcement'],
+                name='uniq_announcement_read'),
+        ]
+
+    def __str__(self):
+        return f'{self.contact_id} read {self.announcement_id}'
+
+
 class DeviceToken(models.Model):
     """An FCM registration token for a device. Linked to a Contact if known."""
 

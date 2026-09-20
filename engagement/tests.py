@@ -151,3 +151,43 @@ class DailyInspirationTests(APITestCase):
     def test_no_entries_returns_204(self):
         api = self.client.get('/api/mobile/v1/inspiration/today/')
         self.assertEqual(api.status_code, 204)
+
+
+class AnnouncementReadTests(APITestCase):
+    """Unread dots (design 28): reads are tracked per member."""
+
+    def setUp(self):
+        self.member = Contact.objects.create(
+            full_name='Ama Member', phone='+233200000011',
+            email='ama-read@example.com', is_active=True, is_member=True)
+        self.announcement = Announcement.objects.create(
+            title='September Gathering', body='Join us.', audience='public')
+
+    def _auth(self):
+        token = MobileToken.issue(self.member)
+        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
+
+    def test_member_unread_then_read(self):
+        auth = self._auth()
+        api = self.client.get('/api/mobile/v1/announcements/', **auth)
+        self.assertFalse(api.data['results'][0]['is_read'])
+
+        res = self.client.post(
+            f'/api/mobile/v1/announcements/{self.announcement.pk}/read/',
+            **auth)
+        self.assertEqual(res.status_code, 200)
+        # Marking twice is fine (idempotent).
+        self.client.post(
+            f'/api/mobile/v1/announcements/{self.announcement.pk}/read/',
+            **auth)
+
+        api = self.client.get('/api/mobile/v1/announcements/', **auth)
+        self.assertTrue(api.data['results'][0]['is_read'])
+
+    def test_guest_sees_no_unread_dots_and_cannot_mark(self):
+        api = self.client.get('/api/mobile/v1/announcements/')
+        self.assertTrue(api.data['results'][0]['is_read'])
+
+        res = self.client.post(
+            f'/api/mobile/v1/announcements/{self.announcement.pk}/read/')
+        self.assertEqual(res.status_code, 401)

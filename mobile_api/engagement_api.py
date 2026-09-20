@@ -8,8 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from consultations.models import Consultation
-from engagement.models import (Announcement, DailyInspiration, DeviceToken,
-                               Notification)
+from engagement.models import (Announcement, AnnouncementRead,
+                               DailyInspiration, DeviceToken, Notification)
 from .authentication import IsMember, MobileTokenAuthentication
 
 
@@ -27,13 +27,20 @@ def allowed_audience_values(contact):
 
 class AnnouncementSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    is_read = serializers.SerializerMethodField()
 
     class Meta:
         model = Announcement
-        fields = ['id', 'title', 'body', 'audience', 'image_url', 'pinned', 'created_at']
+        fields = ['id', 'title', 'body', 'audience', 'image_url', 'pinned',
+                  'is_read', 'created_at']
 
     def get_image_url(self, obj):
         return obj.image.url if obj.image else ''
+
+    def get_is_read(self, obj):
+        # Guests carry no read state, so they see no unread dots.
+        read_ids = self.context.get('read_ids')
+        return True if read_ids is None else obj.id in read_ids
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -68,6 +75,31 @@ class AnnouncementListView(generics.ListAPIView):
         return Announcement.objects.filter(
             is_published=True, audience__in=allowed_audience_values(contact)
         )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        contact = self.request.auth.contact if self.request.auth else None
+        if contact is not None:
+            context['read_ids'] = set(
+                AnnouncementRead.objects.filter(contact=contact)
+                .values_list('announcement_id', flat=True))
+        return context
+
+
+class AnnouncementReadView(APIView):
+    """POST /announcements/<pk>/read/ — clear the unread dot."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsMember]
+
+    def post(self, request, pk):
+        announcement = Announcement.objects.filter(
+            pk=pk, is_published=True).first()
+        if announcement is None:
+            return Response({'detail': 'Not found.'}, status=404)
+        AnnouncementRead.objects.get_or_create(
+            contact=request.member, announcement=announcement)
+        return Response({'is_read': True})
 
 
 class DeviceRegisterView(APIView):

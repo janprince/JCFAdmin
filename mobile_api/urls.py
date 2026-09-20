@@ -45,6 +45,7 @@ urlpatterns = [
 
     # Engagement — announcements, push devices, notifications, appointments
     path('announcements/', engagement_api.AnnouncementListView.as_view(), name='announcement_list'),
+    path('announcements/<int:pk>/read/', engagement_api.AnnouncementReadView.as_view(), name='announcement_read'),
     path('devices/register/', engagement_api.DeviceRegisterView.as_view(), name='device_register'),
     path('devices/<str:token>/', engagement_api.DeviceUnregisterView.as_view(), name='device_unregister'),
     path('notifications/', engagement_api.NotificationListView.as_view(), name='notification_list'),
