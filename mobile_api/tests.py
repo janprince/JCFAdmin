@@ -11,6 +11,8 @@ from engagement.models import Announcement, DeviceToken, Notification
 from members.models import Contact
 from programs.models import AccommodationTier, CostLineItem, Program, Registration
 from teachings.models import Teaching, TeachingSeries
+from unittest.mock import patch
+
 from .models import LoginCode, MobileToken
 
 # Keep media (QR codes) off R2/disk during tests.
@@ -46,22 +48,38 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(mail.outbox[0].to, ['member@example.com'])
         self.assertIn(resp.data['dev_code'], mail.outbox[0].body)
 
-    def test_phone_identifier_still_emails_the_code(self):
+    @patch('mobile_api.otp.send_sms_arkesel', return_value=True)
+    def test_phone_identifier_sends_sms(self, mock_sms):
+        # "Continue with Phone": the code goes out by SMS, not email.
         resp = self._request_code('+233200000000')
         self.assertEqual(resp.status_code, 200)
         self.assertIn('dev_code', resp.data)
-        # Even when identifying by phone, the code goes to the email on file.
-        self.assertEqual(mail.outbox[0].to, ['member@example.com'])
+        self.assertEqual(len(mail.outbox), 0)
+        code_row = LoginCode.objects.get()
+        self.assertEqual(code_row.channel, LoginCode.Channel.SMS)
+        self.assertIn(resp.data['dev_code'], mock_sms.call_args.args[1])
 
-    def test_contact_without_email_gets_no_code(self):
+    @patch('mobile_api.otp.send_sms_arkesel', return_value=False)
+    def test_sms_failure_falls_back_to_email(self, mock_sms):
+        # Arkesel down/unconfigured: the same code is emailed instead.
+        resp = self._request_code('+233200000000')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['member@example.com'])
+        self.assertIn(resp.data['dev_code'], mail.outbox[0].body)
+
+    @patch('mobile_api.otp.send_sms_arkesel', return_value=True)
+    def test_phone_only_contact_gets_sms_code(self, mock_sms):
+        # A member with no email can still sign in by phone now.
         Contact.objects.create(
             full_name='No Email', phone='+233200000099', is_active=True, is_member=True,
         )
         resp = self._request_code('+233200000099')
         self.assertEqual(resp.status_code, 200)
-        self.assertNotIn('dev_code', resp.data)
+        self.assertIn('dev_code', resp.data)
         self.assertEqual(len(mail.outbox), 0)
-        self.assertEqual(LoginCode.objects.count(), 0)
+        self.assertEqual(
+            LoginCode.objects.get().channel, LoginCode.Channel.SMS)
 
     def test_request_code_for_unknown_identifier_is_generic_and_silent(self):
         resp = self._request_code('nobody@example.com')

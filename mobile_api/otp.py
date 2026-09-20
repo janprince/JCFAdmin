@@ -1,11 +1,11 @@
 """
 Helpers to resolve a Contact from a phone/email identifier and deliver the
-one-time login code BY EMAIL.
+one-time login code.
 
-A member may identify themselves by phone or email, but the verification code is
-always emailed to the address on their Contact record. Delivery failures are
-logged (never fatal). Requires EMAIL_HOST_USER / EMAIL_HOST_PASSWORD in the
-environment to actually send (see .env.example).
+Delivery channel follows the identifier ("Continue with Phone" -> SMS via
+Arkesel, "Continue with Email" -> email), falling back to email when SMS
+isn't possible (no Arkesel key, no phone, send failure). Delivery failures
+are logged (never fatal).
 """
 import logging
 
@@ -14,6 +14,8 @@ from django.core.mail import send_mail
 from django.db.models import Q
 
 from members.models import Contact
+from website.notifications import send_sms_arkesel
+
 from .models import LoginCode
 
 logger = logging.getLogger(__name__)
@@ -44,18 +46,7 @@ def find_contact(identifier: str):
     return qs.first()
 
 
-def send_code(contact):
-    """Issue a login code and email it to the contact's address.
-
-    Returns (LoginCode, plaintext_code), or (None, None) if the contact has no
-    email on file (so they can't receive a code).
-    """
-    email = (contact.email or '').strip()
-    if not email:
-        logger.warning('Contact %s has no email on file; cannot send OTP.', contact.pk)
-        return None, None
-
-    login_code, code = LoginCode.issue(contact, LoginCode.Channel.EMAIL, email)
+def _email_code(contact, email, code):
     subject = 'Your JCF verification code'
     message = (
         f'Hello {contact.full_name},\n\n'
@@ -67,7 +58,38 @@ def send_code(contact):
     except Exception:  # pragma: no cover - delivery must never 500 the request
         logger.exception('Failed to email login code to %s', email)
 
+
+def send_code(contact, prefer_sms=False):
+    """Issue a login code and deliver it.
+
+    prefer_sms=True (the app's "Continue with Phone") sends by SMS to the
+    contact's phone; otherwise — or when SMS isn't possible — the code is
+    emailed. Returns (LoginCode, plaintext_code), or (None, None) when the
+    contact has neither a usable phone nor an email.
+    """
+    phone = str(contact.phone) if contact.phone else ''
+    email = (contact.email or '').strip()
+
+    use_sms = prefer_sms and bool(phone)
+    if not use_sms and not email:
+        use_sms = bool(phone)  # email-less contact: SMS is the only route
+    if not use_sms and not email:
+        logger.warning('Contact %s has no phone or email; cannot send OTP.', contact.pk)
+        return None, None
+
+    channel = LoginCode.Channel.SMS if use_sms else LoginCode.Channel.EMAIL
+    login_code, code = LoginCode.issue(contact, channel, phone if use_sms else email)
+
+    if use_sms:
+        sent = send_sms_arkesel(
+            phone, f'Your JCF verification code is {code}. It expires in 10 minutes.')
+        if not sent and email:
+            # Arkesel unavailable or send failed — same code goes out by email.
+            _email_code(contact, email, code)
+    else:
+        _email_code(contact, email, code)
+
     if settings.DEBUG:
-        logger.info('DEBUG login code for %s: %s', email, code)
+        logger.info('DEBUG login code for %s: %s', contact.pk, code)
 
     return login_code, code

@@ -7,11 +7,11 @@ from rest_framework.views import APIView
 
 from .authentication import IsMember, MobileTokenAuthentication
 from .models import MAX_CODE_ATTEMPTS, LoginCode, MobileToken
-from .otp import find_contact, send_code, normalize
+from .otp import find_contact, looks_like_email, normalize, send_code
 from .serializers import MemberSerializer
 
 # Generic response so we never reveal which phones/emails exist.
-_GENERIC = {'detail': 'If the account exists, a verification code has been emailed.'}
+_GENERIC = {'detail': 'If the account exists, a verification code has been sent.'}
 
 
 class RequestCodeView(APIView):
@@ -31,7 +31,7 @@ class RequestCodeView(APIView):
         contact = find_contact(identifier)
         payload = dict(_GENERIC)
         if contact:
-            _, code = send_code(contact)
+            _, code = send_code(contact, prefer_sms=not looks_like_email(identifier))
             if code and settings.DEBUG:
                 payload['dev_code'] = code  # convenience for local dev only
         return Response(payload)
