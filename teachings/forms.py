@@ -7,13 +7,14 @@ class TeachingForm(forms.ModelForm):
     class Meta:
         model = Teaching
         fields = [
-            'topic', 'format', 'language', 'status', 'description',
+            'topic', 'author', 'format', 'language', 'status', 'description',
             'tier', 'series', 'order',
             'media_kind', 'youtube_url', 'media_file', 'thumbnail',
             'duration_seconds',
         ]
         widgets = {
             'topic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Topic Title'}),
+            'author': forms.TextInput(attrs={'class': 'form-control'}),
             'format': forms.Select(attrs={'class': 'form-select'}),
             'language': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -32,8 +33,12 @@ class TeachingForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Quick-add on the list page posts only the basics; everything else
         # falls back to model defaults here.
-        for name in ('tier', 'order', 'media_kind', 'duration_seconds', 'series'):
+        for name in ('tier', 'order', 'media_kind', 'duration_seconds', 'series',
+                     'author'):
             self.fields[name].required = False
+
+    def clean_author(self):
+        return self.cleaned_data.get('author') or 'Dr. Baffour Jan'
 
     def clean_tier(self):
         return self.cleaned_data.get('tier') or Teaching.Tier.GENERAL

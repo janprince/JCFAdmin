@@ -92,3 +92,66 @@ class AcceptLanguageTests(APITestCase):
         res = self.client.get('/api/mobile/v1/auth/me/')
         self.assertEqual(res.status_code, 401)
         self.assertIn('Authentication', str(res.data['detail']))
+
+
+class ContinueLearningTests(APITestCase):
+    """Progress reporting + the Continue Learning summary (design 26)."""
+
+    def setUp(self):
+        from .models import Teaching, TeachingSeries
+        self.member = Contact.objects.create(
+            full_name='Ama Member', phone='+233200000001',
+            email='ama@example.com', is_active=True, is_member=True)
+        self.series = TeachingSeries.objects.create(title='Understanding the Mind')
+        self.lessons = [
+            Teaching.objects.create(
+                topic=f'Lesson {i}', status='published',
+                series=self.series, order=i)
+            for i in range(1, 4)
+        ]
+
+    def _auth(self):
+        token = MobileToken.issue(self.member)
+        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
+
+    def test_opening_a_lesson_counts_view_and_records_history(self):
+        slug = self.lessons[0].slug
+        self.client.get(f'/api/mobile/v1/teachings/{slug}/', **self._auth())
+        self.lessons[0].refresh_from_db()
+        self.assertEqual(self.lessons[0].view_count, 1)
+
+        summary = self.client.get(
+            '/api/mobile/v1/learning/continue/', **self._auth())
+        self.assertEqual(
+            summary.data['recently_viewed'][0]['topic'], 'Lesson 1')
+
+    def test_completion_drives_series_progress(self):
+        auth = self._auth()
+        for lesson in self.lessons[:1]:
+            self.client.post(
+                f'/api/mobile/v1/teachings/{lesson.slug}/progress/',
+                {'completed': True}, format='json', **auth)
+        # A second lesson merely viewed.
+        self.client.get(
+            f'/api/mobile/v1/teachings/{self.lessons[1].slug}/', **auth)
+
+        summary = self.client.get('/api/mobile/v1/learning/continue/', **auth)
+        self.assertEqual(summary.data['active_series'], 1)
+        self.assertEqual(summary.data['lessons_completed'], 1)
+        card = summary.data['series'][0]
+        self.assertEqual(card['title'], 'Understanding the Mind')
+        self.assertEqual(card['percent'], 33)
+        self.assertEqual(card['lessons_total'], 3)
+        self.assertEqual(card['current_lesson'], 2)
+        # Resume points at the viewed-but-not-completed lesson.
+        self.assertEqual(card['resume_slug'], self.lessons[1].slug)
+
+    def test_progress_requires_membership(self):
+        res = self.client.post(
+            f'/api/mobile/v1/teachings/{self.lessons[0].slug}/progress/',
+            {'completed': True}, format='json')
+        self.assertEqual(res.status_code, 401)
+
+    def test_author_served_in_listing(self):
+        api = self.client.get('/api/mobile/v1/teachings/')
+        self.assertEqual(api.data['results'][0]['author'], 'Dr. Baffour Jan')

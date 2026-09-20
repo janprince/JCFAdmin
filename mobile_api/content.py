@@ -10,12 +10,13 @@ These views authenticate with MobileTokenAuthentication but allow anonymous
 access (AllowAny); membership only controls premium unlocking.
 """
 from django.utils.translation import gettext as _
+from django.db.models import F
 from rest_framework import generics, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from teachings.models import Teaching, TeachingSeries
+from teachings.models import Teaching, TeachingProgress, TeachingSeries
 from .authentication import MobileTokenAuthentication
 
 
@@ -50,8 +51,9 @@ class TeachingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teaching
         fields = [
-            'id', 'slug', 'topic', 'format', 'language', 'tier', 'media_kind',
-            'duration_seconds', 'thumbnail_url', 'series', 'is_locked',
+            'id', 'slug', 'topic', 'author', 'format', 'language', 'tier',
+            'media_kind', 'duration_seconds', 'thumbnail_url', 'series',
+            'is_locked', 'view_count',
         ]
 
     def get_is_locked(self, obj):
@@ -129,6 +131,12 @@ class TeachingDetailView(PremiumContextMixin, generics.RetrieveAPIView):
         obj = self.get_object()
         if obj.is_premium and not _can_premium(request):
             raise PermissionDenied(_('This lesson is for registered members or students.'))
+        # Count the open, and record it in the member's viewing history.
+        Teaching.objects.filter(pk=obj.pk).update(view_count=F('view_count') + 1)
+        token = getattr(request, 'auth', None)
+        if token is not None:
+            TeachingProgress.objects.update_or_create(
+                contact=token.contact, teaching=obj)
         return Response(self.get_serializer(obj).data)
 
 
@@ -141,3 +149,108 @@ class SeriesDetailView(PremiumContextMixin, generics.RetrieveAPIView):
     serializer_class = SeriesDetailSerializer
     lookup_field = 'slug'
     queryset = TeachingSeries.objects.filter(is_published=True)
+
+
+# --- Continue Learning (design 26) ---
+
+from rest_framework.views import APIView  # noqa: E402
+from .authentication import IsStudentOrMember  # noqa: E402
+
+
+class TeachingProgressView(APIView):
+    """POST /teachings/<slug>/progress/ {percent?, position_seconds?,
+    completed?} — upsert the member's progress in a teaching."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsStudentOrMember]
+
+    def post(self, request, slug):
+        try:
+            teaching = Teaching.objects.get(
+                slug=slug, status=Teaching.Status.PUBLISHED)
+        except Teaching.DoesNotExist:
+            return Response(status=404)
+
+        progress, _created = TeachingProgress.objects.get_or_create(
+            contact=request.member, teaching=teaching)
+        data = request.data
+        if 'percent' in data:
+            progress.percent = max(0, min(100, int(data['percent'] or 0)))
+        if 'position_seconds' in data:
+            progress.position_seconds = int(data['position_seconds'] or 0)
+        if 'completed' in data:
+            progress.completed = bool(data['completed'])
+            if progress.completed:
+                progress.percent = 100
+        progress.save()
+        return Response({
+            'percent': progress.percent,
+            'completed': progress.completed,
+        })
+
+
+class ContinueLearningView(APIView):
+    """GET /learning/continue/ — the member's Continue Learning summary:
+    per-series progress cards + recently viewed (design 26)."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsStudentOrMember]
+
+    def get(self, request):
+        contact = request.member
+        rows = (
+            TeachingProgress.objects.filter(contact=contact)
+            .select_related('teaching', 'teaching__series')
+            .order_by('-last_viewed_at')
+        )
+        completed_ids = {r.teaching_id for r in rows if r.completed}
+
+        # Per-series cards, ordered by most recent activity in the series.
+        series_cards, seen = [], set()
+        for row in rows:
+            series = row.teaching.series
+            if series is None or series.id in seen or not series.is_published:
+                continue
+            seen.add(series.id)
+            lessons = list(
+                series.teachings.filter(status=Teaching.Status.PUBLISHED)
+                .order_by('order', 'id'))
+            total = len(lessons)
+            done = sum(1 for lesson in lessons if lesson.id in completed_ids)
+            # Resume target: the most recent non-completed lesson viewed in
+            # this series, else the first not-completed lesson.
+            resume = next(
+                (r.teaching for r in rows
+                 if r.teaching.series_id == series.id and not r.completed),
+                next((l for l in lessons if l.id not in completed_ids), None),
+            )
+            series_cards.append({
+                'slug': series.slug,
+                'title': series.title,
+                'author': resume.author if resume else (
+                    lessons[0].author if lessons else ''),
+                'percent': round(done * 100 / total) if total else 0,
+                'lessons_total': total,
+                'lessons_done': done,
+                'current_lesson': min(done + 1, total) if total else 0,
+                'resume_slug': resume.slug if resume else None,
+                'cover_url': series.cover.url if series.cover else '',
+            })
+
+        recently = [{
+            'slug': r.teaching.slug,
+            'topic': r.teaching.topic,
+            'series_title': r.teaching.series.title if r.teaching.series else None,
+            'media_kind': r.teaching.media_kind,
+            'duration_seconds': r.teaching.duration_seconds,
+            'thumbnail_url': r.teaching.thumbnail.url if r.teaching.thumbnail else '',
+            'completed': r.completed,
+            'last_viewed_at': r.last_viewed_at,
+        } for r in rows[:10]]
+
+        return Response({
+            'active_series': len(series_cards),
+            'lessons_completed': len(completed_ids),
+            'series': series_cards,
+            'recently_viewed': recently,
+        })

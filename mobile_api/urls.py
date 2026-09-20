@@ -20,6 +20,8 @@ urlpatterns = [
     # Content — teachings (lessons) + series
     path('teachings/', content.TeachingListView.as_view(), name='teaching_list'),
     path('teachings/<slug:slug>/', content.TeachingDetailView.as_view(), name='teaching_detail'),
+    path('teachings/<slug:slug>/progress/', content.TeachingProgressView.as_view(), name='teaching_progress'),
+    path('learning/continue/', content.ContinueLearningView.as_view(), name='continue_learning'),
     path('series/', content.SeriesListView.as_view(), name='series_list'),
     path('series/<slug:slug>/', content.SeriesDetailView.as_view(), name='series_detail'),
 

@@ -54,6 +54,9 @@ class Teaching(models.Model):
 
     topic = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
+    author = models.CharField(
+        max_length=255, default='Dr. Baffour Jan',
+        help_text='Shown as the teaching attribution in the app.')
     format = models.CharField(max_length=50, choices=Format.choices, default=Format.LECTURE)
     language = models.CharField(max_length=50, choices=Language.choices, default=Language.ENGLISH)
     status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING)
@@ -76,6 +79,8 @@ class Teaching(models.Model):
                                   help_text='Video/audio file hosted on R2.')
     thumbnail = models.ImageField(upload_to='teachings/thumbs/', blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    view_count = models.PositiveIntegerField(
+        default=0, help_text='Times the teaching was opened in the app.')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -101,3 +106,31 @@ class Teaching(models.Model):
 
     def __str__(self):
         return self.topic
+
+
+class TeachingProgress(models.Model):
+    """A member's position in a teaching — powers Continue Learning
+    (design 26). Rows are created on first open; completion is an explicit
+    member action until the in-app player reports playback position."""
+
+    contact = models.ForeignKey(
+        'members.Contact', on_delete=models.CASCADE,
+        related_name='teaching_progress')
+    teaching = models.ForeignKey(
+        Teaching, on_delete=models.CASCADE, related_name='progress_rows')
+    percent = models.PositiveSmallIntegerField(default=0)
+    position_seconds = models.PositiveIntegerField(null=True, blank=True)
+    completed = models.BooleanField(default=False)
+    last_viewed_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-last_viewed_at']
+        verbose_name_plural = 'teaching progress'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contact', 'teaching'], name='unique_contact_teaching'),
+        ]
+
+    def __str__(self):
+        return f'{self.contact_id} -> {self.teaching.topic}: {self.percent}%'
