@@ -9,6 +9,7 @@ Access tiers:
 These views authenticate with MobileTokenAuthentication but allow anonymous
 access (AllowAny); membership only controls premium unlocking.
 """
+from django.utils.translation import gettext as _
 from rest_framework import generics, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
@@ -127,7 +128,7 @@ class TeachingDetailView(PremiumContextMixin, generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
         if obj.is_premium and not _can_premium(request):
-            raise PermissionDenied('This lesson is for registered members or students.')
+            raise PermissionDenied(_('This lesson is for registered members or students.'))
         return Response(self.get_serializer(obj).data)
 
 

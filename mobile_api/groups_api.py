@@ -3,6 +3,7 @@
 Joining is approval-gated: a request creates a PENDING membership that staff
 approve or decline in the dashboard; only APPROVED rows are membership.
 """
+from django.utils.translation import gettext as _
 from rest_framework import generics, serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -81,11 +82,11 @@ class JoinRequestView(APIView):
         try:
             group = Group.objects.get(pk=pk, is_active=True)
         except Group.DoesNotExist:
-            return Response({'detail': 'Group not found.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': _('Group not found.')}, status=status.HTTP_404_NOT_FOUND)
 
         if group.is_full:
             return Response(
-                {'detail': 'This group is full.'}, status=status.HTTP_400_BAD_REQUEST
+                {'detail': _('This group is full.')}, status=status.HTTP_400_BAD_REQUEST
             )
 
         message = str(request.data.get('message', ''))[:255]
@@ -95,12 +96,12 @@ class JoinRequestView(APIView):
         if not created:
             if membership.status == GroupMembership.Status.APPROVED:
                 return Response(
-                    {'detail': 'You are already a member of this group.'},
+                    {'detail': _('You are already a member of this group.')},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if membership.status == GroupMembership.Status.PENDING:
                 return Response(
-                    {'detail': 'Your request is already awaiting approval.'},
+                    {'detail': _('Your request is already awaiting approval.')},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             # Declined earlier — allow a fresh request.

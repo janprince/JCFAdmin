@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -126,6 +127,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LANGUAGE_CODE = 'en-us'
+
+# Wave-1 app languages: the API honours Accept-Language for server-generated
+# text (Django/DRF built-in messages now; our own strings are gettext-wrapped
+# and translate once .po files land).
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'Français'),
+    ('es', 'Español'),
+    ('de', 'Deutsch'),
+    ('pt', 'Português'),
+]
 TIME_ZONE = 'Africa/Accra'
 USE_I18N = True
 USE_TZ = True

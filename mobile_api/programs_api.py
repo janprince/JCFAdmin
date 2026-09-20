@@ -3,6 +3,7 @@ Mobile programs API: list/detail (audience-gated), register (dynamic pricing),
 verify payment (atomic room allocation + QR), and my registrations.
 """
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework import generics, serializers, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
@@ -136,7 +137,7 @@ class ProgramDetailView(generics.RetrieveAPIView):
         program = self.get_object()
         contact = request.auth.contact if request.auth else None
         if not is_eligible(contact, program):
-            raise PermissionDenied('This program is for registered members or students.')
+            raise PermissionDenied(_('This program is for registered members or students.'))
         return Response(self.get_serializer(program).data)
 
 

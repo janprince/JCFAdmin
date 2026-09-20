@@ -3,8 +3,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
 
-from .forms import TeachingForm
-from .models import Teaching
+from .forms import SeriesForm, TeachingForm
+from .models import Teaching, TeachingSeries
 
 
 class TeachingListView(LoginRequiredMixin, ListView):
@@ -52,4 +52,33 @@ class TeachingUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Teaching updated.')
+        return super().form_valid(form)
+
+
+class SeriesListView(LoginRequiredMixin, ListView):
+    model = TeachingSeries
+    template_name = 'teachings/series_list.html'
+    context_object_name = 'series_list'
+    paginate_by = 50
+
+
+class SeriesCreateView(LoginRequiredMixin, CreateView):
+    model = TeachingSeries
+    form_class = SeriesForm
+    template_name = 'teachings/series_form.html'
+    success_url = reverse_lazy('teachings:series_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Series created.')
+        return super().form_valid(form)
+
+
+class SeriesUpdateView(LoginRequiredMixin, UpdateView):
+    model = TeachingSeries
+    form_class = SeriesForm
+    template_name = 'teachings/series_form.html'
+    success_url = reverse_lazy('teachings:series_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Series updated.')
         return super().form_valid(form)

@@ -6,6 +6,7 @@ token scheme instead of session/JWT-for-User auth. A valid access token sets
 `request.member` (the Contact) and `request.auth` (the MobileToken).
 """
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from rest_framework import authentication, exceptions, permissions
 
 from .models import MobileToken
@@ -21,16 +22,16 @@ class MobileTokenAuthentication(authentication.BaseAuthentication):
         if not header or header[0].lower() != self.keyword.lower().encode():
             return None
         if len(header) != 2:
-            raise exceptions.AuthenticationFailed('Invalid authorization header.')
+            raise exceptions.AuthenticationFailed(_('Invalid authorization header.'))
 
         key = header[1].decode()
         try:
             token = MobileToken.objects.select_related('contact').get(access_token=key)
         except MobileToken.DoesNotExist:
-            raise exceptions.AuthenticationFailed('Invalid token.')
+            raise exceptions.AuthenticationFailed(_('Invalid token.'))
 
         if not token.access_valid:
-            raise exceptions.AuthenticationFailed('Token expired or revoked.')
+            raise exceptions.AuthenticationFailed(_('Token expired or revoked.'))
 
         token.last_used_at = timezone.now()
         token.save(update_fields=['last_used_at'])
@@ -47,7 +48,7 @@ class MobileTokenAuthentication(authentication.BaseAuthentication):
 class IsMember(permissions.BasePermission):
     """Allow only requests carrying a valid mobile token."""
 
-    message = 'Member authentication required.'
+    message = _('Member authentication required.')
 
     def has_permission(self, request, view):
         return isinstance(request.auth, MobileToken)
@@ -56,7 +57,7 @@ class IsMember(permissions.BasePermission):
 class IsStudentOrMember(IsMember):
     """Restrict to Contacts flagged as an active member or student."""
 
-    message = 'This content is for registered members or students.'
+    message = _('This content is for registered members or students.')
 
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
