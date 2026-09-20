@@ -178,6 +178,20 @@ class AuthFlowTests(APITestCase):
     def test_me_requires_auth(self):
         self.assertEqual(self.client.get(reverse('mobile_api:me')).status_code, 401)
 
+    def test_invalid_or_revoked_refresh_returns_401(self):
+        # The app's session-expired screen (design 17) keys off this 401.
+        resp = self.client.post(
+            reverse('mobile_api:refresh'), {'refresh': 'garbage'}, format='json')
+        self.assertEqual(resp.status_code, 401)
+
+        token = MobileToken.issue(self.contact)
+        token.revoked = True
+        token.save(update_fields=['revoked'])
+        resp = self.client.post(
+            reverse('mobile_api:refresh'),
+            {'refresh': token.refresh_token}, format='json')
+        self.assertEqual(resp.status_code, 401)
+
     def test_refresh_rotates_access(self):
         code = self._request_code('member@example.com').data['dev_code']
         tokens = self.client.post(
