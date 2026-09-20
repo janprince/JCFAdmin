@@ -48,6 +48,9 @@ urlpatterns = [
     path('appointments/', engagement_api.AppointmentListView.as_view(), name='appointment_list'),
     path('appointments/book/', engagement_api.AppointmentCreateView.as_view(), name='appointment_book'),
 
+    # Daily inspiration (Home hero, design 19/22)
+    path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
+
     # Groups — browse + approval-gated join requests
     path('groups/', groups_api.GroupListView.as_view(), name='group_list'),
     path('groups/mine/', groups_api.MyGroupsView.as_view(), name='my_groups'),

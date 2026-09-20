@@ -6,8 +6,8 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, FormView, ListView, UpdateView
 
-from .forms import AnnouncementForm, NotificationComposeForm
-from .models import Announcement, Notification
+from .forms import AnnouncementForm, DailyInspirationForm, NotificationComposeForm
+from .models import Announcement, DailyInspiration, Notification
 
 
 class AnnouncementListView(LoginRequiredMixin, ListView):
@@ -92,3 +92,40 @@ class NotificationComposeView(LoginRequiredMixin, FormView):
             Notification.objects.select_related('contact').order_by('-created_at')[:15]
         )
         return context
+
+
+class InspirationListView(LoginRequiredMixin, ListView):
+    model = DailyInspiration
+    template_name = 'engagement/inspiration_list.html'
+    context_object_name = 'inspirations'
+    paginate_by = 50
+
+
+class InspirationCreateView(LoginRequiredMixin, CreateView):
+    model = DailyInspiration
+    form_class = DailyInspirationForm
+    template_name = 'engagement/inspiration_form.html'
+    success_url = reverse_lazy('engagement:inspiration_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Daily inspiration scheduled.')
+        return super().form_valid(form)
+
+
+class InspirationUpdateView(LoginRequiredMixin, UpdateView):
+    model = DailyInspiration
+    form_class = DailyInspirationForm
+    template_name = 'engagement/inspiration_form.html'
+    success_url = reverse_lazy('engagement:inspiration_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Daily inspiration updated.')
+        return super().form_valid(form)
+
+
+@login_required
+@require_POST
+def inspiration_delete(request, pk):
+    get_object_or_404(DailyInspiration, pk=pk).delete()
+    messages.success(request, 'Daily inspiration deleted.')
+    return redirect('engagement:inspiration_list')

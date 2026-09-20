@@ -1,0 +1,51 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{% if object %}Edit{% else %}Schedule{% endif %} Inspiration | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit Inspiration{% else %}Schedule Inspiration{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'engagement:inspiration_list' %}">Daily Inspiration</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}New{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Date <span class="text-danger">*</span></label>
+                        {{ form.date }}{{ form.date.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quote <span class="text-danger">*</span></label>
+                        {{ form.quote }}{{ form.quote.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Author</label>
+                        {{ form.author }}{{ form.author.errors }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reflection prompt</label>
+                        {{ form.reflection }}{{ form.reflection.errors }}
+                        <div class="form-text">Shown under the quote on the inspiration page.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Related teaching</label>
+                        {{ form.related_teaching }}{{ form.related_teaching.errors }}
+                    </div>
+                    <div class="form-check mb-3">
+                        {{ form.is_published }}
+                        <label class="form-check-label">Published (visible in the app)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="{% url 'engagement:inspiration_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

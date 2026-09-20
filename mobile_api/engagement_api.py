@@ -1,4 +1,5 @@
-"""Mobile engagement API: announcements, push device tokens, notifications, appointments."""
+"""Mobile engagement API: announcements, daily inspiration, push device
+tokens, notifications, appointments."""
 from django.utils import timezone
 from rest_framework import generics, serializers, status
 from rest_framework.exceptions import ValidationError
@@ -7,7 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from consultations.models import Consultation
-from engagement.models import Announcement, DeviceToken, Notification
+from engagement.models import (Announcement, DailyInspiration, DeviceToken,
+                               Notification)
 from .authentication import IsMember, MobileTokenAuthentication
 
 
@@ -137,3 +139,37 @@ class AppointmentCreateView(generics.CreateAPIView):
             contact=self.request.auth.contact,
             status=Consultation.Status.REQUESTED,
         )
+
+
+class InspirationSerializer(serializers.ModelSerializer):
+    related_teaching = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyInspiration
+        fields = ['id', 'date', 'quote', 'author', 'reflection', 'related_teaching']
+
+    def get_related_teaching(self, obj):
+        teaching = obj.related_teaching
+        if teaching is None or teaching.status != teaching.Status.PUBLISHED:
+            return None
+        return {'slug': teaching.slug, 'topic': teaching.topic}
+
+
+class InspirationTodayView(APIView):
+    """Today's inspiration (or the most recent published past entry) for the
+    Home hero and inspiration page (designs 19/22). Public."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        entry = (
+            DailyInspiration.objects.filter(
+                is_published=True, date__lte=timezone.localdate())
+            .select_related('related_teaching')
+            .order_by('-date')
+            .first()
+        )
+        if entry is None:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(InspirationSerializer(entry).data)

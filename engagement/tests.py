@@ -104,3 +104,50 @@ class EngagementDashboardTests(APITestCase):
         self.client.logout()
         res = self.client.get(reverse('engagement:announcement_list'))
         self.assertEqual(res.status_code, 302)
+
+
+class DailyInspirationTests(APITestCase):
+    """Dashboard-scheduled inspirations feed the app's Home hero."""
+
+    def setUp(self):
+        self.staff = get_user_model().objects.create_user(
+            username='staff2', email='staff2@jcf.org', password='x')
+        self.client.force_login(self.staff)
+
+    def test_scheduled_inspiration_reaches_the_app(self):
+        from django.urls import reverse as r
+        from django.utils import timezone
+        today = timezone.localdate()
+        res = self.client.post(r('engagement:inspiration_create'), {
+            'date': today.isoformat(),
+            'quote': 'Freedom begins when awareness becomes your way of living.',
+            'author': 'Dr. Baffour Jan',
+            'reflection': 'Pause, observe, and let awareness guide your response today.',
+            'is_published': 'on',
+        })
+        self.assertEqual(res.status_code, 302)
+
+        api = self.client.get('/api/mobile/v1/inspiration/today/')
+        self.assertEqual(api.status_code, 200)
+        self.assertIn('Freedom begins', api.data['quote'])
+        self.assertEqual(api.data['author'], 'Dr. Baffour Jan')
+
+    def test_future_and_draft_entries_hidden_falls_back_to_latest_past(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        today = timezone.localdate()
+        Announcement  # keep import satisfied
+        from .models import DailyInspiration
+        DailyInspiration.objects.create(
+            date=today + timedelta(days=1), quote='Tomorrow quote')
+        DailyInspiration.objects.create(
+            date=today, quote='Draft today', is_published=False)
+        DailyInspiration.objects.create(
+            date=today - timedelta(days=2), quote='Two days ago')
+
+        api = self.client.get('/api/mobile/v1/inspiration/today/')
+        self.assertEqual(api.data['quote'], 'Two days ago')
+
+    def test_no_entries_returns_204(self):
+        api = self.client.get('/api/mobile/v1/inspiration/today/')
+        self.assertEqual(api.status_code, 204)

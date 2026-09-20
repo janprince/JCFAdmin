@@ -73,3 +73,28 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'{self.title} -> {self.contact.full_name}'
+
+
+class DailyInspiration(models.Model):
+    """One scheduled quote/teaching per day for the app's Home hero
+    (designs 19/22). The app shows the entry for today, falling back to the
+    most recent published past entry."""
+
+    date = models.DateField(unique=True, help_text='The day this inspiration is shown.')
+    quote = models.TextField()
+    author = models.CharField(max_length=255, default='Dr. Baffour Jan')
+    reflection = models.TextField(
+        blank=True, help_text='A short reflection prompt shown under the quote.')
+    related_teaching = models.ForeignKey(
+        'teachings.Teaching', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='inspirations',
+        help_text='Optional teaching linked from the inspiration page.')
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'{self.date}: {self.quote[:40]}'

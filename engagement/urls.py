@@ -11,4 +11,8 @@ urlpatterns = [
     path('announcements/<int:pk>/delete/', views.announcement_delete, name='announcement_delete'),
     path('announcements/<int:pk>/pin/', views.announcement_toggle_pin, name='announcement_pin'),
     path('notifications/compose/', views.NotificationComposeView.as_view(), name='notification_compose'),
+    path('inspiration/', views.InspirationListView.as_view(), name='inspiration_list'),
+    path('inspiration/add/', views.InspirationCreateView.as_view(), name='inspiration_create'),
+    path('inspiration/<int:pk>/edit/', views.InspirationUpdateView.as_view(), name='inspiration_update'),
+    path('inspiration/<int:pk>/delete/', views.inspiration_delete, name='inspiration_delete'),
 ]

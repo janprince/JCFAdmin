@@ -3,7 +3,7 @@ from django.db.models import Q
 
 from members.models import Contact
 
-from .models import Announcement
+from .models import Announcement, DailyInspiration
 
 
 class AnnouncementForm(forms.ModelForm):
@@ -69,3 +69,17 @@ class NotificationComposeForm(forms.Form):
         if audience == 'students':
             return list(qs.filter(is_student=True))
         return list(qs.filter(Q(is_member=True) | Q(is_student=True)))
+
+
+class DailyInspirationForm(forms.ModelForm):
+    class Meta:
+        model = DailyInspiration
+        fields = ['date', 'quote', 'author', 'reflection', 'related_teaching', 'is_published']
+        widgets = {
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'quote': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'author': forms.TextInput(attrs={'class': 'form-control'}),
+            'reflection': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'related_teaching': forms.Select(attrs={'class': 'form-select'}),
+            'is_published': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
