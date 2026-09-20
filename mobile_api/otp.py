@@ -93,3 +93,23 @@ def send_code(contact, prefer_sms=False):
         logger.info('DEBUG login code for %s: %s', contact.pk, code)
 
     return login_code, code
+
+RESEND_COOLDOWN_SECONDS = 30
+
+
+def mask_phone(phone: str) -> str:
+    """+233201234824 -> '+233 ••• ••• 824' (country prefix + last 3)."""
+    phone = (phone or '').strip()
+    if len(phone) < 7:
+        return '•••'
+    return f'{phone[:4]} ••• ••• {phone[-3:]}'
+
+
+def mask_email(email: str) -> str:
+    """ama@example.com -> 'a•••@example.com'."""
+    email = (email or '').strip()
+    if '@' not in email:
+        return '•••'
+    local, domain = email.split('@', 1)
+    return f'{local[:1]}•••@{domain}'
+

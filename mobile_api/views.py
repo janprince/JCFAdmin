@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from .authentication import IsMember, MobileTokenAuthentication
 from .models import MAX_CODE_ATTEMPTS, LoginCode, MobileToken
-from .otp import find_contact, looks_like_email, normalize, send_code
+from .otp import (RESEND_COOLDOWN_SECONDS, find_contact, looks_like_email,
+                  mask_email, mask_phone, normalize, send_code)
 from .serializers import MemberSerializer
 
 # Generic response so we never reveal which phones/emails exist.
@@ -31,9 +32,37 @@ class RequestCodeView(APIView):
         contact = find_contact(identifier)
         payload = dict(_GENERIC)
         if contact:
-            _, code = send_code(contact, prefer_sms=not looks_like_email(identifier))
-            if code and settings.DEBUG:
-                payload['dev_code'] = code  # convenience for local dev only
+            prefer_sms = not looks_like_email(identifier)
+
+            # Honest resend countdown: within the cooldown we do not re-send,
+            # we just report how long is left.
+            latest = (
+                LoginCode.objects.filter(contact=contact, consumed_at__isnull=True)
+                .order_by('-created_at')
+                .first()
+            )
+            remaining = 0
+            if latest and not latest.is_expired:
+                age = (timezone.now() - latest.created_at).total_seconds()
+                remaining = max(0, int(RESEND_COOLDOWN_SECONDS - age))
+
+            if remaining > 0:
+                payload['retry_after'] = remaining
+            else:
+                login_code, code = send_code(contact, prefer_sms=prefer_sms)
+                payload['retry_after'] = RESEND_COOLDOWN_SECONDS
+                if code and settings.DEBUG:
+                    payload['dev_code'] = code  # convenience for local dev only
+                latest = login_code
+
+            # Where the code went, masked for display ("+233 ••• ••• 824").
+            if latest is not None:
+                sms = latest.channel == LoginCode.Channel.SMS
+                payload['channel'] = 'sms' if sms else 'email'
+                payload['masked_destination'] = (
+                    mask_phone(latest.destination) if sms
+                    else mask_email(latest.destination)
+                )
         return Response(payload)
 
 

@@ -81,6 +81,32 @@ class AuthFlowTests(APITestCase):
         self.assertEqual(
             LoginCode.objects.get().channel, LoginCode.Channel.SMS)
 
+    @patch('mobile_api.otp.send_sms_arkesel', return_value=True)
+    def test_request_code_returns_masked_destination_and_cooldown(self, mock_sms):
+        resp = self._request_code('+233200000000')
+        self.assertEqual(resp.data['channel'], 'sms')
+        self.assertEqual(resp.data['masked_destination'], '+233 ••• ••• 000')
+        self.assertEqual(resp.data['retry_after'], 30)
+
+        email_resp = self.client.post(
+            '/api/mobile/v1/auth/request-code/',
+            {'identifier': 'member@example.com'}, format='json')
+        # Cooldown active: no second code is issued, remaining time reported.
+        self.assertEqual(LoginCode.objects.count(), 1)
+        self.assertLessEqual(email_resp.data['retry_after'], 30)
+        self.assertNotIn('dev_code', email_resp.data)
+
+    def test_email_masked_destination(self):
+        resp = self._request_code('member@example.com')
+        self.assertEqual(resp.data['channel'], 'email')
+        self.assertEqual(resp.data['masked_destination'], 'm•••@example.com')
+
+    def test_unknown_identifier_reveals_nothing(self):
+        resp = self._request_code('nobody@nowhere.com')
+        self.assertNotIn('masked_destination', resp.data)
+        self.assertNotIn('channel', resp.data)
+        self.assertNotIn('retry_after', resp.data)
+
     def test_request_code_for_unknown_identifier_is_generic_and_silent(self):
         resp = self._request_code('nobody@example.com')
         self.assertEqual(resp.status_code, 200)
