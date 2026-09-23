@@ -9,6 +9,7 @@ from . import engagement_api
 from . import groups_api
 from . import practices_api
 from . import activities_api
+from . import search_api
 
 app_name = 'mobile_api'
 
@@ -65,6 +66,10 @@ urlpatterns = [
     # Upcoming Activities feed (design 25)
     path('activities/upcoming/', activities_api.UpcomingActivitiesView.as_view(), name='activities_upcoming'),
     path('activities/reminder/', activities_api.ReminderToggleView.as_view(), name='activities_reminder'),
+
+    # Global search (designs 30/31)
+    path('search/', search_api.GlobalSearchView.as_view(), name='search'),
+    path('search/popular/', search_api.PopularSearchesView.as_view(), name='search_popular'),
 
     # Groups — browse + approval-gated join requests
     path('groups/', groups_api.GroupListView.as_view(), name='group_list'),

@@ -114,3 +114,20 @@ class MobileToken(models.Model):
     @property
     def refresh_valid(self):
         return not self.revoked and timezone.now() < self.refresh_expires_at
+
+
+class SearchQuery(models.Model):
+    """One executed app search, logged to power Popular Searches
+    (design 30). Terms are stored lowercased and trimmed."""
+
+    term = models.CharField(max_length=120, db_index=True)
+    contact = models.ForeignKey(
+        Contact, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='searches')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = 'search queries'
+
+    def __str__(self):
+        return self.term
