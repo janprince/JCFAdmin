@@ -1,95 +1,60 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}Impact Stats | JCF Management{% endblock %}
-{% block page_title %}Impact Stats{% endblock %}
+{% block title %}Impact stats | JCF Management{% endblock %}
+{% block page_title %}Impact stats{% endblock %}
+{% block page_subtitle %}The headline numbers on the website's home page, in display order.{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item active">Impact Stats</li>
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStatModal"><i class="ph ph-plus" aria-hidden="true"></i>Add stat</button>
 {% endblock %}
 
 {% block content %}
-<div class="row mt-3">
-    <div class="col-xl-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">All Impact Stats</h5>
+<div class="card jcf-list" style="max-width: 880px">
+    <div class="table-responsive">
+        <table class="table jcf-table mb-0">
+            <thead>
+                <tr><th>Label</th><th class="text-end">Shown as</th><th class="text-end">Position</th><th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                {% for stat in stats %}
+                {% url 'website:impact_update' stat.pk as edit_url %}
+                <tr>
+                    <td><a href="{{ edit_url }}" class="jcf-cell-title">{{ stat.label }}</a></td>
+                    <td class="text-end jcf-num fw-semibold">{{ stat.prefix }}{{ stat.value }}{{ stat.suffix }}</td>
+                    <td class="text-end jcf-num">{{ stat.order }}</td>
+                    <td class="jcf-table__actions">{% include "partials/_row_menu.html" with edit_url=edit_url label=stat.label %}</td>
+                </tr>
+                {% empty %}
+                {% include "partials/_empty_row.html" with colspan=4 icon="chart-bar" title="No impact stats yet" %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if is_paginated %}<div class="jcf-list__foot">{% include "partials/_pagination.html" %}</div>{% endif %}
+</div>
+
+<div class="modal fade" id="addStatModal" tabindex="-1" aria-labelledby="addStatTitle" aria-hidden="true"{% if form.errors %} data-jcf-open{% endif %}>
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'website:impact_create' %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStatTitle">Add impact stat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover table-centered mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th>#</th>
-                                <th>Label</th>
-                                <th>Display Value</th>
-                                <th>Order</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for stat in stats %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td><span class="fw-semibold">{{ stat.label }}</span></td>
-                                <td>
-                                    <span class="badge bg-primary-subtle text-primary fs-14">{{ stat.prefix }}{{ stat.value }}{{ stat.suffix }}</span>
-                                </td>
-                                <td>{{ stat.order }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'website:impact_update' stat.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
-                                        <i class="ti ti-pencil"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">No impact stats yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">{% include "partials/_field.html" with field=form.label %}</div>
+                    <div class="col-4">{% include "partials/_field.html" with field=form.prefix %}</div>
+                    <div class="col-4">{% include "partials/_field.html" with field=form.value %}</div>
+                    <div class="col-4">{% include "partials/_field.html" with field=form.suffix %}</div>
+                    <div class="col-sm-4">{% include "partials/_field.html" with field=form.order label="Position" %}</div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-xl-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Add Impact Stat</h5>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add stat</button>
             </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'website:impact_create' %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.label.id_for_label }}" class="form-label">Label <span class="text-danger">*</span></label>
-                        {{ form.label }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.value.id_for_label }}" class="form-label">Value <span class="text-danger">*</span></label>
-                        {{ form.value }}
-                    </div>
-                    <div class="row">
-                        <div class="col-6 mb-3">
-                            <label for="{{ form.prefix.id_for_label }}" class="form-label">Prefix</label>
-                            {{ form.prefix }}
-                        </div>
-                        <div class="col-6 mb-3">
-                            <label for="{{ form.suffix.id_for_label }}" class="form-label">Suffix</label>
-                            {{ form.suffix }}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.order.id_for_label }}" class="form-label">Order</label>
-                        {{ form.order }}
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="ti ti-plus me-1"></i>Add Stat
-                    </button>
-                </form>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}

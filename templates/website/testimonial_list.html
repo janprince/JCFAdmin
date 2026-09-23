@@ -2,122 +2,67 @@
 
 {% block title %}Testimonials | JCF Management{% endblock %}
 {% block page_title %}Testimonials{% endblock %}
+{% block page_subtitle %}Words from students and members, quoted on the website.{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item active">Testimonials</li>
+{% block page_actions %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTestimonialModal"><i class="ph ph-plus" aria-hidden="true"></i>Add testimonial</button>
 {% endblock %}
 
 {% block content %}
-<div class="row mt-3">
-    <div class="col-xl-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">All Testimonials</h5>
-            </div>
-            <div class="card-body">
-                <form method="get" class="mb-3">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <div class="app-search">
-                                <input type="search" name="q" class="form-control" placeholder="Search by name..." value="{{ search_query }}" />
-                                <i class="ti ti-search app-search-icon text-muted"></i>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            {% if search_query %}
-                            <a href="{% url 'website:testimonial_list' %}" class="btn btn-outline-secondary">Clear</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </form>
+<div class="card jcf-list">
+    <form method="get" class="jcf-toolbar" role="search">
+        {% include "partials/_search.html" with placeholder="Search by name" %}
+        {% if search_query %}<a href="{% querystring q=None page=None %}" class="jcf-toolbar__clear">Clear search</a>{% endif %}
+    </form>
 
-                <div class="table-responsive">
-                    <table class="table table-hover table-centered mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th>#</th>
-                                <th>Person</th>
-                                <th>Quote</th>
-                                <th>Order</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for t in testimonials %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    <span class="fw-semibold">{{ t.name }}</span>
-                                    <br><small class="text-muted">{{ t.role }}</small>
-                                </td>
-                                <td>{{ t.quote|truncatewords:15 }}</td>
-                                <td>{{ t.order }}</td>
-                                <td>
-                                    {% if t.is_published %}
-                                    <span class="badge bg-success-subtle text-success">Published</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary-subtle text-secondary">Draft</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <a href="{% url 'website:testimonial_update' t.pk %}" class="btn btn-sm btn-soft-info" title="Edit">
-                                        <i class="ti ti-pencil"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">No testimonials yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <div class="table-responsive">
+        <table class="table jcf-table mb-0">
+            <thead>
+                <tr><th>Person</th><th>Quote</th><th class="text-end">Position</th><th>Status</th><th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                {% for t in testimonials %}
+                {% url 'website:testimonial_update' t.pk as edit_url %}
+                <tr>
+                    <td>{% include "partials/_person.html" with name=t.name meta=t.role image=t.avatar url=edit_url %}</td>
+                    <td><span class="jcf-truncate" title="{{ t.quote }}">“{{ t.quote }}”</span></td>
+                    <td class="text-end jcf-num">{{ t.order }}</td>
+                    <td>{% if t.is_published %}<span class="jcf-status jcf-status--success">Published</span>{% else %}<span class="jcf-status jcf-status--neutral">Draft</span>{% endif %}</td>
+                    <td class="jcf-table__actions">{% include "partials/_row_menu.html" with edit_url=edit_url label=t.name %}</td>
+                </tr>
+                {% empty %}
+                {% include "partials/_empty_row.html" with colspan=5 icon="quotes" title="No testimonials yet" %}
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    <div class="col-xl-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Add New Testimonial</h5>
+    {% if is_paginated %}<div class="jcf-list__foot">{% include "partials/_pagination.html" %}</div>{% endif %}
+</div>
+
+<div class="modal fade" id="addTestimonialModal" tabindex="-1" aria-labelledby="addTestimonialTitle" aria-hidden="true"{% if form.errors %} data-jcf-open{% endif %}>
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'website:testimonial_create' %}" enctype="multipart/form-data" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTestimonialTitle">Add testimonial</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'website:testimonial_create' %}" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.name.id_for_label }}" class="form-label">Name <span class="text-danger">*</span></label>
-                        {{ form.name }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.role.id_for_label }}" class="form-label">Role <span class="text-danger">*</span></label>
-                        {{ form.role }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.avatar.id_for_label }}" class="form-label">Avatar</label>
-                        {{ form.avatar }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.quote.id_for_label }}" class="form-label">Quote <span class="text-danger">*</span></label>
-                        {{ form.quote }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.order.id_for_label }}" class="form-label">Order</label>
-                        {{ form.order }}
-                    </div>
-                    <div class="mb-3 form-check">
-                        {{ form.is_published }}
-                        <label for="{{ form.is_published.id_for_label }}" class="form-check-label">Published</label>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="ti ti-plus me-1"></i>Add Testimonial
-                    </button>
-                </form>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">{% include "partials/_field.html" with field=form.name %}</div>
+                    <div class="col-sm-6">{% include "partials/_field.html" with field=form.role %}</div>
+                    <div class="col-12">{% include "partials/_field.html" with field=form.quote %}</div>
+                    <div class="col-sm-8">{% include "partials/_field.html" with field=form.avatar label="Photo" %}</div>
+                    <div class="col-sm-4">{% include "partials/_field.html" with field=form.order label="Position" %}</div>
+                    <div class="col-12">{% include "partials/_field.html" with field=form.is_published label="Publish on the website" %}</div>
+                </div>
             </div>
-        </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add testimonial</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

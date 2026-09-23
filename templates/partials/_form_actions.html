@@ -1,0 +1,6 @@
+{% comment %}Sticky Save / Cancel bar at the foot of a form page.{% endcomment %}
+<div class="jcf-form-actions">
+    <span class="jcf-form-status" role="status">Changes are saved when you submit.</span>
+    <a href="{{ cancel_url }}" class="btn btn-light">Cancel</a>
+    <button type="submit" class="btn btn-primary">{{ submit_label|default:"Save changes" }}</button>
+</div>

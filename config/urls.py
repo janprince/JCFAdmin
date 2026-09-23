@@ -10,6 +10,7 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls')),
     path('login/', LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('account/', include('accounts.urls')),
     path('contacts/', include('members.urls')),
     path('consultations/', include('consultations.urls')),
 path('staff/', include('staff_mgmt.urls')),

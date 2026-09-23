@@ -3,9 +3,11 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import ListView, CreateView, UpdateView
 
 from members.models import Contact
+from dashboard.listing import count_by, tabs
 from .models import Consultation
 from .forms import ConsultationForm
 
@@ -17,7 +19,17 @@ class ConsultationListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Consultation.objects.filter(done=False).select_related('contact').order_by('scheduled_date')
+        selected = self.request.GET.get('show', '')
+        done = selected == 'done'
+        # Upcoming: soonest first. Completed: most recent first.
+        qs = (Consultation.objects.filter(done=done).select_related('contact')
+              .order_by('-scheduled_date' if done else 'scheduled_date'))
+        if selected == 'today':
+            qs = qs.filter(scheduled_date=timezone.localdate())
+        elif selected == 'overdue':
+            qs = qs.filter(scheduled_date__lt=timezone.localdate())
+        elif not done:
+            qs = qs.filter(scheduled_date__gte=timezone.localdate())
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(contact__full_name__icontains=q)
@@ -26,6 +38,14 @@ class ConsultationListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
+        context['showing_done'] = self.request.GET.get('show') == 'done'
+        counts = count_by(Consultation.objects.all(), 'done')
+        context['tabs'] = tabs(self.request, 'show', [
+            ('', 'Upcoming', Consultation.objects.filter(done=False, scheduled_date__gte=timezone.localdate()).count()),
+            ('today', 'Today', Consultation.objects.filter(done=False, scheduled_date=timezone.localdate()).count()),
+            ('overdue', 'Needs an update', Consultation.objects.filter(done=False, scheduled_date__lt=timezone.localdate()).count()),
+            ('done', 'Completed', counts.get(True, 0)),
+        ], all_label=None)
         return context
 
 

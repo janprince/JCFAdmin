@@ -1,8 +1,7 @@
-{% load static %}
 <header class="app-topbar">
     <div class="container-fluid topbar-menu">
         <div class="d-flex align-items-center gap-2">
-            <!-- Topbar Brand Logo -->
+            <!-- Topbar Brand Logo (shown when the sidebar is off-canvas) -->
             <div class="logo-topbar">
                 <a href="{% url 'dashboard:analytics' %}" class="logo-light">
                     <span class="logo-lg">{% include "partials/_brand.html" %}</span>
@@ -14,80 +13,68 @@
                 </a>
             </div>
 
-            <!-- Sidebar Menu Toggle Button -->
-            <button class="sidenav-toggle-button btn btn-primary btn-icon">
-                <i class="ti ti-menu-4"></i>
+            <!-- Sidebar toggle (class is what app.js binds to) -->
+            <button type="button" class="sidenav-toggle-button jcf-topbar-btn" aria-label="Toggle navigation">
+                <i class="ph ph-sidebar-simple" aria-hidden="true"></i>
             </button>
 
-            <!-- Horizontal Menu Toggle Button -->
-            <button class="topnav-toggle-button px-2" data-bs-toggle="collapse" data-bs-target="#topnav-menu">
-                <i class="ti ti-menu-4"></i>
+            <button type="button" class="jcf-find-trigger" data-finder-open aria-haspopup="dialog" aria-controls="page-finder" aria-label="Find a page"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span>Find a page…</span><kbd>Ctrl K</kbd></button>
+
+            <!-- Horizontal menu toggle -->
+            <button type="button" class="topnav-toggle-button px-2" data-bs-toggle="collapse" data-bs-target="#topnav-menu" aria-label="Toggle menu">
+                <i class="ph ph-list" aria-hidden="true"></i>
             </button>
         </div>
 
-        <div class="d-flex align-items-center gap-2">
-            <!-- Theme Switcher -->
+        <div class="d-flex align-items-center gap-1">
+            <a href="https://www.jancosmicfoundation.org" target="_blank" rel="noopener noreferrer" class="jcf-website-link">View public website <i class="ph ph-arrow-up-right" aria-hidden="true"></i><span class="visually-hidden"> (opens in a new tab)</span></a>
+            <!-- Theme switcher (ids are toggled by app.js) -->
             <div class="topbar-item d-none d-sm-flex">
                 <div class="dropdown">
-                    <button class="topbar-link" data-bs-toggle="dropdown" type="button">
-                        <i class="ti ti-sun topbar-link-icon d-none" id="theme-icon-light"></i>
-                        <i class="ti ti-moon topbar-link-icon d-none" id="theme-icon-dark"></i>
-                        <i class="ti ti-sun-moon topbar-link-icon d-none" id="theme-icon-system"></i>
+                    <button class="topbar-link jcf-topbar-btn" data-bs-toggle="dropdown" type="button" aria-label="Colour theme">
+                        <i class="ph ph-sun topbar-link-icon d-none" id="theme-icon-light"></i>
+                        <i class="ph ph-moon topbar-link-icon d-none" id="theme-icon-dark"></i>
+                        <i class="ph ph-circle-half topbar-link-icon d-none" id="theme-icon-system"></i>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end" data-thememode="dropdown">
-                        <label class="dropdown-item cursor-pointer">
-                            <input class="form-check-input" type="radio" name="data-bs-theme" value="light" style="display: none" />
-                            <i class="ti ti-sun align-middle me-1 fs-16"></i>
-                            <span class="align-middle">Light</span>
+                        <label class="dropdown-item cursor-pointer jcf-theme-option">
+                            <input class="form-check-input" type="radio" name="data-bs-theme" value="light" />
+                            <i class="ph ph-sun" aria-hidden="true"></i>Light
                         </label>
-                        <label class="dropdown-item cursor-pointer">
-                            <input class="form-check-input" type="radio" name="data-bs-theme" value="dark" style="display: none" />
-                            <i class="ti ti-moon align-middle me-1 fs-16"></i>
-                            <span class="align-middle">Dark</span>
+                        <label class="dropdown-item cursor-pointer jcf-theme-option">
+                            <input class="form-check-input" type="radio" name="data-bs-theme" value="dark" />
+                            <i class="ph ph-moon" aria-hidden="true"></i>Dark
                         </label>
-                        <label class="dropdown-item cursor-pointer">
-                            <input class="form-check-input" type="radio" name="data-bs-theme" value="system" style="display: none" />
-                            <i class="ti ti-sun-moon align-middle me-1 fs-16"></i>
-                            <span class="align-middle">System</span>
+                        <label class="dropdown-item cursor-pointer jcf-theme-option">
+                            <input class="form-check-input" type="radio" name="data-bs-theme" value="system" />
+                            <i class="ph ph-circle-half" aria-hidden="true"></i>System
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- Fullscreen -->
-            <div class="topbar-item d-none d-md-flex">
-                <button class="topbar-link" type="button" data-toggle="fullscreen">
-                    <i class="ti ti-maximize topbar-link-icon"></i>
-                    <i class="ti ti-minimize topbar-link-icon d-none"></i>
-                </button>
-            </div>
-
-            <!-- User Profile -->
+            <!-- User -->
             <div class="topbar-item nav-user">
                 <div class="dropdown">
-                    <a class="topbar-link dropdown-toggle drop-arrow-none px-2" data-bs-toggle="dropdown" href="#!" aria-expanded="false">
-                        <img src="{% static 'paces/images/users/user-1.jpg' %}" width="32" class="rounded-circle me-lg-2 d-flex" alt="user-image" />
-                        <div class="d-lg-flex align-items-center gap-1 d-none">
-                            <span>
-                                <h5 class="my-0 lh-1 pro-username">{{ request.user.get_full_name|default:request.user.username }}</h5>
-                                <span class="fs-xs lh-1">{{ request.user.profile.get_role_display|default:"Staff" }}</span>
-                            </span>
-                            <i class="ti ti-chevron-down align-middle"></i>
-                        </div>
+                    <a class="topbar-link dropdown-toggle drop-arrow-none jcf-user" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" aria-label="Account menu">
+                        {% avatar request.user.get_full_name fallback=request.user.email %}
+                        <span class="jcf-user__text d-none d-lg-flex">
+                            <span class="jcf-user__name">{{ request.user.get_full_name|default:request.user.email }}</span>
+                            <span class="jcf-user__role">{% if request.user.is_superuser %}System administrator{% else %}{{ request.user.profile.get_role_display|default:"No role assigned" }}{% endif %}</span>
+                        </span>
+                        <i class="ph ph-caret-down d-none d-lg-inline" aria-hidden="true"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end">
-                        <div class="dropdown-header noti-title">
-                            <h6 class="text-overflow m-0">Welcome back!</h6>
+                        <div class="dropdown-header">
+                            <div class="fw-semibold text-body">{{ request.user.get_full_name|default:request.user.email }}</div>
+                            <div class="text-truncate">{{ request.user.email }}</div>
                         </div>
-                        <a href="#!" class="dropdown-item">
-                            <i class="ti ti-user-circle me-1 fs-lg align-middle"></i>
-                            <span class="align-middle">Profile</span>
-                        </a>
+                        <a href="{% url 'accounts:password_change' %}" class="dropdown-item"><i class="ph ph-key" aria-hidden="true"></i>Change password</a>
+                        {% if request.user.is_superuser %}
+                        <a href="{% url 'admin:index' %}" class="dropdown-item"><i class="ph ph-gear-six" aria-hidden="true"></i>Django admin</a>
+                        {% endif %}
                         <div class="dropdown-divider"></div>
-                        <a href="{% url 'logout' %}" class="dropdown-item fw-semibold">
-                            <i class="ti ti-logout me-1 fs-lg align-middle"></i>
-                            <span class="align-middle">Log Out</span>
-                        </a>
+                        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="dropdown-item"><i class="ph ph-sign-out" aria-hidden="true"></i>Sign out</button></form>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,11 @@
+{% comment %}
+    Avatar + name + one line of detail, for table cells and cards.
+    name (required), meta, url, image (an ImageFieldFile shown instead of initials)
+{% endcomment %}
+<div class="jcf-person">
+    {% if image %}<img src="{{ image.url }}" alt="" class="jcf-avatar jcf-avatar--sm" loading="lazy">{% else %}{% avatar name fallback=meta %}{% endif %}
+    <div class="jcf-person__body">
+        {% if url %}<a href="{{ url }}" class="jcf-person__name">{{ name|person_name|default:"No name on file" }}</a>{% else %}<span class="jcf-person__name">{{ name|person_name|default:"No name on file" }}</span>{% endif %}
+        {% if meta %}<span class="jcf-person__meta">{{ meta }}</span>{% endif %}
+    </div>
+</div>

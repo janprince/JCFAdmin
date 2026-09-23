@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
+from dashboard.listing import count_by, tabs
 from .forms import (
     GalleryItemForm, VolunteerOpportunityForm, TestimonialForm,
     TeamMemberForm, ImpactStatForm,
@@ -45,6 +46,10 @@ class GalleryListView(LoginRequiredMixin, ListView):
         context['categories'] = GalleryItem.CATEGORY_CHOICES
         context['active_category'] = self.request.GET.get('category', '')
         context['search_query'] = self.request.GET.get('q', '')
+        counts = count_by(GalleryItem.objects.all(), 'category')
+        context['tabs'] = tabs(self.request, 'category', [
+            (value, label, counts.get(value, 0)) for value, label in GalleryItem.CATEGORY_CHOICES
+        ], total=sum(counts.values()))
         return context
 
 
@@ -72,6 +77,7 @@ class GalleryUpdateView(LoginRequiredMixin, UpdateView):
 
 class GalleryDeleteView(LoginRequiredMixin, DeleteView):
     model = GalleryItem
+    template_name = 'confirm_delete.html'
     success_url = reverse_lazy('website:gallery_list')
 
     def form_valid(self, form):
@@ -302,6 +308,11 @@ class ContactSubmissionListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['active_status'] = self.request.GET.get('status', '')
         context['unread_count'] = ContactSubmission.objects.filter(is_read=False).count()
+        counts = count_by(ContactSubmission.objects.all(), 'is_read')
+        context['tabs'] = tabs(self.request, 'status', [
+            ('unread', 'Unread', counts.get(False, 0)),
+            ('read', 'Read', counts.get(True, 0)),
+        ], total=sum(counts.values()))
         return context
 
 
@@ -335,6 +346,10 @@ class VolunteerApplicationListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['active_status'] = self.request.GET.get('status', '')
         context['status_choices'] = VolunteerApplication.Status.choices
+        counts = count_by(VolunteerApplication.objects.all(), 'status')
+        context['tabs'] = tabs(self.request, 'status', [
+            (value, label, counts.get(value, 0)) for value, label in VolunteerApplication.Status.choices
+        ], total=sum(counts.values()))
         return context
 
 
@@ -369,6 +384,10 @@ class JoinCentreRequestListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         context['active_status'] = self.request.GET.get('status', '')
         context['status_choices'] = JoinCentreRequest.Status.choices
+        counts = count_by(JoinCentreRequest.objects.all(), 'status')
+        context['tabs'] = tabs(self.request, 'status', [
+            (value, label, counts.get(value, 0)) for value, label in JoinCentreRequest.Status.choices
+        ], total=sum(counts.values()))
         return context
 
 
@@ -428,10 +447,20 @@ class NewsletterSubscriberListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(email__icontains=q)
+        status = self.request.GET.get('status')
+        if status == 'active':
+            qs = qs.filter(is_active=True)
+        elif status == 'unsubscribed':
+            qs = qs.filter(is_active=False)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
         context['total_active'] = NewsletterSubscriber.objects.filter(is_active=True).count()
+        counts = count_by(NewsletterSubscriber.objects.all(), 'is_active')
+        context['tabs'] = tabs(self.request, 'status', [
+            ('active', 'Subscribed', counts.get(True, 0)),
+            ('unsubscribed', 'Unsubscribed', counts.get(False, 0)),
+        ], total=sum(counts.values()))
         return context

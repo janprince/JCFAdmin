@@ -59,6 +59,7 @@ class CentreUpdateView(LoginRequiredMixin, UpdateView):
 
 class CentreDeleteView(LoginRequiredMixin, DeleteView):
     model = Centre
+    template_name = 'confirm_delete.html'
     success_url = reverse_lazy('centres:centre_list')
 
     def form_valid(self, form):

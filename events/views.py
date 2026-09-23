@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
+from dashboard.listing import tabs
 from .forms import EventForm, EventCategoryForm
 from .models import Event, EventCategory
 
@@ -28,11 +29,13 @@ class EventListView(LoginRequiredMixin, ListView):
             qs = qs.filter(category_id=category)
 
         filter_type = self.request.GET.get('filter')
-        today = timezone.now().date()
+        today = timezone.localdate()
         if filter_type == 'upcoming':
-            qs = qs.filter(date__gte=today)
+            qs = qs.filter(is_published=True).filter(Q(end_date__gte=today) | Q(end_date__isnull=True, date__gte=today))
         elif filter_type == 'past':
-            qs = qs.filter(date__lt=today)
+            qs = qs.filter(is_published=True).filter(Q(end_date__lt=today) | Q(end_date__isnull=True, date__lt=today))
+        elif filter_type == 'draft':
+            qs = qs.filter(is_published=False)
 
         return qs
 
@@ -43,10 +46,16 @@ class EventListView(LoginRequiredMixin, ListView):
         context['current_category'] = self.request.GET.get('category', '')
         context['categories'] = EventCategory.objects.all()
         context['category_form'] = EventCategoryForm()
-        today = timezone.now().date()
+        today = timezone.localdate()
         context['total_count'] = Event.objects.count()
-        context['upcoming_count'] = Event.objects.filter(date__gte=today).count()
-        context['past_count'] = Event.objects.filter(date__lt=today).count()
+        context['upcoming_count'] = Event.objects.filter(is_published=True).filter(Q(end_date__gte=today) | Q(end_date__isnull=True, date__gte=today)).count()
+        context['past_count'] = Event.objects.filter(is_published=True).filter(Q(end_date__lt=today) | Q(end_date__isnull=True, date__lt=today)).count()
+        context['draft_count'] = Event.objects.filter(is_published=False).count()
+        context['tabs'] = tabs(self.request, 'filter', [
+            ('upcoming', 'Upcoming', context['upcoming_count']),
+            ('past', 'Past', context['past_count']),
+            ('draft', 'Unpublished', context['draft_count']),
+        ], total=context['total_count'])
         return context
 
 

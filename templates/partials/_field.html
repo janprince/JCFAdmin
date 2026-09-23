@@ -1,0 +1,21 @@
+{% comment %}
+    One form field: label, widget, help text, errors.
+        {% include "partials/_field.html" with field=form.title %}
+    Optional: label (override), help (override), nohelp=True.
+    Checkboxes render as a switch with the label beside it.
+{% endcomment %}
+<div class="jcf-field{% if field.errors %} jcf-field--error{% endif %}">
+    {% if field.widget_type == 'checkbox' %}
+    <div class="form-check form-switch mb-0">
+        {{ field|as_switch }}
+        <label class="form-check-label" for="{{ field.id_for_label }}">{{ label|default:field.label }}</label>
+    </div>
+    {% else %}
+    <label class="form-label"{% if field.widget_type != 'checkboxselectmultiple' %} for="{{ field.id_for_label }}"{% endif %}>
+        {{ label|default:field.label }}{% if field.field.required %}<span class="jcf-required" aria-hidden="true">*</span>{% endif %}
+    </label>
+    {% if field.widget_type == 'checkboxselectmultiple' %}<div class="jcf-checks">{{ field }}</div>{% else %}{{ field }}{% endif %}
+    {% endif %}
+    {% if not nohelp %}{% if help %}<div class="form-text" id="{{ field.id_for_label }}_helptext">{{ help }}</div>{% elif field.help_text %}<div class="form-text" id="{{ field.id_for_label }}_helptext">{{ field.help_text }}</div>{% endif %}{% endif %}
+    {% if field.errors %}<div class="jcf-field__error" id="{{ field.id_for_label }}_error" role="alert">{% for error in field.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
+</div>

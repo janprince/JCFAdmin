@@ -2,148 +2,90 @@
 
 {% block title %}{{ cause.title }} | JCF Management{% endblock %}
 {% block page_title %}{{ cause.title }}{% endblock %}
+{% block page_subtitle %}{% if cause.type == "ongoing" %}Ongoing cause{% else %}Specific goal{% endif %}{% if cause.category %} · {{ cause.category.name }}{% endif %}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'causes:cause_list' %}">Causes</a></li>
-<li class="breadcrumb-item active">{{ cause.title|truncatewords:5 }}</li>
+<li class="breadcrumb-item"><a href="{% url 'causes:cause_list' %}">Initiatives</a></li>
+<li class="breadcrumb-item active">{{ cause.title }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'causes:cause_update' cause.pk %}" class="btn btn-light"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Edit</a>
+<a href="{% url 'causes:donation_create' %}?cause={{ cause.pk }}" class="btn btn-primary"><i class="ph ph-plus" aria-hidden="true"></i>Record donation</a>
 {% endblock %}
 
 {% block content %}
-<div class="row mt-3">
+<div class="row g-3">
     <div class="col-xl-4">
-        <div class="card">
-            <div class="card-body">
-                {% if cause.image %}
-                <img src="{{ cause.image.url }}" alt="{{ cause.title }}" class="img-fluid rounded mb-3">
-                {% endif %}
-                <h4 class="mb-1">{{ cause.title }}</h4>
-                <p class="text-muted">{{ cause.description }}</p>
-                <div class="mb-3">
-                    {% if cause.type == "ongoing" %}
-                    <span class="badge bg-warning-subtle text-warning">Ongoing</span>
-                    {% else %}
-                    <span class="badge bg-info-subtle text-info">Specific</span>
-                    {% endif %}
-                    {% if cause.is_active %}
-                    <span class="badge bg-success-subtle text-success ms-1">Active</span>
-                    {% else %}
-                    <span class="badge bg-secondary-subtle text-secondary ms-1">Inactive</span>
-                    {% endif %}
-                    {% if cause.category %}
-                    <span class="badge bg-primary-subtle text-primary ms-1">{{ cause.category.name }}</span>
-                    {% endif %}
+        <div class="card mb-3">
+            {% if cause.image %}<img src="{{ cause.image.url }}" alt="" class="card-img-top" style="aspect-ratio: 16 / 9; object-fit: cover">{% endif %}
+            <div class="jcf-card-body">
+                <div class="d-flex justify-content-between align-items-baseline gap-2 mb-2">
+                    <span class="jcf-stat__value m-0">{{ cause.currency }} {{ cause.raised_amount|floatformat:"2g" }}</span>
+                    {% if cause.is_active %}<span class="jcf-status jcf-status--success">Active</span>{% else %}<span class="jcf-status jcf-status--neutral">Inactive</span>{% endif %}
                 </div>
-
-                {% if cause.impact_statement %}
-                <div class="alert alert-warning border-0 py-2 mb-3">
-                    <small><i class="ti ti-sparkles me-1"></i>{{ cause.impact_statement }}</small>
+                {% if cause.type == "ongoing" %}
+                <p class="text-muted mb-0">raised from {{ cause.donors_count }} supporter{{ cause.donors_count|pluralize }} · no fixed goal</p>
+                {% else %}
+                <p class="text-muted mb-2">raised of {{ cause.currency }} {{ cause.goal_amount|floatformat:"2g" }} from {{ cause.donors_count }} donor{{ cause.donors_count|pluralize }}</p>
+                <div class="jcf-progress">
+                    <span class="jcf-progress__track"><span class="jcf-progress__bar{% if cause.progress_percent >= 100 %} jcf-progress__bar--done{% endif %}" style="width: {{ cause.progress_percent }}%"></span></span>
+                    <span class="jcf-progress__value">{{ cause.progress_percent }}%</span>
                 </div>
                 {% endif %}
-
-                <!-- Fundraising -->
-                <div class="mb-3">
-                    {% if cause.type == "ongoing" %}
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-semibold">{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }} raised</span>
-                        <span class="text-muted">No fixed goal</span>
-                    </div>
-                    <small class="text-muted">{{ cause.donors_count }} supporter{{ cause.donors_count|pluralize }}</small>
-                    {% else %}
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="fw-semibold">{{ cause.currency }} {{ cause.raised_amount|floatformat:2 }} raised</span>
-                        <span class="text-muted">of {{ cause.currency }} {{ cause.goal_amount|floatformat:2 }}</span>
-                    </div>
-                    <div class="progress" style="height: 10px;">
-                        <div class="progress-bar {% if cause.progress_percent >= 100 %}bg-success{% elif cause.progress_percent >= 50 %}bg-primary{% else %}bg-warning{% endif %}" style="width: {{ cause.progress_percent }}%;"></div>
-                    </div>
-                    <small class="text-muted">{{ cause.progress_percent }}% funded &middot; {{ cause.donors_count }} donor{{ cause.donors_count|pluralize }}</small>
-                    {% endif %}
-                </div>
-
-                <table class="table table-sm table-borderless mb-3">
-                    <tr><td class="text-muted">Created</td><td>{{ cause.created_at|date:"d M Y" }}</td></tr>
-                    <tr><td class="text-muted">Updated</td><td>{{ cause.updated_at|date:"d M Y" }}</td></tr>
-                </table>
-
-                <div class="d-flex gap-2 flex-wrap">
-                    <a href="{% url 'causes:cause_update' cause.pk %}" class="btn btn-primary btn-sm"><i class="ti ti-pencil me-1"></i>Edit</a>
-                    <a href="{% url 'causes:cause_delete' cause.pk %}" class="btn btn-danger btn-sm" onclick="return confirm('Delete this cause?')"><i class="ti ti-trash me-1"></i>Delete</a>
-                </div>
+                {% if cause.impact_statement %}<p class="mt-3 mb-0 fst-italic">“{{ cause.impact_statement }}”</p>{% endif %}
             </div>
         </div>
+
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">About</h2></div>
+            <div class="jcf-card-body">
+                {% if cause.description %}<p>{{ cause.description }}</p>{% endif %}
+                <dl class="jcf-dl">
+                    <dt>Created</dt><dd>{{ cause.created_at|date:"j M Y" }}</dd>
+                    <dt>Last updated</dt><dd>{{ cause.updated_at|date:"j M Y" }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <a href="{% url 'causes:cause_delete' cause.pk %}" class="btn btn-link text-danger px-0"><i class="ph ph-trash" aria-hidden="true"></i> Delete this cause</a>
     </div>
 
     <div class="col-xl-8">
-        <!-- Content -->
         {% if cause.content %}
-        <div class="card">
-            <div class="card-header"><h5 class="card-title mb-0">Details</h5></div>
-            <div class="card-body">{{ cause.content|safe }}</div>
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Details</h2></div>
+            <div class="jcf-card-body">{{ cause.content|safe }}</div>
         </div>
         {% endif %}
 
-        <!-- Donations -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Donations ({{ donations|length }})</h5>
-                <a href="{% url 'causes:donation_create' %}?cause={{ cause.pk }}" class="btn btn-primary btn-sm">
-                    <i class="ti ti-plus me-1"></i>Add Donation
-                </a>
+        <div class="card jcf-list">
+            <div class="jcf-card-head">
+                <h2 class="jcf-card-head__title">Donations <span class="jcf-count ms-1">{{ donations|length }}</span></h2>
             </div>
-            <div class="card-body">
-                {% if donations %}
-                <div class="table-responsive">
-                    <table class="table table-hover table-centered mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th>#</th>
-                                <th>Donor</th>
-                                <th>Amount</th>
-                                <th>Method</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for d in donations %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    {% if d.is_anonymous %}
-                                    <span class="text-muted fst-italic">Anonymous</span>
-                                    {% else %}
-                                    <span class="fw-semibold">{{ d.donor_name }}</span>
-                                    {% if d.donor_email %}<br><small class="text-muted">{{ d.donor_email }}</small>{% endif %}
-                                    {% endif %}
-                                </td>
-                                <td>{{ d.currency }} {{ d.amount|floatformat:2 }}</td>
-                                <td><span class="badge bg-info-subtle text-info">{{ d.get_method_display }}</span></td>
-                                <td>
-                                    {% if d.status == "completed" %}
-                                    <span class="badge bg-success-subtle text-success">Completed</span>
-                                    {% elif d.status == "pending" %}
-                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
-                                    {% elif d.status == "failed" %}
-                                    <span class="badge bg-danger-subtle text-danger">Failed</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary-subtle text-secondary">Refunded</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ d.donated_at|date:"d M Y H:i" }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'causes:donation_update' d.pk %}" class="btn btn-sm btn-soft-info" title="Edit"><i class="ti ti-pencil"></i></a>
-                                    <a href="{% url 'causes:donation_delete' d.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this donation?')"><i class="ti ti-trash"></i></a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center mb-0 py-3">No donations yet.</p>
-                {% endif %}
+            <div class="table-responsive">
+                <table class="table jcf-table mb-0">
+                    <thead>
+                        <tr><th>Donor</th><th class="text-end">Amount</th><th>Method</th><th>Status</th><th>Date</th><th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th></tr>
+                    </thead>
+                    <tbody>
+                        {% for d in donations %}
+                        {% url 'causes:donation_update' d.pk as edit_url %}
+                        {% url 'causes:donation_delete' d.pk as delete_url %}
+                        <tr>
+                            <td>{% if d.is_anonymous %}{% include "partials/_person.html" with name="Anonymous" %}{% else %}{% include "partials/_person.html" with name=d.donor_name meta=d.donor_email %}{% endif %}</td>
+                            <td class="text-end jcf-num fw-semibold">{{ d.currency }} {{ d.amount|floatformat:"2g" }}</td>
+                            <td><span class="jcf-tag">{{ d.get_method_display }}</span></td>
+                            <td>{% include "causes/_donation_status.html" %}</td>
+                            <td class="jcf-num">{{ d.donated_at|date:"j M Y" }}</td>
+                            <td class="jcf-table__actions">{% include "partials/_row_menu.html" with edit_url=edit_url delete_url=delete_url label=d.donor_name no_confirm=True %}</td>
+                        </tr>
+                        {% empty %}
+                        {% include "partials/_empty_row.html" with colspan=6 icon="coins" title="No donations yet" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

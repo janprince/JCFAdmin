@@ -1,214 +1,144 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}{{ student.display_name|default:student.email }} | Innerspace{% endblock %}
-{% block page_title %}{{ student.display_name|default:student.email|default:"Student" }}{% endblock %}
+{% block title %}{{ student.display_name|person_name|default:student.email }} | Online students{% endblock %}
+{% block page_title %}{{ student.display_name|person_name|default:student.email|default:"Student" }}{% endblock %}
+{% block page_subtitle %}{% if student.display_name %}{{ student.email }}{% endif %}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'innerspace:student_list' %}">Innerspace Students</a></li>
+<li class="breadcrumb-item"><a href="{% url 'innerspace:student_list' %}">Online students</a></li>
 <li class="breadcrumb-item active">{{ student.display_name|default:student.email }}</li>
 {% endblock %}
 
+{% block page_actions %}
+{% if can_manage %}
+{% if membership.is_active %}
+<button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#revokeAccessModal"><i class="ph ph-lock" aria-hidden="true"></i>Revoke</button>
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#extendAccessModal"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Extend access</button>
+{% else %}
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#grantAccessModal"><i class="ph ph-lock-open" aria-hidden="true"></i>{% if membership %}Reactivate access{% else %}Grant access{% endif %}</button>
+{% endif %}
+{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="row mt-3">
-    <!-- Profile -->
+{% if pending_request %}
+<div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span>
+        <i class="ph ph-arrow-circle-up me-1" aria-hidden="true"></i>
+        Asking to move from {{ pending_request.get_current_level_display }} to <strong>{{ pending_request.get_requested_level_display }}</strong>
+        · {{ pending_request.created_at|date:"j M Y" }}
+        {% if pending_request.message %}<span class="d-block fs-xs mt-1">“{{ pending_request.message }}”</span>{% endif %}
+    </span>
+    <a href="{% url 'innerspace:request_list' %}" class="btn btn-sm btn-light">Review request</a>
+</div>
+{% endif %}
+
+<div class="row g-3">
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <div class="avatar-lg mx-auto mb-2">
-                    <span class="avatar-title bg-primary-subtle text-primary fw-bold rounded-circle fs-24">{{ student.initial }}</span>
+        <div class="card mb-3">
+            <div class="jcf-card-body d-flex align-items-center gap-3">
+                {% avatar student.display_name size="lg" fallback=student.email %}
+                <div class="min-w-0">
+                    <p class="jcf-card-head__title mb-1">{{ student.display_name|person_name|default:"No name on file" }}</p>
+                    <span class="jcf-tag">{{ student.get_access_level_display }} level</span>
+                    {% if can_manage %}<a href="#" class="ms-1 fs-xs" data-bs-toggle="modal" data-bs-target="#setLevelModal">Change</a>{% endif %}
                 </div>
-                <h5 class="mb-1">{{ student.display_name|default:"No name on file" }}</h5>
-                <p class="text-muted mb-0">{{ student.email|default:"—" }}</p>
             </div>
-            <div class="card-body border-top">
-                <dl class="row mb-0 fs-sm">
-                    <dt class="col-5 text-muted fw-normal">Phone</dt>
-                    <dd class="col-7">{{ student.phone|default:"—" }}</dd>
-
-                    <dt class="col-5 text-muted fw-normal">Country</dt>
-                    <dd class="col-7">{{ student.country|default:"—" }}</dd>
-
-                    <dt class="col-5 text-muted fw-normal">Access level</dt>
-                    <dd class="col-7">
-                        <span class="badge bg-primary-subtle text-primary p-1">{{ student.get_access_level_display }}</span>
-                        {% if can_manage %}
-                        <a href="#" class="ms-1 text-muted fs-xs" data-bs-toggle="modal" data-bs-target="#setLevelModal">change</a>
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-5 text-muted fw-normal">Email verified</dt>
-                    <dd class="col-7">
-                        {% if student.email_verified %}<span class="text-success">{{ student.email_verified|date:"d M Y" }}</span>
-                        {% else %}<span class="text-warning">Not verified</span>{% endif %}
-                    </dd>
-
-                    <dt class="col-5 text-muted fw-normal">Onboarded</dt>
-                    <dd class="col-7">{% if student.has_completed_onboarding %}Yes{% else %}No{% endif %}</dd>
-
-                    <dt class="col-5 text-muted fw-normal">Signed up</dt>
-                    <dd class="col-7">{{ student.created_at|date:"d M Y" }}</dd>
+            <div class="jcf-card-body border-top">
+                <dl class="jcf-dl">
+                    <dt>Email</dt><dd>{{ student.email|or_dash }}</dd>
+                    <dt>Phone</dt><dd class="jcf-num">{{ student.phone|or_dash }}</dd>
+                    <dt>Country</dt><dd>{{ student.country|or_dash }}</dd>
+                    <dt>Email verified</dt><dd>{% if student.email_verified %}{{ student.email_verified|date:"j M Y" }}{% else %}<span class="jcf-status jcf-status--warning">Not verified</span>{% endif %}</dd>
+                    <dt>Onboarding</dt><dd>{% if student.has_completed_onboarding %}Completed{% else %}Not finished{% endif %}</dd>
+                    <dt>Signed up</dt><dd>{{ student.created_at|date:"j M Y" }}</dd>
                 </dl>
             </div>
         </div>
     </div>
 
-    <!-- Access -->
     <div class="col-lg-8">
-        {% if pending_request %}
-        <div class="alert alert-warning d-flex justify-content-between align-items-center">
-            <div>
-                <i class="ti ti-arrow-up-circle me-1"></i>
-                Asking to move from {{ pending_request.get_current_level_display }} to
-                <strong>{{ pending_request.get_requested_level_display }}</strong>
-                &middot; {{ pending_request.created_at|date:"d M Y" }}
-                {% if pending_request.message %}<br><span class="fs-xs">“{{ pending_request.message }}”</span>{% endif %}
-            </div>
-            <a href="{% url 'innerspace:request_list' %}" class="btn btn-sm btn-warning">Review</a>
-        </div>
-        {% endif %}
-
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Programme Access</h5>
+        <div class="card mb-3">
+            <div class="jcf-card-head">
+                <h2 class="jcf-card-head__title">Programme access</h2>
                 {% if membership.is_active %}
-                    {% if membership.is_lifetime %}
-                    <span class="badge bg-success-subtle text-success p-1">Lifetime access</span>
-                    {% else %}
-                    <span class="badge bg-success-subtle text-success p-1">Active</span>
-                    {% endif %}
+                    <span class="jcf-status jcf-status--success">{% if membership.is_lifetime %}Lifetime access{% else %}Active{% endif %}</span>
                 {% elif membership %}
-                <span class="badge bg-danger-subtle text-danger p-1">{{ membership.get_status_display }}</span>
+                    <span class="jcf-status jcf-status--danger">{{ membership.get_status_display }}</span>
                 {% else %}
-                <span class="badge bg-light text-muted p-1">No membership</span>
+                    <span class="jcf-status jcf-status--neutral">No membership</span>
                 {% endif %}
             </div>
-            <div class="card-body">
+            <div class="jcf-card-body">
                 {% if membership %}
-                <dl class="row mb-3 fs-sm">
-                    <dt class="col-4 col-md-3 text-muted fw-normal">Started</dt>
-                    <dd class="col-8 col-md-9">{{ membership.started_at|date:"d M Y" }}</dd>
-
-                    <dt class="col-4 col-md-3 text-muted fw-normal">Expires</dt>
-                    <dd class="col-8 col-md-9">
+                <dl class="jcf-dl">
+                    <dt>Started</dt><dd>{{ membership.started_at|date:"j M Y" }}</dd>
+                    <dt>Expires</dt>
+                    <dd>
                         {% if membership.expires_at %}
-                            {{ membership.expires_at|date:"d M Y" }}
-                            {% if membership.is_active %}<span class="text-muted">({{ membership.days_remaining }} days left)</span>
-                            {% else %}<span class="text-danger">(lapsed)</span>{% endif %}
+                            {{ membership.expires_at|date:"j M Y" }}
+                            {% if membership.is_active %}<span class="text-muted">· {{ membership.days_remaining }} days left</span>
+                            {% else %}<span class="text-danger">· lapsed</span>{% endif %}
                         {% else %}Never{% endif %}
                     </dd>
-
-                    <dt class="col-4 col-md-3 text-muted fw-normal">Paid via</dt>
-                    <dd class="col-8 col-md-9">{{ membership.get_provider_display|default:"—" }}</dd>
-
-                    <dt class="col-4 col-md-3 text-muted fw-normal">Reference</dt>
-                    <dd class="col-8 col-md-9"><code class="fs-xs">{{ membership.provider_ref|default:"—" }}</code></dd>
+                    <dt>Paid via</dt><dd>{{ membership.get_provider_display|or_dash }}</dd>
+                    <dt>Reference</dt><dd>{% if membership.provider_ref %}<code>{{ membership.provider_ref }}</code>{% else %}{{ ""|or_dash }}{% endif %}</dd>
                 </dl>
                 {% else %}
-                <p class="text-muted">
-                    This student has signed up but has no membership, so the paywall still applies.
-                    If they have paid at the office, grant them access below.
-                </p>
+                <p class="text-muted mb-0">Signed up, but with no membership — the paywall still applies. If they paid at the office, grant access.</p>
                 {% endif %}
-
-                {% if can_manage %}
-                <div class="d-flex flex-wrap gap-2">
-                    {% if membership.is_active %}
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#extendAccessModal">
-                        <i class="ti ti-calendar-plus me-1"></i> Extend access
-                    </button>
-                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#revokeAccessModal">
-                        <i class="ti ti-lock me-1"></i> Revoke access
-                    </button>
-                    {% else %}
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#grantAccessModal">
-                        <i class="ti ti-lock-open me-1"></i>
-                        {% if membership %}Reactivate access{% else %}Grant access{% endif %}
-                    </button>
-                    {% endif %}
-                </div>
-                {% else %}
-                <p class="text-muted fs-xs mb-0">
-                    <i class="ti ti-info-circle me-1"></i>
-                    You do not have permission to change membership access.
-                </p>
+                {% if not can_manage %}
+                <p class="text-muted fs-xs mt-3 mb-0"><i class="ph ph-info me-1" aria-hidden="true"></i>You don't have permission to change access.</p>
                 {% endif %}
             </div>
         </div>
 
-        <!-- Payments -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Payments</h5>
-            </div>
-            <div class="card-body">
-                {% if payments %}
-                <div class="table-responsive">
-                    <table class="table table-sm table-centered table-nowrap mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr class="text-uppercase fs-xxs">
-                                <th>Date</th><th>Amount</th><th>Method</th><th>Status</th><th>Reference</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for payment in payments %}
-                            <tr>
-                                <td>{{ payment.created_at|date:"d M Y" }}</td>
-                                <td class="fw-semibold">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
-                                <td>{{ payment.get_provider_display }}</td>
-                                <td>
-                                    {% if payment.status == 'SUCCESS' %}<span class="badge bg-success-subtle text-success p-1">Success</span>
-                                    {% else %}<span class="badge bg-secondary-subtle text-secondary p-1">{{ payment.get_status_display }}</span>{% endif %}
-                                </td>
-                                <td><code class="fs-xs">{{ payment.provider_ref }}</code></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center mb-0 py-3">No payments recorded.</p>
-                {% endif %}
+        <div class="card jcf-list mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Payments</h2></div>
+            <div class="table-responsive">
+                <table class="table jcf-table mb-0">
+                    <thead><tr><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Status</th><th>Reference</th></tr></thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td class="jcf-num">{{ payment.created_at|date:"j M Y" }}</td>
+                            <td class="text-end jcf-num fw-semibold">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
+                            <td>{{ payment.get_provider_display }}</td>
+                            <td>{% if payment.status == 'SUCCESS' %}<span class="jcf-status jcf-status--success">Paid</span>{% else %}<span class="jcf-status jcf-status--neutral">{{ payment.get_status_display }}</span>{% endif %}</td>
+                            <td><code class="fs-xs">{{ payment.provider_ref }}</code></td>
+                        </tr>
+                        {% empty %}
+                        {% include "partials/_empty_row.html" with colspan=5 icon="receipt" title="No payments recorded" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- Audit trail -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Access History</h5>
-            </div>
-            <div class="card-body">
-                {% if history %}
-                <div class="table-responsive">
-                    <table class="table table-sm table-centered table-nowrap mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr class="text-uppercase fs-xxs">
-                                <th>When</th><th>Action</th><th>By</th><th>Level</th><th>Amount</th><th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entry in history %}
-                            <tr>
-                                <td>{{ entry.created_at|date:"d M Y, H:i" }}</td>
-                                <td>{{ entry.get_action_display }}</td>
-                                <td>{{ entry.performed_by.email|default:"—" }}</td>
-                                <td class="text-nowrap">
-                                    {% if entry.new_level and entry.new_level != entry.previous_level %}
-                                        <span class="text-muted fs-xs">{{ entry.previous_level|default:"—" }}</span>
-                                        <i class="ti ti-arrow-right mx-1 text-muted fs-xs"></i>
-                                        <span class="fw-semibold fs-xs">{{ entry.new_level }}</span>
-                                    {% else %}—{% endif %}
-                                </td>
-                                <td>{% if entry.amount %}{{ entry.currency }} {{ entry.amount|floatformat:2 }}{% else %}—{% endif %}</td>
-                                <td class="text-wrap">{{ entry.note|default:"—" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center mb-0 py-3">No changes made from this admin yet.</p>
-                {% endif %}
+        <div class="card jcf-list">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Access history</h2></div>
+            <div class="table-responsive">
+                <table class="table jcf-table mb-0">
+                    <thead><tr><th>When</th><th>Change</th><th>Level</th><th class="text-end">Amount</th><th>Note</th></tr></thead>
+                    <tbody>
+                        {% for entry in history %}
+                        <tr>
+                            <td class="jcf-num">{{ entry.created_at|date:"j M Y" }}<span class="jcf-cell-meta">{{ entry.created_at|time:"H:i" }}</span></td>
+                            <td>{{ entry.get_action_display }}<span class="jcf-cell-meta">by {{ entry.performed_by.email|default:"—" }}</span></td>
+                            <td class="text-nowrap">
+                                {% if entry.new_level and entry.new_level != entry.previous_level %}
+                                <span class="text-muted">{{ entry.previous_level|default:"—" }}</span> <i class="ph ph-arrow-right mx-1 text-muted" aria-label="to"></i> {{ entry.new_level }}
+                                {% else %}{{ ""|or_dash }}{% endif %}
+                            </td>
+                            <td class="text-end jcf-num">{% if entry.amount %}{{ entry.currency }} {{ entry.amount|floatformat:"2g" }}{% else %}{{ ""|or_dash }}{% endif %}</td>
+                            <td>{{ entry.note|or_dash }}</td>
+                        </tr>
+                        {% empty %}
+                        {% include "partials/_empty_row.html" with colspan=5 icon="clock-counter-clockwise" title="No changes from this admin yet" %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -223,7 +153,7 @@
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">{% if membership %}Reactivate{% else %}Grant{% endif %} access</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted fs-sm">
@@ -232,7 +162,7 @@
                     {% include "innerspace/_access_fields.html" with form=access_form %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Confirm</button>
                 </div>
             </form>
@@ -248,7 +178,7 @@
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Extend access</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted fs-sm">
@@ -262,7 +192,7 @@
                     {% include "innerspace/_access_fields.html" with form=access_form %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Confirm</button>
                 </div>
             </form>
@@ -278,24 +208,20 @@
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Change access level</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted fs-sm">
                         Which courses {{ student.email }} can open. Higher levels include
                         everything below them. Takes effect on their next page load.
                     </p>
-                    <div class="mb-3">
-                        <label class="form-label">{{ set_level_form.access_level.label }}</label>
-                        {{ set_level_form.access_level }}
-                    </div>
-                    <div class="mb-0">
-                        <label class="form-label">{{ set_level_form.note.label }}</label>
-                        {{ set_level_form.note }}
+                    <div class="row g-3">
+                        <div class="col-12">{% include "partials/_field.html" with field=set_level_form.access_level %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=set_level_form.note %}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
@@ -311,22 +237,21 @@
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Revoke access</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-3">
                         {{ student.email }} will lose access to the programme.
                     </p>
                     <div class="alert alert-warning fs-xs mb-3">
-                        <i class="ti ti-alert-triangle me-1"></i>
+                        <i class="ph ph-warning me-1" aria-hidden="true"></i>
                         This takes effect the next time they sign in. If they are signed in right now,
                         they keep access until their session token refreshes.
                     </div>
-                    <label class="form-label">{{ revoke_form.note.label }}</label>
-                    {{ revoke_form.note }}
+                    {% include "partials/_field.html" with field=revoke_form.note %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-danger">Revoke access</button>
                 </div>
             </form>

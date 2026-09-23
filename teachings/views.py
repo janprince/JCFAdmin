@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
 
+from dashboard.listing import count_by, tabs
 from .forms import TeachingForm
 from .models import Teaching
 
@@ -18,12 +19,20 @@ class TeachingListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(topic__icontains=q)
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
         context['form'] = TeachingForm()
+        counts = count_by(Teaching.objects.all(), 'status')
+        context['tabs'] = tabs(self.request, 'status', [
+            (value, label, counts.get(value, 0))
+            for value, label in Teaching._meta.get_field('status').choices
+        ], total=sum(counts.values()))
         return context
 
 

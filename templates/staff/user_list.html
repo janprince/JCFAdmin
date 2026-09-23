@@ -1,0 +1,20 @@
+{% extends 'layouts/dashboard.html' %}
+{% block title %}Portal access | JCF Management{% endblock %}
+{% block page_title %}Portal access{% endblock %}
+{% block page_subtitle %}Decide who can sign in and which parts of the Foundation office they can manage.{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'staff:user_create' %}"><i class="ph ph-user-plus" aria-hidden="true"></i>Add portal user</a>{% endblock %}
+{% block content %}
+{% include 'staff/_section_tabs.html' with active='access' %}
+<p class="jcf-access-summary"><strong>{{ active_count }}</strong> active account{{ active_count|pluralize }} <span>· {{ inactive_count }} inactive</span></p>
+<div class="card jcf-list">
+<form method="get" class="jcf-toolbar" role="search">
+{% include 'partials/_search.html' with placeholder='Search by name or email' %}
+<select class="form-select jcf-select" name="role" aria-label="Filter by role"><option value="">All roles</option>{% for value,label in role_choices %}<option value="{{ value }}"{% if request.GET.role == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+<select class="form-select jcf-select" name="status" aria-label="Filter by status"><option value="">All statuses</option><option value="active"{% if request.GET.status == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if request.GET.status == 'inactive' %} selected{% endif %}>Inactive</option></select><button class="btn btn-light" type="submit">Filter</button>{% if request.GET %}<a href="{% url 'staff:user_list' %}">Clear</a>{% endif %}
+</form>
+<div class="table-responsive"><table class="table jcf-table mb-0"><thead><tr><th>Person</th><th>Portal role</th><th>Access</th><th>Last sign-in</th><th><span class="visually-hidden">Manage account</span></th></tr></thead><tbody>
+{% for account in portal_users %}<tr><td>{% include 'partials/_person.html' with name=account.get_full_name meta=account.email %}{% if account.pk == request.user.pk %}<span class="jcf-cell-meta">Your account</span>{% endif %}</td><td>{% if account.is_superuser %}System administrator{% else %}{{ account.profile.get_role_display|default:'No role assigned' }}{% endif %}{% if account.profile.worker %}<small class="d-block text-muted">Linked to staff directory</small>{% endif %}</td><td>{% if not account.is_active %}<span class="jcf-status jcf-status--neutral">Inactive</span>{% elif account.must_change_password %}<span class="jcf-status jcf-status--warning">Password setup required</span>{% else %}<span class="jcf-status jcf-status--success">Active</span>{% endif %}</td><td>{{ account.last_login|date:'j M Y, H:i'|default:'Not yet signed in' }}</td><td>{% if account.is_superuser %}<span class="jcf-cell-meta">Managed in Django admin</span>{% else %}<a class="btn btn-light btn-sm" href="{% url 'staff:user_update' account.pk %}" aria-label="Manage access for {{ account.email }}">Manage</a>{% endif %}</td></tr>
+{% empty %}{% include 'partials/_empty_row.html' with colspan=5 icon='users-three' title='No matching accounts' text='Try a different name, email or filter.' %}{% endfor %}
+</tbody></table></div>{% if is_paginated %}<div class="jcf-list__foot">{% include 'partials/_pagination.html' %}</div>{% endif %}</div>
+<p class="text-muted mt-3">Staff records and portal accounts are separate. Adding someone to the staff directory does not give them sign-in access.</p>
+{% endblock %}

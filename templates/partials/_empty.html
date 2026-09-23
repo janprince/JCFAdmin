@@ -1,0 +1,9 @@
+{% comment %}
+    Empty state. icon (Phosphor name), title, text, action_url + action_label.
+{% endcomment %}
+<div class="jcf-empty-state">
+    <i class="ph-light ph-{{ icon|default:'tray' }}" aria-hidden="true"></i>
+    <p class="jcf-empty-state__title">{{ title|default:"Nothing here yet" }}</p>
+    {% if text %}<p class="mb-0">{{ text }}</p>{% endif %}
+    {% if action_url %}<a href="{{ action_url }}" class="btn btn-light btn-sm mt-3">{{ action_label }}</a>{% endif %}
+</div>

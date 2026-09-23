@@ -1,0 +1,988 @@
+/* ---------------------------------------------------------------------------
+   JCF UI components
+   ---------------------------------------------------------------------------
+   Small, shared pieces that replace ad-hoc Bootstrap badges across the admin.
+   Loaded after app.min.css and brand.css.
+
+     .jcf-avatar    initials in a tinted circle     {% avatar name %}
+     .jcf-status    state of a record, with a dot   Active, Pending, Declined
+     .jcf-tag       what a record *is*, neutral     Member, Remote, category
+     .jcf-count     a number next to a heading      12 unread
+     .jcf-person    avatar + name + one meta line in a table cell
+     .jcf-pager     "1–50 of 1898" + elided page links
+
+   Why two badge styles: a status changes and wants attention scaled to how
+   much it matters; a tag is a fact about the record and should stay quiet.
+   Colouring both the same made every table a wall of confetti.
+--------------------------------------------------------------------------- */
+
+:root {
+    /* Avatar tints: soft ground, deep ink. Order matters — the template tag
+       picks a tone by index (AVATAR_TONES in dashboard/templatetags/jcf_ui.py). */
+    --jcf-tone-0-bg: #e7f0ff; --jcf-tone-0-fg: #1f5fcc; /* blue   */
+    --jcf-tone-1-bg: #efebfd; --jcf-tone-1-fg: #5a3fc0; /* violet */
+    --jcf-tone-2-bg: #e2f4f6; --jcf-tone-2-fg: #0e6f78; /* teal   */
+    --jcf-tone-3-bg: #fdf0dd; --jcf-tone-3-fg: #945400; /* amber  */
+    --jcf-tone-4-bg: #fce9ef; --jcf-tone-4-fg: #b0285b; /* rose   */
+    --jcf-tone-5-bg: #e9edf3; --jcf-tone-5-fg: #475569; /* slate  */
+
+    /* Status inks are darker than Bootstrap's so 12px text passes AA contrast. */
+    --jcf-success-bg: #e6f6ed; --jcf-success-fg: #13754a;
+    --jcf-warning-bg: #fdf2de; --jcf-warning-fg: #8f5500;
+    --jcf-danger-bg:  #fdeaec; --jcf-danger-fg:  #b92a3d;
+    --jcf-info-bg:    #e7f1ff; --jcf-info-fg:    #1f5fcc;
+    --jcf-neutral-bg: #eef1f5; --jcf-neutral-fg: #5d6878;
+
+    --jcf-tag-border: #e1e6ee;
+    --jcf-hover-bg: #f1f4f9;
+}
+
+html[data-bs-theme="dark"] {
+    --jcf-tone-0-bg: rgba(96, 150, 255, 0.16);  --jcf-tone-0-fg: #9dbfff;
+    --jcf-tone-1-bg: rgba(151, 123, 255, 0.16); --jcf-tone-1-fg: #c0b0ff;
+    --jcf-tone-2-bg: rgba(64, 190, 200, 0.16);  --jcf-tone-2-fg: #8fdbe2;
+    --jcf-tone-3-bg: rgba(240, 170, 60, 0.16);  --jcf-tone-3-fg: #f3c889;
+    --jcf-tone-4-bg: rgba(240, 100, 150, 0.16); --jcf-tone-4-fg: #f5a9c4;
+    --jcf-tone-5-bg: rgba(160, 175, 195, 0.16); --jcf-tone-5-fg: #c3ccd8;
+
+    --jcf-success-bg: rgba(52, 199, 123, 0.14); --jcf-success-fg: #7fdcaa;
+    --jcf-warning-bg: rgba(240, 170, 60, 0.14); --jcf-warning-fg: #f3c889;
+    --jcf-danger-bg:  rgba(240, 90, 110, 0.14); --jcf-danger-fg:  #f6a3ae;
+    --jcf-info-bg:    rgba(96, 150, 255, 0.14); --jcf-info-fg:    #9dbfff;
+    --jcf-neutral-bg: rgba(160, 175, 195, 0.12); --jcf-neutral-fg: #aab4c2;
+
+    --jcf-tag-border: rgba(255, 255, 255, 0.12);
+    --jcf-hover-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* --- Avatar ------------------------------------------------------------- */
+
+.jcf-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    user-select: none;
+}
+
+.jcf-avatar--xs { width: 24px; height: 24px; font-size: 10px; }
+.jcf-avatar--sm { width: 34px; height: 34px; font-size: 12px; }
+.jcf-avatar--md { width: 40px; height: 40px; font-size: 14px; }
+.jcf-avatar--lg { width: 64px; height: 64px; font-size: 21px; }
+.jcf-avatar--xl { width: 84px; height: 84px; font-size: 27px; }
+
+.jcf-avatar--tone-0 { background: var(--jcf-tone-0-bg); color: var(--jcf-tone-0-fg); }
+.jcf-avatar--tone-1 { background: var(--jcf-tone-1-bg); color: var(--jcf-tone-1-fg); }
+.jcf-avatar--tone-2 { background: var(--jcf-tone-2-bg); color: var(--jcf-tone-2-fg); }
+.jcf-avatar--tone-3 { background: var(--jcf-tone-3-bg); color: var(--jcf-tone-3-fg); }
+.jcf-avatar--tone-4 { background: var(--jcf-tone-4-bg); color: var(--jcf-tone-4-fg); }
+.jcf-avatar--tone-5 { background: var(--jcf-tone-5-bg); color: var(--jcf-tone-5-fg); }
+
+/* --- Status pill -------------------------------------------------------- */
+
+.jcf-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px 3px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    vertical-align: middle;
+    color: var(--jcf-neutral-fg);
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.jcf-status--success { color: var(--jcf-success-fg); background: var(--jcf-success-bg); }
+.jcf-status--warning { color: var(--jcf-warning-fg); background: var(--jcf-warning-bg); }
+.jcf-status--danger  { color: var(--jcf-danger-fg);  background: var(--jcf-danger-bg); }
+.jcf-status--info    { color: var(--jcf-info-fg);    background: var(--jcf-info-bg); }
+.jcf-status--neutral { color: var(--jcf-neutral-fg); background: var(--jcf-neutral-bg); }
+
+/* --- Tag ---------------------------------------------------------------- */
+
+.jcf-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--jcf-tag-border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.35;
+    white-space: nowrap;
+    vertical-align: middle;
+    color: var(--theme-body-color);
+    background: var(--theme-secondary-bg);
+}
+
+.jcf-tag > i {
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* --- Count -------------------------------------------------------------- */
+
+.jcf-count {
+    display: inline-block;
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+    vertical-align: middle;
+    color: var(--jcf-neutral-fg);
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-count--danger { color: var(--jcf-danger-fg); background: var(--jcf-danger-bg); }
+
+/* --- Person cell -------------------------------------------------------- */
+
+.jcf-person {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.jcf-person__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.35;
+}
+
+.jcf-person__name {
+    font-weight: 600;
+    color: var(--theme-body-color);
+    text-decoration: none;
+}
+
+a.jcf-person__name:hover {
+    color: var(--theme-primary);
+}
+
+.jcf-person__meta {
+    font-size: 12px;
+    color: var(--theme-secondary-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jcf-empty {
+    color: var(--theme-secondary-color);
+    opacity: 0.7;
+}
+
+/* Numbers line up when every digit is the same width. */
+.jcf-num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* --- Row actions -------------------------------------------------------- */
+
+.jcf-row-actions {
+    display: inline-flex;
+    gap: 2px;
+}
+
+.jcf-row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 17px;
+    color: var(--theme-secondary-color);
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.jcf-row-action:hover,
+.jcf-row-action:focus-visible {
+    background: var(--jcf-hover-bg);
+    color: var(--theme-primary);
+}
+
+/* --- Tables ------------------------------------------------------------- */
+
+/* Header labels: quieter and tracked, so the data carries the weight. */
+.table > thead > tr.text-uppercase > th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--theme-secondary-color);
+}
+
+/* --- Pager -------------------------------------------------------------- */
+
+.jcf-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.jcf-pager__summary {
+    margin: 0;
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------------------
+   List page
+   ---------------------------------------------------------------------------
+   One card per list: tabs (with counts) → toolbar → table → pager.
+   Counts live in the tabs, so list pages no longer need a row of stat cards
+   above them, and there is no Search button — Enter submits and the selects
+   submit on change.
+--------------------------------------------------------------------------- */
+
+.jcf-list__head {
+    padding: 0 20px;
+    border-bottom: 1px solid var(--theme-border-color);
+}
+
+.jcf-list__foot {
+    padding: 12px 20px;
+    border-top: 1px solid var(--theme-border-color);
+}
+
+.jcf-list__foot .jcf-pager {
+    margin-top: 0;
+}
+
+/* --- Tabs --------------------------------------------------------------- */
+
+.jcf-tabs {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.jcf-tabs__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: -1px;
+    padding: 15px 0 13px;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    color: var(--theme-secondary-color);
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.jcf-tabs__item:hover {
+    color: var(--theme-body-color);
+}
+
+.jcf-tabs__item.is-active {
+    color: var(--theme-body-color);
+    border-bottom-color: var(--theme-primary);
+}
+
+.jcf-tabs__count {
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    color: var(--jcf-neutral-fg);
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-tabs__item.is-active .jcf-tabs__count {
+    color: var(--theme-primary);
+    background: rgba(var(--theme-primary-rgb), 0.1);
+}
+
+/* --- Toolbar ------------------------------------------------------------ */
+
+.jcf-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--theme-border-color);
+}
+
+.jcf-search {
+    position: relative;
+    flex: 1 1 240px;
+    max-width: 340px;
+    margin: 0;
+}
+
+.jcf-search > i {
+    position: absolute;
+    top: 50%;
+    left: 11px;
+    transform: translateY(-50%);
+    font-size: 16px;
+    color: var(--theme-secondary-color);
+    pointer-events: none;
+}
+
+.jcf-search > input,
+.jcf-select {
+    height: 36px;
+    border: 1px solid var(--jcf-tag-border);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--theme-body-color);
+    background-color: var(--theme-secondary-bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.jcf-search > input {
+    width: 100%;
+    padding: 0 12px 0 34px;
+}
+
+.jcf-select {
+    width: auto;
+    min-width: 150px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.jcf-search > input:focus,
+.jcf-select:focus {
+    outline: none;
+    border-color: rgba(var(--theme-primary-rgb), 0.5);
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), 0.12);
+}
+
+.jcf-toolbar__clear {
+    margin-inline-start: 4px;
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-toolbar__clear:hover {
+    color: var(--theme-primary);
+}
+
+/* --- Table -------------------------------------------------------------- */
+
+.jcf-table > thead > tr > th {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--theme-border-color);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--theme-secondary-color);
+    white-space: nowrap;
+    background: transparent;
+    box-shadow: none;
+}
+
+.jcf-table > tbody > tr > td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    border-bottom-color: var(--theme-border-color);
+}
+
+.jcf-table > :not(caption) > tr > :first-child { padding-inline-start: 20px; }
+.jcf-table > :not(caption) > tr > :last-child  { padding-inline-end: 16px; }
+.jcf-table > tbody > tr:last-child > td        { border-bottom: 0; }
+
+/* Paces paints row backgrounds with an inset shadow driven by this variable. */
+.jcf-table > tbody > tr:hover > * {
+    --theme-table-bg-state: var(--jcf-hover-bg);
+}
+
+.jcf-table__actions {
+    width: 1%;
+    text-align: end;
+    white-space: nowrap;
+}
+
+.jcf-cell-title {
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+a.jcf-cell-title:hover {
+    color: var(--theme-primary);
+}
+
+.jcf-cell-meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--theme-secondary-color);
+}
+
+/* Pixel caps, not ch: Poppins' wide digits make `ch` much larger than it looks,
+   which pushed the actions column out of the card. */
+.jcf-truncate {
+    display: block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jcf-truncate--short {
+    max-width: 190px;
+}
+
+.jcf-row-action[aria-expanded="true"] {
+    color: var(--theme-primary);
+    background: var(--jcf-hover-bg);
+}
+
+.jcf-row-action--danger:hover,
+.jcf-row-action--danger:focus-visible {
+    color: var(--jcf-danger-fg);
+    background: var(--jcf-danger-bg);
+}
+
+.jcf-empty-state {
+    padding: 48px 16px;
+    text-align: center;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-empty-state > i {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 40px;
+    opacity: 0.7;
+}
+
+.jcf-empty-state__title {
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-plain-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jcf-plain-list > li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-top: 1px solid var(--theme-border-color);
+}
+
+.jcf-plain-list > li:first-child {
+    border-top: 0;
+}
+
+/* --- Phosphor icons inside Bootstrap controls --------------------------- */
+
+.btn > .ph,
+.dropdown-item > .ph {
+    font-size: 16px;
+    vertical-align: -3px;
+    margin-inline-end: 6px;
+}
+
+.dropdown-item > .ph {
+    margin-inline-end: 8px;
+    color: var(--theme-secondary-color);
+}
+
+.dropdown-item.text-danger > .ph {
+    color: inherit;
+}
+
+.btn-icon > .ph {
+    margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Base polish
+   ---------------------------------------------------------------------------
+   Small corrections to Paces defaults that apply everywhere, so legacy markup
+   and new components agree.
+--------------------------------------------------------------------------- */
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.form-label {
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--theme-body-color);
+}
+
+.form-control,
+.form-select {
+    border-color: var(--jcf-tag-border);
+    border-radius: 8px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: rgba(var(--theme-primary-rgb), 0.5);
+    box-shadow: 0 0 0 3px rgba(var(--theme-primary-rgb), 0.12);
+}
+
+.form-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--theme-secondary-color);
+}
+
+.modal-content {
+    border: 0;
+    border-radius: 14px;
+}
+
+.modal-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.dropdown-menu {
+    padding: 4px;
+    border-radius: 10px;
+}
+
+.dropdown-item {
+    border-radius: 6px;
+}
+
+img.jcf-avatar {
+    object-fit: cover;
+}
+
+/* --- Card sections (detail pages, forms) -------------------------------- */
+
+.jcf-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--theme-border-color);
+}
+
+.jcf-card-head__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-card-head__text {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-card-body {
+    padding: 20px;
+}
+
+.jcf-dl {
+    display: grid;
+    grid-template-columns: minmax(96px, 38%) 1fr;
+    gap: 10px 16px;
+    margin: 0;
+}
+
+.jcf-dl > dt {
+    font-weight: 400;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-dl > dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--theme-body-color);
+    overflow-wrap: anywhere;
+}
+
+/* --- Summary strip ------------------------------------------------------ */
+
+.jcf-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.jcf-stat {
+    padding: 16px 20px;
+    border-inline-start: 1px solid var(--theme-border-color);
+}
+
+.jcf-stat:first-child {
+    border-inline-start: 0;
+}
+
+.jcf-stat__label {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-stat__value {
+    margin: 2px 0 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-body-color);
+}
+
+a.jcf-stat {
+    color: inherit;
+    transition: background-color 0.15s;
+}
+
+a.jcf-stat:hover {
+    background: var(--jcf-hover-bg);
+}
+
+@media (max-width: 767.98px) {
+    .jcf-stat {
+        border-inline-start: 0;
+        border-top: 1px solid var(--theme-border-color);
+    }
+
+    .jcf-stat:first-child {
+        border-top: 0;
+    }
+}
+
+/* --- Progress ----------------------------------------------------------- */
+
+.jcf-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+}
+
+.jcf-progress__track {
+    flex: 1;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-progress__bar {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--theme-primary);
+}
+
+.jcf-progress__bar--done {
+    background: var(--jcf-success-fg);
+}
+
+.jcf-progress__value {
+    min-width: 3.5ch;
+    font-size: 12px;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-secondary-color);
+}
+
+/* --- Tiles (centres, gallery, team) ------------------------------------- */
+
+.jcf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.jcf-grid--sm {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.jcf-tile {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    overflow: hidden;
+}
+
+.jcf-tile__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 16 / 10;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 40px;
+    color: var(--theme-secondary-color);
+    background: var(--theme-tertiary-bg);
+}
+
+.jcf-tile__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.jcf-tile__body {
+    flex: 1;
+    padding: 14px 16px;
+}
+
+.jcf-tile__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-tile__meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-tile__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+    padding: 6px 8px 6px 16px;
+    border-top: 1px solid var(--theme-border-color);
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-tile__foot strong {
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-toolbar--bare {
+    padding: 0;
+    margin-bottom: 16px;
+    border: 0;
+}
+
+/* --- Forms -------------------------------------------------------------- */
+
+.jcf-form {
+    max-width: 880px;
+}
+
+.jcf-form > .card,
+.jcf-form-grid__main > .card {
+    margin-bottom: 16px;
+}
+
+.jcf-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 16px;
+    align-items: start;
+    max-width: 1240px;
+}
+
+.jcf-form-grid__side {
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.jcf-form-grid__side > .card {
+    margin: 0;
+}
+
+@media (max-width: 991.98px) {
+    .jcf-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .jcf-form-grid__side {
+        position: static;
+    }
+}
+
+.jcf-required {
+    margin-inline-start: 2px;
+    color: var(--jcf-danger-fg);
+}
+
+.jcf-field__error {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--jcf-danger-fg);
+}
+
+.jcf-field--error .form-control,
+.jcf-field--error .form-select {
+    border-color: var(--jcf-danger-fg);
+}
+
+.jcf-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 0 16px;
+    background: linear-gradient(to top, var(--theme-body-bg) 70%, transparent);
+}
+
+.jcf-form-grid + .jcf-form-actions,
+.jcf-form .jcf-form-actions {
+    max-width: inherit;
+}
+
+/* Many-to-many checkboxes as selectable chips. */
+.jcf-checks > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.jcf-checks label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--jcf-tag-border);
+    border-radius: 999px;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.jcf-checks input {
+    margin: 0;
+}
+
+.jcf-checks label:has(input:checked) {
+    border-color: rgba(var(--theme-primary-rgb), 0.5);
+    color: var(--theme-primary);
+    background: rgba(var(--theme-primary-rgb), 0.06);
+}
+
+.jcf-current-file {
+    display: block;
+    max-height: 120px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+}
+
+.jcf-prewrap {
+    white-space: pre-wrap;
+}
+
+.jcf-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--theme-border-color);
+}
+
+.jcf-progress__bar--warning { background: var(--jcf-warning-fg); }
+.jcf-progress__bar--neutral { background: var(--jcf-neutral-fg); }
+
+/* Compact rows inside a dashboard or detail card. */
+.jcf-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jcf-rows > li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--theme-border-color);
+}
+
+.jcf-rows > li:first-child {
+    border-top: 0;
+}
+
+.jcf-rows__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.jcf-contact-lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jcf-contact-lines > li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    min-width: 0;
+}
+
+.jcf-contact-lines > li > i {
+    flex-shrink: 0;
+    font-size: 17px;
+    color: var(--theme-secondary-color);
+}
+
+/* Unchecked switches were a faint grey dot on white; give the track an edge. */
+.form-switch .form-check-input:not(:checked) {
+    border-color: var(--jcf-tag-border);
+    background-color: var(--jcf-neutral-bg);
+}

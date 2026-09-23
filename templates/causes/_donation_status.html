@@ -1,0 +1,4 @@
+{% if d.status == "completed" %}<span class="jcf-status jcf-status--success">Completed</span>
+{% elif d.status == "pending" %}<span class="jcf-status jcf-status--warning">Pending</span>
+{% elif d.status == "failed" %}<span class="jcf-status jcf-status--danger">Failed</span>
+{% else %}<span class="jcf-status jcf-status--neutral">{{ d.get_status_display }}</span>{% endif %}

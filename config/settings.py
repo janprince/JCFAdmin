@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'accounts.middleware.PortalAccessMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -71,7 +72,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.access.office_access',
             ],
+            # avatar, person_name, phone, or_dash, page_window — see the module.
+            'builtins': ['dashboard.templatetags.jcf_ui'],
         },
     },
 ]
@@ -117,6 +121,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 AUTHENTICATION_BACKENDS = [
     'accounts.backends.EmailBackend',
+    'accounts.backends.PortalRoleBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 

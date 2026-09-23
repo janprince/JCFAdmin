@@ -1,0 +1,21 @@
+{% extends 'layouts/dashboard.html' %}{% load static %}
+{% block title %}{% if creating %}Add portal user{% else %}Manage portal access{% endif %} | JCF Management{% endblock %}
+{% block page_title %}{% if creating %}Add portal user{% else %}{{ account.get_full_name|default:account.email }}{% endif %}{% endblock %}
+{% block page_subtitle %}{% if creating %}Set up their sign-in details and choose the access they need.{% else %}Manage their sign-in details, role and account status.{% endif %}{% endblock %}
+{% block breadcrumb %}<li><a href="{% url 'staff:user_list' %}">Portal access</a></li>{% endblock %}
+{% block content %}
+{% if account.must_change_password %}<div class="alert alert-info">Password setup is required. They will choose a new password after signing in with their initial password.</div>{% endif %}
+{% if account and not account.is_active %}<div class="alert alert-warning">This account is inactive and cannot sign in. Reactivate access when they need to return.</div>{% endif %}
+<form method="post" class="jcf-form" data-role-form>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<div class="jcf-form-grid"><div>
+<section class="card"><div class="card-body"><h2 class="h5 mb-3">Sign-in details</h2><div class="row g-3"><div class="col-sm-6">{% include 'partials/_field.html' with field=form.first_name %}</div><div class="col-sm-6">{% include 'partials/_field.html' with field=form.last_name %}</div><div class="col-12">{% include 'partials/_field.html' with field=form.email %}</div><div class="col-12">{% include 'partials/_field.html' with field=form.worker %}</div></div></div></section>
+<section class="card"><div class="card-body"><h2 class="h5 mb-3">Foundation responsibilities</h2>{% include 'partials/_field.html' with field=form.role %}<p class="form-text">Permissions apply across pages and actions, including direct links.</p></div></section>
+{% if creating %}<section class="card"><div class="card-body"><h2 class="h5 mb-2">First sign-in</h2><p class="text-muted">Set an initial password and share it securely with this person. They will choose their own password before opening the portal. No email is sent automatically.</p><div class="d-grid gap-3">{% include 'partials/_field.html' with field=form.password1 %}{% include 'partials/_field.html' with field=form.password2 %}</div></div></section>{% endif %}
+</div><div class="jcf-form-grid__side">{% include 'staff/_role_preview.html' %}</div></div>
+{% url 'staff:user_list' as cancel_url %}{% if creating %}{% include 'partials/_form_actions.html' with submit_label='Create portal account' %}{% else %}{% include 'partials/_form_actions.html' with submit_label='Save access details' %}{% endif %}
+</form>
+{% if account %}<section class="card mt-4"><div class="card-body"><h2 class="h5">Account access</h2><p>Sign-in page: <a href="{{ sign_in_url }}">{{ sign_in_url }}</a></p><div class="d-flex gap-2 flex-wrap">{% if account.pk == request.user.pk %}<a class="btn btn-light" href="{% url 'accounts:password_change' %}">Change my password</a><span class="align-self-center text-muted">Another Admin must change your role or deactivate your account.</span>{% else %}<a class="btn btn-light" href="{% url 'staff:user_password' account.pk %}">Reset initial password</a>{% if account.is_active %}<a class="btn btn-outline-danger" href="{% url 'staff:user_deactivate' account.pk %}">Deactivate access</a>{% else %}<a class="btn btn-primary" href="{% url 'staff:user_activate' account.pk %}">Reactivate access</a>{% endif %}{% endif %}</div></div></section>
+<section class="card"><div class="card-body"><h2 class="h5 mb-3">Recent access activity</h2><ul class="jcf-access-history">{% for event in events %}<li><strong>{{ event.action }}</strong><span>{{ event.created_at|date:'j M Y, H:i' }} · {{ event.actor.get_full_name|default:event.actor.email|default:'System' }}</span>{% if event.detail %}<small>{{ event.detail }}</small>{% endif %}</li>{% empty %}<li>No portal access changes recorded yet.</li>{% endfor %}</ul></div></section>{% endif %}
+{% endblock %}
+{% block extra_js %}<script src="{% static 'jcf/js/access.js' %}"></script>{% endblock %}

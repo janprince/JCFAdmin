@@ -1,15 +1,20 @@
-import json
 from datetime import date, timedelta
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
+from django.urls import reverse
+from django.utils import timezone
 from django.views.generic import TemplateView
 
+from accounts.access import areas_for
 from members.models import Contact
 from consultations.models import Consultation
-from staff_mgmt.models import Worker
 from teachings.models import Teaching
+from causes.models import Donation
+from events.models import Event
+from blog.models import Post
+from website.models import ContactSubmission, VolunteerApplication, JoinCentreRequest
 
 
 class AnalyticsView(LoginRequiredMixin, TemplateView):
@@ -17,52 +22,55 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Counts
-        context['contact_count'] = Contact.objects.count()
-        context['member_count'] = Contact.objects.filter(is_member=True).count()
-        context['student_count'] = Contact.objects.filter(is_student=True).count()
-        context['consultation_count'] = Consultation.objects.filter(done=False).count()
-        context['staff_count'] = Worker.objects.count()
-        context['teaching_count'] = Teaching.objects.count()
-
-        # Today's consultations
-        context['todays_consultations'] = (
-            Consultation.objects.filter(scheduled_date=date.today(), done=False)
-            .select_related('contact')
-        )
-
-        # Upcoming consultations (next 7 days)
-        context['upcoming_consultations'] = (
-            Consultation.objects.filter(
-                scheduled_date__gte=date.today(),
-                scheduled_date__lte=date.today() + timedelta(days=7),
-                done=False,
+        access = areas_for(self.request.user)
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+        if 'community' in access:
+            contact_counts = Contact.objects.aggregate(
+                total=Count('pk'), members=Count('pk', filter=Q(is_member=True, is_active=True)),
+                students=Count('pk', filter=Q(is_student=True, is_active=True)),
             )
-            .select_related('contact')
-            .order_by('scheduled_date')[:10]
-        )
+            context.update(contact_count=contact_counts['total'], member_count=contact_counts['members'], student_count=contact_counts['students'])
+        if 'giving' in access:
+            completed_this_month = Donation.objects.filter(status=Donation.Status.COMPLETED, donated_at__date__gte=month_start, donated_at__date__lte=today)
+            context['giving_by_currency'] = list(completed_this_month.order_by('currency').values('currency').annotate(total=Sum('amount'), count=Count('pk')))
+            context['monthly_donation_count'] = completed_this_month.count()
+            context['general_donation_count'] = completed_this_month.filter(cause__isnull=True).count()
+            context['giving_month'] = today
+        if 'inbox' in access:
+            tasks = [
+                ('Contact messages', 'Unread messages from the public website', 'envelope-simple', ContactSubmission.objects.filter(is_read=False).count(), reverse('website:contact_list') + '?status=unread'),
+                ('Centre join requests', 'People waiting to connect with a centre', 'users-three', JoinCentreRequest.objects.filter(status='pending').count(), reverse('website:join_request_list') + '?status=pending'),
+                ('Volunteer applications', 'Offers of time and skills to review', 'hand-heart', VolunteerApplication.objects.filter(status='pending').count(), reverse('website:volunteer_app_list') + '?status=pending'),
+            ]
+            context['inbox_count'] = sum(item[3] for item in tasks)
+            context['inbox_tasks'] = [{'title': title, 'description': description, 'icon': icon, 'count': count, 'url': url} for title, description, icon, count, url in tasks]
+        if 'giving' in access:
+            context['pending_donation_count'] = Donation.objects.filter(status='pending').count()
+        if 'consultations' in access:
+            context['overdue_consultation_count'] = Consultation.objects.filter(done=False, scheduled_date__lt=today).count()
+            context['upcoming_consultations'] = Consultation.objects.filter(done=False, scheduled_date__gte=today, scheduled_date__lte=today + timedelta(days=7)).select_related('contact').order_by('scheduled_date', 'pk')[:5]
+            context['today_consultation_count'] = Consultation.objects.filter(done=False, scheduled_date=today).count()
+        if 'publishing' in access:
+            # Multi-day events stay current through their final day.
+            events = Event.objects.filter(is_published=True).filter(Q(end_date__gte=today) | Q(end_date__isnull=True, date__gte=today))
+            context['upcoming_events'] = events.order_by('date', 'time')[:3]
+            context['upcoming_event_count'] = events.count()
+            context['draft_post_count'] = Post.objects.filter(status='draft').count()
+            context['draft_event_count'] = Event.objects.filter(is_published=False).count()
+            context['pending_teaching_count'] = Teaching.objects.filter(status='pending').count()
+        if 'community' in access:
+            context['recent_contacts'] = Contact.objects.order_by('-created_at', '-pk')[:4]
 
-        # Recent contacts added (last 5)
-        context['recent_contacts'] = Contact.objects.order_by('-id')[:5]
-
-        # Monthly registrations for chart (last 6 months)
-        six_months_ago = date.today() - timedelta(days=180)
-        monthly = (
-            Contact.objects.filter(created_at__date__gte=six_months_ago)
-            .annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(count=Count('id'))
-            .order_by('month')
-        )
-        chart_labels = [m['month'].strftime('%b %Y') for m in monthly]
-        chart_data = [m['count'] for m in monthly]
-        context['chart_labels'] = json.dumps(chart_labels)
-        context['chart_data'] = json.dumps(chart_data)
-
-        # Teachings by status
-        context['teachings_published'] = Teaching.objects.filter(status='published').count()
-        context['teachings_pending'] = Teaching.objects.filter(status='pending').count()
-        context['teachings_archive'] = Teaching.objects.filter(status='archive').count()
-
+            year, month = today.year, today.month
+            months = []
+            for _ in range(6):
+                months.append((year, month))
+                year, month = (year, month - 1) if month > 1 else (year - 1, 12)
+            months.reverse()
+            monthly = (Contact.objects.filter(created_at__date__gte=date(*months[0], 1), created_at__date__lte=today)
+                       .annotate(month=TruncMonth('created_at')).values('month').annotate(count=Count('pk')).order_by('month'))
+            per_month = {(row['month'].year, row['month'].month): row['count'] for row in monthly}
+            maximum = max(per_month.values(), default=1) or 1
+            context['contact_trend'] = [{'month': date(y, m, 1), 'count': per_month.get((y, m), 0), 'width': round(100 * per_month.get((y, m), 0) / maximum)} for y, m in months]
         return context

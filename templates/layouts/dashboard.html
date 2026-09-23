@@ -2,36 +2,38 @@
 
 {% block body %}
 <!-- Begin page -->
+<a class="jcf-skip" href="#main-content">Skip to content</a>
 <div class="wrapper">
     {% include "partials/_topbar.html" %}
     {% include "partials/_sidebar.html" %}
 
-    <div class="content-page">
+    <main class="content-page" id="main-content" tabindex="-1">
         <div class="container-fluid">
 
-            <!-- Page Title -->
-            <div class="page-title-head d-flex align-items-center">
-                <div class="flex-grow-1">
-                    <h4 class="page-main-title m-0">{% block page_title %}Dashboard{% endblock %}</h4>
+            <!-- Page header. Child templates fill:
+                   page_title     the heading
+                   page_subtitle  optional one-line description
+                   page_actions   buttons, right-aligned
+                   breadcrumb     <li> items; only a parent link is shown, and
+                                  only on nested pages (see shell.css) -->
+            <header class="jcf-page-header">
+                <div class="jcf-page-header__text">
+                    <ol class="breadcrumb jcf-crumbs">{% block breadcrumb %}{% endblock %}</ol>
+                    <h1 class="jcf-page-header__title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="jcf-page-header__subtitle">{% block page_subtitle %}{% endblock %}</p>
                 </div>
-                <div class="text-end">
-                    <ol class="breadcrumb m-0 py-0">
-                        <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">JCF</a></li>
-                        {% block breadcrumb %}
-                        <li class="breadcrumb-item active">Dashboard</li>
-                        {% endblock %}
-                    </ol>
-                </div>
-            </div>
+                <div class="jcf-page-header__actions">{% block page_actions %}{% endblock %}</div>
+            </header>
 
             {% block content %}{% endblock %}
 
         </div>
 
         {% include "partials/_footer.html" %}
-    </div>
+    </main>
 </div>
 <!-- END wrapper -->
 
+{% include "partials/_page_finder.html" %}
 {% include "partials/_messages.html" %}
 {% endblock %}

@@ -1,124 +1,69 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} Post | JCF Management{% endblock %}
-{% block page_title %}{% if form.instance.pk %}Edit Post{% else %}New Post{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit post{% else %}New post{% endif %} | JCF Management{% endblock %}
+{% block page_title %}{% if form.instance.pk %}Edit post{% else %}New post{% endif %}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'blog:post_list' %}">Blog Posts</a></li>
+<li class="breadcrumb-item"><a href="{% url 'blog:post_list' %}">Blog</a></li>
 <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}New{% endif %}</li>
 {% endblock %}
 
 {% block extra_css %}{% include "partials/_quill_css.html" %}{% endblock %}
 
 {% block content %}
+{% url 'blog:post_list' as cancel_url %}
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    <div class="row mt-3">
-        <!-- Main content column -->
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Post Content</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="{{ form.title.id_for_label }}" class="form-label">Title <span class="text-danger">*</span></label>
-                        {{ form.title }}
-                        {% if form.title.errors %}<div class="text-danger fs-12 mt-1">{{ form.title.errors.0 }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.slug.id_for_label }}" class="form-label">Slug</label>
-                        {{ form.slug }}
-                        <small class="text-muted">Leave blank to auto-generate from title.</small>
-                        {% if form.slug.errors %}<div class="text-danger fs-12 mt-1">{{ form.slug.errors.0 }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.excerpt.id_for_label }}" class="form-label">Excerpt <span class="text-danger">*</span></label>
-                        {{ form.excerpt }}
-                        {% if form.excerpt.errors %}<div class="text-danger fs-12 mt-1">{{ form.excerpt.errors.0 }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Content <span class="text-danger">*</span></label>
-                        {{ form.content }}
-                        <div class="quill-editor" data-input="{{ form.content.id_for_label }}" style="height: 300px;"></div>
-                        {% if form.content.errors %}<div class="text-danger fs-12 mt-1">{{ form.content.errors.0 }}</div>{% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Metadata sidebar -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Publish</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-                        {{ form.status }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.published_date.id_for_label }}" class="form-label">Published Date</label>
-                        {{ form.published_date }}
-                        <small class="text-muted">Auto-set when status changes to published.</small>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ti ti-device-floppy me-1"></i>{% if form.instance.pk %}Update Post{% else %}Save Post{% endif %}
-                        </button>
-                        <a href="{% url 'blog:post_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="{{ form.author.id_for_label }}" class="form-label">Author</label>
-                        {{ form.author }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                        {{ form.category }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tags</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            {{ form.tags }}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="jcf-form-grid">
+        <div class="jcf-form-grid__main">
+            <section class="card">
+                <div class="jcf-card-body">
+                    <div class="row g-3">
+                        <div class="col-12">{% include "partials/_field.html" with field=form.title %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.slug label="Web address" help="Leave blank to create one from the title." %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.excerpt label="Summary" %}</div>
+                        <div class="col-12 jcf-field{% if form.content.errors %} jcf-field--error{% endif %}">
+                            <label class="form-label">Article<span class="jcf-required" aria-hidden="true">*</span></label>
+                            {{ form.content }}
+                            <div class="quill-editor" data-input="{{ form.content.id_for_label }}" style="height: 420px;"></div>
+                            {% for error in form.content.errors %}<div class="jcf-field__error">{{ error }}</div>{% endfor %}
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Media</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Featured Image</label>
-                        {% if form.instance.pk and form.instance.image %}
-                        <div class="mb-2">
-                            <img src="{{ form.instance.image.url }}" class="img-fluid rounded" alt="Current image" />
-                        </div>
-                        {% endif %}
-                        {{ form.image }}
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.video_link.id_for_label }}" class="form-label">Video Link</label>
-                        {{ form.video_link }}
-                        <small class="text-muted">YouTube URL for the source video.</small>
-                        {% if form.video_link.errors %}<div class="text-danger fs-12 mt-1">{{ form.video_link.errors.0 }}</div>{% endif %}
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
+
+        <aside class="jcf-form-grid__side">
+            <section class="card">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title">Publishing</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.status %}
+                    {% include "partials/_field.html" with field=form.published_date label="Publish date" help="Filled in automatically when you publish." %}
+                </div>
+            </section>
+            <section class="card">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title">Details</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.author %}
+                    {% include "partials/_field.html" with field=form.category %}
+                    {% include "partials/_field.html" with field=form.tags %}
+                </div>
+            </section>
+            <section class="card">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title">Media</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    <div>
+                        {% if form.instance.pk and form.instance.image %}<img src="{{ form.instance.image.url }}" alt="" class="jcf-current-file">{% endif %}
+                        {% include "partials/_field.html" with field=form.image label="Featured image" %}
+                    </div>
+                    {% include "partials/_field.html" with field=form.video_link help="The YouTube video this post is based on, if any." %}
+                </div>
+            </section>
+        </aside>
     </div>
+    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Save post" %}
 </form>
 {% endblock %}
 

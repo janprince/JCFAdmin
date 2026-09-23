@@ -14,7 +14,7 @@ class StaffListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = Worker.objects.select_related('contact').order_by('-id')
+        qs = Worker.objects.select_related('contact', 'portal_profile__user').order_by('-id')
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(contact__full_name__icontains=q)

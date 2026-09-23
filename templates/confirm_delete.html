@@ -1,0 +1,22 @@
+{% extends "layouts/dashboard.html" %}
+{% comment %}
+    Shared confirmation page for DeleteViews (set template_name on the view).
+    Uses `object` and the view's success_url for Cancel.
+{% endcomment %}
+
+{% block title %}Delete | JCF Management{% endblock %}
+{% block page_title %}Delete {{ object }}?{% endblock %}
+
+{% block content %}
+<form method="post" class="card" style="max-width: 560px">
+    {% csrf_token %}
+    <div class="jcf-card-body">
+        <p class="mb-2">You're about to delete <strong>{{ object }}</strong>.</p>
+        <p class="text-muted mb-0">This can't be undone.</p>
+    </div>
+    <div class="jcf-card-foot">
+        <a href="{{ view.success_url }}" class="btn btn-light">Cancel</a>
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </div>
+</form>
+{% endblock %}

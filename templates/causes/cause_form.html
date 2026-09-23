@@ -1,122 +1,85 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}{% if object %}Edit Cause{% else %}Add Cause{% endif %} | JCF Management{% endblock %}
-{% block page_title %}{% if object %}Edit Cause{% else %}Add Cause{% endif %}{% endblock %}
+{% block title %}{% if object %}Edit initiative{% else %}Add initiative{% endif %} | JCF Management{% endblock %}
+{% block page_title %}{% if object %}Edit initiative{% else %}Add initiative{% endif %}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'causes:cause_list' %}">Causes</a></li>
+<li class="breadcrumb-item"><a href="{% url 'causes:cause_list' %}">Initiatives</a></li>
 <li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
 {% endblock %}
 
 {% block extra_css %}{% include "partials/_quill_css.html" %}{% endblock %}
 
 {% block content %}
-<div class="row mt-3">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">{% if object %}Edit Cause{% else %}New Cause{% endif %}</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">Title <span class="text-danger">*</span></label>
-                            {{ form.title }}
-                            {% if form.title.errors %}<div class="text-danger fs-12 mt-1">{{ form.title.errors.0 }}</div>{% endif %}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="{{ form.slug.id_for_label }}" class="form-label">Slug</label>
-                            {{ form.slug }}
-                            {% if form.slug.errors %}<div class="text-danger fs-12 mt-1">{{ form.slug.errors.0 }}</div>{% endif %}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="{{ form.description.id_for_label }}" class="form-label">Description <span class="text-danger">*</span></label>
-                        {{ form.description }}
-                        {% if form.description.errors %}<div class="text-danger fs-12 mt-1">{{ form.description.errors.0 }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Content <span class="text-danger">*</span></label>
-                        {{ form.content }}
-                        <div class="quill-editor" data-input="{{ form.content.id_for_label }}" style="height: 300px;"></div>
-                        {% if form.content.errors %}<div class="text-danger fs-12 mt-1">{{ form.content.errors.0 }}</div>{% endif %}
-                    </div>
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="{{ form.type.id_for_label }}" class="form-label">Type <span class="text-danger">*</span></label>
-                            {{ form.type }}
-                            <small class="text-muted">Specific causes show a progress bar; ongoing causes focus on impact.</small>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                            {{ form.category }}
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="{{ form.currency.id_for_label }}" class="form-label">Currency</label>
-                            {{ form.currency }}
+{% url 'causes:cause_list' as cancel_url %}
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    {{ form.gallery }}
+    <div class="jcf-form-grid">
+        <div class="jcf-form-grid__main">
+            <section class="card">
+                <div class="jcf-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">{% include "partials/_field.html" with field=form.title %}</div>
+                        <div class="col-md-4">{% include "partials/_field.html" with field=form.slug label="Web address" %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.description label="Summary" %}</div>
+                        <div class="col-12 jcf-field{% if form.content.errors %} jcf-field--error{% endif %}">
+                            <label class="form-label">Full story<span class="jcf-required" aria-hidden="true">*</span></label>
+                            {{ form.content }}
+                            <div class="quill-editor" data-input="{{ form.content.id_for_label }}" style="height: 320px;"></div>
+                            {% for error in form.content.errors %}<div class="jcf-field__error">{{ error }}</div>{% endfor %}
                         </div>
                     </div>
-                    <div class="row" id="specific-fields">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.goal_amount.id_for_label }}" class="form-label">Goal Amount</label>
-                            {{ form.goal_amount }}
-                            {% if form.goal_amount.errors %}<div class="text-danger fs-12 mt-1">{{ form.goal_amount.errors.0 }}</div>{% endif %}
-                            <small class="text-muted">Set to 0 for ongoing causes.</small>
-                        </div>
-                    </div>
-                    <div class="row" id="ongoing-fields">
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ form.impact_statement.id_for_label }}" class="form-label">Impact Statement</label>
-                            {{ form.impact_statement }}
-                            {% if form.impact_statement.errors %}<div class="text-danger fs-12 mt-1">{{ form.impact_statement.errors.0 }}</div>{% endif %}
-                            <small class="text-muted">Short impact line for ongoing causes (e.g. &ldquo;Reaching seekers across the world&rdquo;).</small>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.image.id_for_label }}" class="form-label">Image</label>
-                            {{ form.image }}
-                        </div>
-                        <div class="col-md-6 mb-3 d-flex align-items-end">
-                            <div class="form-check">
-                                {{ form.is_active }}
-                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
-                            </div>
-                        </div>
-                    </div>
-                    {{ form.gallery }}
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ti ti-device-floppy me-1"></i>{% if object %}Update{% else %}Create{% endif %}
-                        </button>
-                        <a href="{% url 'causes:cause_list' %}" class="btn btn-outline-secondary ms-1">Cancel</a>
-                    </div>
-                </form>
-            </div>
+                </div>
+            </section>
         </div>
+
+        <aside class="jcf-form-grid__side">
+            <section class="card">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title">Fundraising</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.type help="A specific goal shows a progress bar; an ongoing cause shows its impact instead." %}
+                    <div id="specific-fields" class="row g-3">
+                        <div class="col-7">{% include "partials/_field.html" with field=form.goal_amount label="Goal" %}</div>
+                        <div class="col-5">{% include "partials/_field.html" with field=form.currency %}</div>
+                    </div>
+                    <div id="ongoing-fields">{% include "partials/_field.html" with field=form.impact_statement label="Impact line" help="e.g. “Reaching seekers across the world”." %}</div>
+                </div>
+            </section>
+            <section class="card">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title">Listing</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.is_active label="Active — accepting donations" %}
+                    {% include "partials/_field.html" with field=form.category %}
+                    <div>
+                        {% if object.image %}<img src="{{ object.image.url }}" alt="" class="jcf-current-file">{% endif %}
+                        {% include "partials/_field.html" with field=form.image %}
+                    </div>
+                </div>
+            </section>
+        </aside>
     </div>
-</div>
+    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Save cause" %}
+</form>
 {% endblock %}
 
 {% block extra_js %}
 {% include "partials/_quill_js.html" %}
 <script>
 (function () {
-    const typeSelect = document.getElementById('{{ form.type.id_for_label }}');
-    const specificFields = document.getElementById('specific-fields');
-    const ongoingFields = document.getElementById('ongoing-fields');
-
-    function toggleFields() {
-        const isOngoing = typeSelect.value === 'ongoing';
-        specificFields.style.display = isOngoing ? 'none' : '';
-        ongoingFields.style.display = isOngoing ? '' : 'none';
+    // Goal fields for specific causes, the impact line for ongoing ones.
+    var typeSelect = document.getElementById('{{ form.type.id_for_label }}');
+    var specific = document.getElementById('specific-fields');
+    var ongoing = document.getElementById('ongoing-fields');
+    function sync() {
+        var isOngoing = typeSelect.value === 'ongoing';
+        specific.hidden = isOngoing;
+        ongoing.hidden = !isOngoing;
     }
-
-    typeSelect.addEventListener('change', toggleFields);
-    toggleFields();
+    typeSelect.addEventListener('change', sync);
+    sync();
 })();
 </script>
 {% endblock %}

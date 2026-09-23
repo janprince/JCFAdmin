@@ -1,0 +1,191 @@
+/* ---------------------------------------------------------------------------
+   JCF shell: sidebar, topbar, page header
+   ---------------------------------------------------------------------------
+   Loaded after app.min.css. base.html pins data-menu-color / data-topbar-color
+   to "light"; these rules tune Paces' light variants for the saas skin.
+
+   Intent: the chrome should recede. A white sidebar and a see-through topbar
+   leave the page header and the content as the only things with weight.
+--------------------------------------------------------------------------- */
+
+/* --- Type --------------------------------------------------------------- */
+
+/* IBM Plex Sans replaces the saas skin's Poppins: narrower, calmer, and its
+   figures line up in tables. Loaded by base.html. */
+html[data-skin="saas"] {
+    --theme-font-sans-serif: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --theme-font-family-secondary: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --theme-font-monospace: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --theme-body-font-size: 13.5px;
+}
+
+code,
+kbd,
+samp {
+    font-family: var(--theme-font-monospace);
+}
+
+/* --- Sidebar ------------------------------------------------------------ */
+
+/* The sidebar keeps the saas skin's dark navy (pinned in base.html); only
+   the section titles change — normal case, and quieter than the links. */
+.sidenav-menu .side-nav-title {
+    padding-top: 1.25rem;
+    padding-bottom: 0.375rem;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--theme-sidenav-item-color);
+    opacity: 0.6;
+}
+
+.sidenav-menu .menu-icon .ph {
+    font-size: 19px;
+}
+
+/* --- Topbar ------------------------------------------------------------- */
+
+/* Same colour as the page, slightly translucent so content scrolls under it. */
+html[data-skin="saas"][data-topbar-color="light"] {
+    --theme-topbar-bg: rgba(242, 246, 251, 0.82);
+    --theme-topbar-item-color: #5d6878;
+}
+
+html[data-bs-theme="dark"][data-skin="saas"][data-topbar-color="light"] {
+    --theme-topbar-bg: rgba(23, 24, 30, 0.82);
+    --theme-topbar-item-color: #aab4c2;
+}
+
+.app-topbar {
+    box-shadow: none;
+    -webkit-backdrop-filter: saturate(1.4) blur(10px);
+    backdrop-filter: saturate(1.4) blur(10px);
+}
+
+.jcf-topbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    font-size: 20px;
+    color: var(--theme-topbar-item-color);
+    background: transparent;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.jcf-topbar-btn:hover,
+.jcf-topbar-btn:focus-visible {
+    color: var(--theme-body-color);
+    background: var(--jcf-hover-bg);
+}
+
+.jcf-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 4px 4px;
+    border-radius: 999px;
+}
+
+.jcf-user:hover {
+    background: var(--jcf-hover-bg);
+}
+
+.jcf-user__text {
+    flex-direction: column;
+    line-height: 1.25;
+    text-align: start;
+}
+
+.jcf-user__name {
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-user__role {
+    font-size: 12px;
+    color: var(--theme-secondary-color);
+}
+
+/* --- Page header -------------------------------------------------------- */
+
+.jcf-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin: 4px 0 20px;
+}
+
+.jcf-page-header__text {
+    min-width: 0;
+}
+
+.jcf-page-header__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    color: var(--theme-body-color);
+}
+
+.jcf-page-header__subtitle {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-page-header__subtitle:empty,
+.jcf-page-header__actions:empty {
+    display: none;
+}
+
+.jcf-page-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Breadcrumb as a single "‹ Parent" back link.
+   Templates list Dashboard › Parent › Current. The first and the current item
+   are redundant next to the sidebar and the heading, so both are hidden — and
+   on top-level pages (fewer than three items) nothing is left to show. */
+.jcf-crumbs {
+    margin: 0 0 4px;
+    padding: 0;
+    font-size: 13px;
+}
+
+.jcf-crumbs:not(:has(> li:nth-child(3))),
+.jcf-crumbs > li:first-child,
+.jcf-crumbs > li.active {
+    display: none;
+}
+
+.jcf-crumbs > li:nth-child(2)::before {
+    content: "\2039";
+    padding-inline-end: 6px;
+    float: none;
+    color: inherit;
+}
+
+.jcf-crumbs a {
+    color: var(--theme-secondary-color);
+}
+
+.jcf-crumbs a:hover {
+    color: var(--theme-primary);
+}
+
+@media (max-width: 575.98px) {
+    .jcf-page-header__actions {
+        width: 100%;
+    }
+}

@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import DetailView, ListView
 
+from dashboard.listing import count_by, tabs
 from . import services
 from .forms import AccessForm, ReviewRequestForm, RevokeForm, SetLevelForm
 from .models import (
@@ -100,6 +101,12 @@ class StudentListView(LoginRequiredMixin, InnerspaceDatabaseMixin, ListView):
         context['total_count'] = total
         context['active_count'] = active
         context['no_access_count'] = total - Membership.objects.count()
+        context['lapsed_count'] = Membership.objects.count() - active
+        context['tabs'] = tabs(self.request, 'access', [
+            ('active', 'Active', active),
+            ('lapsed', 'Lapsed', context['lapsed_count']),
+            ('none', 'No membership', context['no_access_count']),
+        ], total=total)
         context['pending_requests'] = AccessRequest.objects.filter(
             status=AccessRequestStatus.PENDING,
         ).count()
@@ -291,6 +298,10 @@ class AccessRequestListView(LoginRequiredMixin, InnerspaceDatabaseMixin, ListVie
         ).count()
         context['can_manage'] = self.request.user.has_perm(MANAGE_PERM)
         context['review_form'] = ReviewRequestForm()
+        counts = count_by(AccessRequest.objects.all(), 'status')
+        context['tabs'] = tabs(self.request, 'status', [
+            (value, label, counts.get(value, 0)) for value, label in AccessRequestStatus.choices
+        ] + [('all', 'All', sum(counts.values()))], all_label=None, default=AccessRequestStatus.PENDING)
         return context
 
 

@@ -1,0 +1,32 @@
+{% comment %}
+    Per-row "⋯" menu for list tables. Resolve URLs first, then:
+        {% url 'app:item_update' obj.pk as edit_url %}
+        {% include "partials/_row_menu.html" with edit_url=edit_url label=obj.title %}
+
+    Accepts view_url, edit_url, delete_url (all optional), label (for screen
+    readers and the confirm prompt), delete_note (extra confirm text) and
+    no_confirm=True when delete_url leads to its own confirmation page.
+
+    Delete lives behind the menu on purpose: a red icon on every row is one
+    stray click from losing a record.
+
+    Popper runs with the fixed strategy so the menu isn't clipped by
+    .table-responsive, which scrolls horizontally and hides overflow.
+{% endcomment %}
+<div class="dropdown">
+    <button type="button" class="jcf-row-action" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" aria-label="Actions for {{ label }}">
+        <i class="ph ph-dots-three-outline" aria-hidden="true"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+        {% if view_url %}<li><a class="dropdown-item" href="{{ view_url }}"><i class="ph ph-eye" aria-hidden="true"></i>View</a></li>{% endif %}
+        {% if edit_url %}<li><a class="dropdown-item" href="{{ edit_url }}"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Edit</a></li>{% endif %}
+        {% if delete_url %}
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <a class="dropdown-item text-danger" href="{{ delete_url }}"{% if not no_confirm %} data-confirm="Delete “{{ label }}”?{% if delete_note %} {{ delete_note }}{% endif %}"{% endif %}>
+                <i class="ph ph-trash" aria-hidden="true"></i>Delete
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>

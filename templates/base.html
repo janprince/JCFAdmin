@@ -1,6 +1,6 @@
 {% load static %}
 <!doctype html>
-<html lang="en" data-skin="saas">
+<html lang="en" data-skin="saas" data-menu-color="dark" data-topbar-color="light">
 <head>
     <meta charset="utf-8" />
     <title>{% block title %}JCF Management{% endblock %}</title>
@@ -9,25 +9,30 @@
     <!-- App favicon -->
     <link rel="shortcut icon" href="{% static 'paces/images/favicon.ico' %}" />
 
+    <link rel="preload" href="{% static 'jcf/fonts/PublicSans-Variable.ttf' %}" as="font" type="font/ttf" crossorigin />
+
     {% block extra_css %}{% endblock %}
 
     <!-- Theme Config Js -->
     <script src="{% static 'paces/js/config.js' %}"></script>
 
     <!-- config.js restores a cached config from sessionStorage, which would keep
-         old sessions on whatever skin they were served before. Pin the skin. -->
+         old sessions on whatever skin and sidebar colour they were served
+         before. Pin both. -->
     <script>
         (() => {
+            const pinned = { skin: 'saas', 'sidenav-color': 'dark', 'topbar-color': 'light' };
             const html = document.documentElement;
-            html.setAttribute('data-skin', 'saas');
-            if (window.config) { window.config.skin = 'saas'; }
+            html.setAttribute('data-skin', pinned.skin);
+            html.setAttribute('data-menu-color', pinned['sidenav-color']);
+            html.setAttribute('data-topbar-color', pinned['topbar-color']);
+            if (window.config) { Object.assign(window.config, pinned); }
             try {
                 const cached = JSON.parse(sessionStorage.getItem('__THEME_CONFIG__') || 'null');
-                if (cached && cached.skin !== 'saas') {
-                    cached.skin = 'saas';
-                    sessionStorage.setItem('__THEME_CONFIG__', JSON.stringify(cached));
+                if (cached && Object.keys(pinned).some((k) => cached[k] !== pinned[k])) {
+                    sessionStorage.setItem('__THEME_CONFIG__', JSON.stringify(Object.assign(cached, pinned)));
                 }
-            } catch (e) { /* private mode / malformed cache — the attribute above is enough */ }
+            } catch (e) { /* private mode / malformed cache — the attributes above are enough */ }
         })();
     </script>
 
@@ -39,6 +44,16 @@
 
     <!-- JCF brand (text logo) -->
     <link href="{% static 'jcf/css/brand.css' %}" rel="stylesheet" type="text/css" />
+
+    <!-- Icons: Phosphor (regular for UI, light for large empty-state art).
+         Tabler still ships inside vendors.min.css for Paces' own widgets. -->
+    <link href="{% static 'vendor/phosphor/regular/style.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'vendor/phosphor/light/style.css' %}" rel="stylesheet" type="text/css" />
+
+    <!-- JCF shell (sidebar, topbar, page header) and UI components -->
+    <link href="{% static 'jcf/css/shell.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'jcf/css/ui.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'jcf/css/office.css' %}" rel="stylesheet" />
 </head>
 
 <body>
@@ -49,6 +64,9 @@
 
     <!-- App js -->
     <script src="{% static 'paces/js/app.js' %}"></script>
+
+    <!-- JCF behaviours (modal re-open on errors, data-confirm) -->
+    <script src="{% static 'jcf/js/ui.js' %}"></script>
 
     {% block extra_js %}{% endblock %}
 </body>

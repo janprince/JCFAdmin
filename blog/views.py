@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
+from dashboard.listing import count_by, tabs
 from .forms import PostForm, AuthorForm, CategoryForm, TagForm
 from .models import Post, Author, Category, Tag
 
@@ -37,6 +38,10 @@ class PostListView(LoginRequiredMixin, ListView):
         context['current_status'] = self.request.GET.get('status', '')
         context['current_category'] = self.request.GET.get('category', '')
         context['categories'] = Category.objects.all()
+        counts = count_by(Post.objects.all(), 'status')
+        context['tabs'] = tabs(self.request, 'status', [
+            (value, label, counts.get(value, 0)) for value, label in Post.Status.choices
+        ], total=sum(counts.values()))
         return context
 
 
@@ -80,6 +85,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
 
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
+    template_name = 'confirm_delete.html'
     success_url = reverse_lazy('blog:post_list')
 
     def form_valid(self, form):

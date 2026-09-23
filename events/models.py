@@ -47,7 +47,7 @@ class Event(models.Model):
 
     @property
     def is_past(self):
-        return self.date < timezone.now().date()
+        return (self.end_date or self.date) < timezone.localdate()
 
     def __str__(self):
         return self.title

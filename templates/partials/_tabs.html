@@ -1,0 +1,16 @@
+{% comment %}
+    Tabs with counts at the top of a list card. `tabs` comes from
+    dashboard.listing.tabs() in the view. Renders nothing without it, so a
+    create view re-rendering the list with form errors still works.
+{% endcomment %}
+{% if tabs %}
+<div class="jcf-list__head">
+    <nav class="jcf-tabs" aria-label="{{ label|default:'Filter' }}">
+        {% for tab in tabs %}
+        <a href="{{ tab.href }}" class="jcf-tabs__item{% if tab.active %} is-active{% endif %}"{% if tab.active %} aria-current="page"{% endif %}>
+            {{ tab.label }}{% if tab.count is not None %} <span class="jcf-tabs__count">{{ tab.count }}</span>{% endif %}
+        </a>
+        {% endfor %}
+    </nav>
+</div>
+{% endif %}

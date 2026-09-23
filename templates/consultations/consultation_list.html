@@ -2,109 +2,76 @@
 
 {% block title %}Consultations | JCF Management{% endblock %}
 {% block page_title %}Consultations{% endblock %}
+{% block page_subtitle %}Sessions booked with the spiritual master.{% endblock %}
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item active">Consultations</li>
+{% block page_actions %}
+<a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Book consultation</a>
 {% endblock %}
 
 {% block content %}
-<div class="row mt-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">Pending Consultations</h5>
-                <a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary btn-sm">
-                    <i class="ti ti-plus me-1"></i> Book Consultation
-                </a>
-            </div>
-            <div class="card-body">
-                <form method="get" class="mb-3">
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <div class="app-search">
-                                <input type="search" name="q" class="form-control" placeholder="Search by member name..." value="{{ search_query }}" />
-                                <i class="ti ti-search app-search-icon text-muted"></i>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-primary">Search</button>
-                            {% if search_query %}
-                            <a href="{% url 'consultations:consultation_list' %}" class="btn btn-outline-secondary">Clear</a>
+{% now "Y-m-d" as today %}
+<div class="card jcf-list">
+    {% include "partials/_tabs.html" with label="Filter consultations" %}
+
+    <form method="get" class="jcf-toolbar" role="search">
+        {% keep_params 'show' %}
+        {% include "partials/_search.html" with placeholder="Search by contact name" %}
+        {% if search_query %}<a href="{% querystring q=None page=None %}" class="jcf-toolbar__clear">Clear search</a>{% endif %}
+    </form>
+
+    <div class="table-responsive">
+        <table class="table jcf-table mb-0">
+            <thead>
+                <tr>
+                    <th>Contact</th>
+                    <th>Date</th>
+                    <th>Mode</th>
+                    <th>Status</th>
+                    <th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in consultations %}
+                {% url 'members:contact_detail' c.contact.pk as contact_url %}
+                {% url 'consultations:consultation_update' c.pk as edit_url %}
+                {% url 'consultations:consultation_delete' c.pk as delete_url %}
+                {% with day=c.scheduled_date|date:"Y-m-d" %}
+                <tr>
+                    <td>{% include "partials/_person.html" with name=c.contact.full_name meta=c.contact.phone|phone url=contact_url %}</td>
+                    <td class="jcf-num">{{ c.scheduled_date|date:"D, j M Y" }}</td>
+                    <td>
+                        {% if c.mode == "Remote" %}<span class="jcf-tag"><i class="ph ph-video-camera"></i>Remote</span>
+                        {% else %}<span class="jcf-tag"><i class="ph ph-buildings"></i>Onsite</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if c.done %}<span class="jcf-status jcf-status--success">Completed</span>
+                        {% elif day == today %}<span class="jcf-status jcf-status--info">Today</span>
+                        {% elif day < today %}<span class="jcf-status jcf-status--warning">Overdue</span>
+                        {% else %}<span class="jcf-status jcf-status--neutral">Scheduled</span>{% endif %}
+                    </td>
+                    <td class="jcf-table__actions">
+                        <div class="d-inline-flex align-items-center gap-1">
+                            {% if not c.done %}
+                            <a href="{% url 'consultations:consultation_complete' c.pk %}" class="btn btn-light btn-sm" data-confirm="Mark the consultation with {{ c.contact.full_name|person_name }} as done?">
+                                <i class="ph ph-check" aria-hidden="true"></i>Done
+                            </a>
                             {% endif %}
+                            {% include "partials/_row_menu.html" with edit_url=edit_url delete_url=delete_url label=c.contact.full_name|person_name %}
                         </div>
-                    </div>
-                </form>
-
-                <div class="table-responsive">
-                    <table class="table table-hover table-centered mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th>#</th>
-                                <th>Member</th>
-                                <th>Mode</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for c in consultations %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>
-                                    <a href="{% url 'members:contact_detail' c.contact.pk %}" class="fw-semibold text-reset">
-                                        {{ c.contact.full_name }}
-                                    </a>
-                                </td>
-                                <td>
-                                    {% if c.mode == "Remote" %}
-                                    <span class="badge bg-info-subtle text-info"><i class="ti ti-video me-1"></i>Remote</span>
-                                    {% else %}
-                                    <span class="badge bg-success-subtle text-success"><i class="ti ti-building me-1"></i>Onsite</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {{ c.scheduled_date|date:"d M Y" }}
-                                    {% if c.is_today %}
-                                    <span class="badge bg-warning-subtle text-warning ms-1">Today</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-warning-subtle text-warning">Pending</span>
-                                </td>
-                                <td class="text-end">
-                                    <a href="{% url 'consultations:consultation_complete' c.pk %}" class="btn btn-sm btn-soft-success me-1" title="Mark Complete" onclick="return confirm('Mark this consultation as complete?')">
-                                        <i class="ti ti-check"></i>
-                                    </a>
-                                    <a href="{% url 'consultations:consultation_update' c.pk %}" class="btn btn-sm btn-soft-info me-1" title="Edit">
-                                        <i class="ti ti-pencil"></i>
-                                    </a>
-                                    <a href="{% url 'consultations:consultation_delete' c.pk %}" class="btn btn-sm btn-soft-danger" title="Delete" onclick="return confirm('Delete this consultation?')">
-                                        <i class="ti ti-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">No pending consultations.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                {% if is_paginated %}
-                <nav class="mt-3">
-                    <ul class="pagination justify-content-end mb-0">
-                        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"><i class="ti ti-chevron-left"></i></a></li>{% endif %}
-                        {% for num in page_obj.paginator.page_range %}<li class="page-item {% if page_obj.number == num %}active{% endif %}"><a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a></li>{% endfor %}
-                        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"><i class="ti ti-chevron-right"></i></a></li>{% endif %}
-                    </ul>
-                </nav>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% empty %}
+                {% if showing_done %}
+                {% include "partials/_empty_row.html" with colspan=5 icon="calendar-check" title="No completed consultations" %}
+                {% else %}
+                {% include "partials/_empty_row.html" with colspan=5 icon="calendar-blank" title="Nothing booked" text="Book a consultation from a contact's page or with the button above." %}
                 {% endif %}
-            </div>
-        </div>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
+    {% if is_paginated %}<div class="jcf-list__foot">{% include "partials/_pagination.html" %}</div>{% endif %}
 </div>
 {% endblock %}

@@ -231,29 +231,73 @@ INNERSPACE_DATABASE_URL=postgres://...
 
 ## Theme & Branding
 
-- **Skin:** Paces ships ~25 CSS skins selected by `data-skin` on `<html>`. This
-  app is pinned to **`saas`** (Poppins, `#f2f6fb` body, `#0a74ff` primary).
-  `static/paces/js/config.js` restores a cached config from `sessionStorage`, so
-  `base.html` re-pins the skin in an inline script after it runs — changing only
-  the `<html>` attribute would leave existing sessions on the old skin.
-- **Logo is text, not an image.** `templates/partials/_brand.html` (full
-  wordmark) and `_brand_mark.html` (monogram, condensed sidebar) are included in
-  the sidebar, topbar, and login page. Styles live in `static/jcf/css/brand.css`,
-  loaded after `app.min.css`. The `logo.png` / `logo-black.png` / `logo-sm.png`
-  files are no longer referenced.
-- **Login side photo:** `static/paces/images/auth-jcf.jpg` (JCF training
-  programme). `brand.css` also lightens Paces' `.auth-overlay`, which is built
-  for a caption we don't render and otherwise greys the photo out.
+- Paces' `saas` skin remains as a compatibility layer. The Foundation office
+  direction is defined in `static/jcf/css/office.css`, loaded last. It uses
+  **Public Sans**, self-hosted in `static/jcf/fonts/` with its SIL license;
+  no Google Fonts request is needed. Use a single sans family for UI and headings.
+- Indigo (`#393477`) actions, deep indigo (`#24243e`) navigation, white surfaces,
+  a cool neutral (`#f4f5f8`) canvas, and gold (`#d3ae63`) navigation markers.
+  Semantic status colors remain distinct. Light/dark modes both work.
+- Sidebar and topbar colors are pinned dark/light in `base.html`, including
+  cached Paces config. Match selector specificity when overriding Paces skins.
+- `dashboard/navigation.py` defines task groups and resolves the most specific
+  active URL. `{% office_navigation %}` renders the sidebar. The page finder
+  uses those authorized navigation links; it searches pages, not records.
+- Keep the shared list/form components in `static/jcf/css/ui.css`, layout in
+  `shell.css`, and final visual tokens in `office.css`. Do not edit minified
+  Paces assets for application styling.
+- Icons are vendored Phosphor (`ph ph-*`, `ph-light ph-*`). Use descriptive
+  accessible names on icon-only controls. Status colors must also have text.
+- The text logo reads “JCF / Foundation office.” Login uses the existing real
+  Foundation photograph (`static/paces/images/auth-jcf.jpg`).
+- The overview prioritizes incoming work, consultations, giving, gatherings,
+  and draft publishing. Financial totals must be grouped by currency.
+- General donations have a null cause. Centre requests and general Foundation
+  registrations are different workflows; the latter API remains outstanding.
+- Forms with `_form_actions.html` get unsaved-change feedback. Errors and
+  warnings remain until dismissed; only success feedback auto-dismisses.
+- Review rationale, validation, and remaining priorities are documented in
+  `docs/admin-experience-review-2026-09-23.md`. Regression tests live in
+  `dashboard/test_office.py`.
 
 ## Template Pattern
 
 All pages extend `layouts/dashboard.html` which extends `base.html`. Override these blocks:
 
-- `{% block title %}` — page title
+- `{% block title %}` — browser tab title
 - `{% block page_title %}` — heading shown on page
-- `{% block breadcrumb %}` — breadcrumb items
+- `{% block page_subtitle %}` — optional one-line description under the heading
+- `{% block page_actions %}` — buttons on the right of the page header
+- `{% block breadcrumb %}` — `<li>` items (Dashboard › Parent › Current). Only the
+  parent is shown, as a "‹ Parent" back link, and only on nested pages
 - `{% block content %}` — main content
 - `{% block extra_css %}` — additional CSS
 - `{% block extra_js %}` — additional JS
 
+Page patterns — copy the nearest existing page rather than starting fresh:
+
+- **List:** `members/contact_list.html`. One `.card.jcf-list`: `_tabs.html`
+  (tabs built in the view with `dashboard.listing.tabs()` / `count_by()`) →
+  `.jcf-toolbar` form (`_search.html`, `{% keep_params 'status' %}`, selects
+  that submit on change, no Search button) → `.jcf-table` → pager.
+  Rows use `_person.html`, `_row_menu.html`, `_empty_row.html`.
+- **Small create forms** live in a modal on the list page (`teachings/teaching_list.html`);
+  add `data-jcf-open` when `form.errors` so it re-opens after a failed POST.
+- **Form page:** `.jcf-form` with `section.card` blocks, or `.jcf-form-grid`
+  (main + sticky side column) for rich content (`events/event_form.html`).
+  Render fields with `partials/_field.html`; end with `_form_actions.html`.
+- **Grid of cards:** `.jcf-grid` of `.jcf-tile` (`centres/centre_list.html`).
+- **Delete confirmation:** set `template_name = 'confirm_delete.html'` on a DeleteView.
+- Confirm prompts use `data-confirm="…"` (handled in `static/jcf/js/ui.js`),
+  not inline `onclick`.
+
 Auth pages extend `layouts/auth.html` and override `{% block auth_content %}`.
+
+## Portal accounts and role policy
+
+- Staff directory records and portal accounts are separate. Account management lives at `/staff/access/`; optional `Profile.worker` links them.
+- `accounts/access.py` is the authoritative role policy; `accounts/middleware.py` enforces portal routes and first-login password setup. Add a policy entry when adding protected modules/routes.
+- Admin manages portal access; Administrator manages all operational areas; Secretary manages community, inbox and consultations; Media Operations manages publishing/content. Django admin is reserved for system superusers.
+- Navigation, dashboard sections and Inner Space action permissions derive from that policy. Never rely only on hiding a link.
+- Password reset/deactivation are CSRF-protected POSTs. Account changes are audited; no plaintext password logging or email. New/reset initial passwords must be changed on first sign-in.
+- Apply the accounts migration to the default Foundation DB when deploying. See `docs/portal-access.md` for rollout, legacy-account behavior and validation; regression tests are in `accounts/test_portal_access.py`.
