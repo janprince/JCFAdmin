@@ -1,0 +1,140 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{{ group.name }} | JCF Management{% endblock %}
+{% block page_title %}{{ group.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'groups:group_list' %}">Groups</a></li>
+<li class="breadcrumb-item active">{{ group.name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">About</h5>
+                <a href="{% url 'groups:group_update' group.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">{{ group.description|default:"No description."|linebreaksbr }}</p>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-1"><strong>Centre:</strong> {{ group.centre.name|default:"—" }}</li>
+                    <li class="mb-1"><strong>Members:</strong> {{ group.member_count }}{% if group.capacity %} / {{ group.capacity }}{% endif %}</li>
+                    <li class="mb-1"><strong>Status:</strong>
+                        {% if group.is_active %}<span class="badge bg-success">Active</span>
+                        {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                        {% if group.is_full %}<span class="badge bg-danger">Full</span>{% endif %}
+                    </li>
+                    <li><strong>Created:</strong> {{ group.created_at|date:"j M Y" }}{% if group.created_by %} by {{ group.created_by.get_full_name|default:group.created_by.email }}{% endif %}</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    Pending Requests
+                    {% if pending %}<span class="badge bg-warning ms-1">{{ pending|length }}</span>{% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending %}
+                <div class="table-responsive">
+                    <table class="table table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr><th>Name</th><th>Contact</th><th>Note</th><th>Requested</th><th class="text-end">Decision</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for m in pending %}
+                            <tr>
+                                <td><a href="{% url 'members:contact_detail' m.contact.pk %}">{{ m.contact.full_name }}</a></td>
+                                <td>{{ m.contact.email|default:m.contact.phone }}</td>
+                                <td>{{ m.message|default:"—" }}</td>
+                                <td>{{ m.requested_at|date:"j M Y" }}</td>
+                                <td class="text-end">
+                                    <form method="post" action="{% url 'groups:membership_approve' m.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'groups:membership_decline' m.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Decline</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No pending requests.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Members ({{ members|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if members %}
+                <div class="table-responsive">
+                    <table class="table table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr><th>Name</th><th>Contact</th><th>Joined</th><th>Approved by</th><th class="text-end"></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for m in members %}
+                            <tr>
+                                <td><a href="{% url 'members:contact_detail' m.contact.pk %}">{{ m.contact.full_name }}</a></td>
+                                <td>{{ m.contact.email|default:m.contact.phone }}</td>
+                                <td>{{ m.decided_at|date:"j M Y" }}</td>
+                                <td>{{ m.decided_by.get_full_name|default:m.decided_by.email|default:"—" }}</td>
+                                <td class="text-end">
+                                    <form method="post" action="{% url 'groups:membership_remove' m.pk %}" class="d-inline"
+                                          onsubmit="return confirm('Remove {{ m.contact.full_name }} from this group?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-soft-danger">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No members yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if declined %}
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Declined ({{ declined|length }})</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr><th>Name</th><th>Declined</th><th>By</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for m in declined %}
+                            <tr>
+                                <td>{{ m.contact.full_name }}</td>
+                                <td>{{ m.decided_at|date:"j M Y" }}</td>
+                                <td>{{ m.decided_by.get_full_name|default:m.decided_by.email|default:"—" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

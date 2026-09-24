@@ -1,0 +1,58 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Practices | JCF Management{% endblock %}
+{% block page_title %}Practices{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Practices</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Guided Practices</h5>
+                <a href="{% url 'practices:practice_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> New Practice
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">The app's Practice tab: today's practice rotates through active practices; members log sessions against them.</p>
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Title</th><th>Category</th><th>Minutes</th>
+                                <th>Audience</th><th>Sessions logged</th><th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in practices %}
+                            <tr>
+                                <td><strong>{{ p.title }}</strong></td>
+                                <td>{{ p.get_category_display }}</td>
+                                <td>{{ p.minutes }}</td>
+                                <td>{{ p.get_audience_display }}</td>
+                                <td>{{ p.logs.count }}</td>
+                                <td>
+                                    {% if p.is_active %}<span class="badge bg-success">Live in app</span>
+                                    {% else %}<span class="badge bg-secondary">Off</span>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'practices:practice_update' p.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" class="text-center text-muted py-4">No practices yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

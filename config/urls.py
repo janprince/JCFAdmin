@@ -14,6 +14,11 @@ urlpatterns = [
     path('consultations/', include('consultations.urls')),
 path('staff/', include('staff_mgmt.urls')),
     path('teachings/', include('teachings.urls')),
+    path('groups/', include('groups.urls')),
+    path('programs/', include('programs.urls')),
+    path('engagement/', include('engagement.urls')),
+    path('practices/', include('practices.urls')),
+    path('activities/', include('activities.urls')),
     # Public website content management
     path('events/', include('events.urls')),
     path('blog/', include('blog.urls')),
@@ -24,6 +29,8 @@ path('staff/', include('staff_mgmt.urls')),
     path('innerspace/', include('innerspace.urls')),
     # Public API for Next.js website
     path('api/', include('config.api_urls')),
+    # Mobile app API (versioned)
+    path('api/mobile/v1/', include('mobile_api.urls')),
     path('admin/', admin.site.urls),
 ]
 

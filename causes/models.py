@@ -86,6 +86,11 @@ class Donation(models.Model):
 
     cause = models.ForeignKey(Cause, on_delete=models.SET_NULL, null=True, blank=True, related_name='donations',
                               help_text='Leave blank for general donations.')
+    contact = models.ForeignKey(
+        'members.Contact', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='donations',
+        help_text='Linked member, if donated in-app while logged in.',
+    )
     donor_name = models.CharField(max_length=255)
     donor_email = models.EmailField(blank=True)
     donor_phone = PhoneNumberField(blank=True)

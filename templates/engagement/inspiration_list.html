@@ -1,0 +1,65 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Daily Inspiration | JCF Management{% endblock %}
+{% block page_title %}Daily Inspiration{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Daily Inspiration</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Scheduled Inspirations</h5>
+                <a href="{% url 'engagement:inspiration_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> Schedule Inspiration
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">One entry per day. The app's Home hero shows today's entry (or the most recent past one).</p>
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Date</th>
+                                <th>Quote</th>
+                                <th>Author</th>
+                                <th>Related teaching</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in inspirations %}
+                            <tr>
+                                <td><strong>{{ i.date|date:"D, j M Y" }}</strong></td>
+                                <td>{{ i.quote|truncatechars:70 }}</td>
+                                <td>{{ i.author }}</td>
+                                <td>{{ i.related_teaching.topic|default:"—"|truncatechars:30 }}</td>
+                                <td>
+                                    {% if i.is_published %}<span class="badge bg-success">Published</span>
+                                    {% else %}<span class="badge bg-secondary">Draft</span>{% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'engagement:inspiration_update' i.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+                                    <form method="post" action="{% url 'engagement:inspiration_delete' i.pk %}" class="d-inline"
+                                          onsubmit="return confirm('Delete this inspiration?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-soft-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted py-4">Nothing scheduled yet.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

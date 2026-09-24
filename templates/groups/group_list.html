@@ -1,0 +1,91 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Groups | JCF Management{% endblock %}
+{% block page_title %}Groups{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item active">Groups</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    All Groups
+                    {% if pending_total %}
+                    <span class="badge bg-warning ms-2">{{ pending_total }} pending request{{ pending_total|pluralize }}</span>
+                    {% endif %}
+                </h5>
+                <a href="{% url 'groups:group_create' %}" class="btn btn-primary btn-sm">
+                    <i class="ti ti-plus me-1"></i> New Group
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="get" class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="app-search">
+                                <input type="search" name="q" class="form-control" placeholder="Search groups..." value="{{ search_query }}" />
+                                <i class="ti ti-search app-search-icon text-muted"></i>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            {% if search_query %}
+                            <a href="{% url 'groups:group_list' %}" class="btn btn-outline-secondary">Clear</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-centered mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th>Name</th>
+                                <th>Centre</th>
+                                <th>Members</th>
+                                <th>Pending</th>
+                                <th>Capacity</th>
+                                <th>Status</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in groups %}
+                            <tr>
+                                <td><a href="{% url 'groups:group_detail' g.pk %}">{{ g.name }}</a></td>
+                                <td>{{ g.centre.name|default:"—" }}</td>
+                                <td>{{ g.member_count }}</td>
+                                <td>
+                                    {% if g.pending_count %}
+                                    <span class="badge bg-warning">{{ g.pending_count }}</span>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>{{ g.capacity|default:"—" }}</td>
+                                <td>
+                                    {% if g.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'groups:group_detail' g.pk %}" class="btn btn-sm btn-soft-primary">View</a>
+                                    <a href="{% url 'groups:group_update' g.pk %}" class="btn btn-sm btn-soft-secondary">Edit</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="7" class="text-center text-muted py-4">No groups yet. Create the first one.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

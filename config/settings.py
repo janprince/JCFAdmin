@@ -43,6 +43,13 @@ INSTALLED_APPS = [
     'centres',
     'causes',
     'website',
+    'programs',
+    'engagement',
+    'groups',
+    'practices',
+    'activities',
+    # Mobile app API
+    'mobile_api',
     # Innerspace student platform (separate, Prisma-owned database)
     'innerspace',
 ]
@@ -51,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -121,6 +129,17 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LANGUAGE_CODE = 'en-us'
+
+# Wave-1 app languages: the API honours Accept-Language for server-generated
+# text (Django/DRF built-in messages now; our own strings are gettext-wrapped
+# and translate once .po files land).
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'Français'),
+    ('es', 'Español'),
+    ('de', 'Deutsch'),
+    ('pt', 'Português'),
+]
 TIME_ZONE = 'Africa/Accra'
 USE_I18N = True
 USE_TZ = True
@@ -145,6 +164,9 @@ if CLOUDFLARE_R2_BUCKET:
                 'secret_key': env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
                 'bucket_name': CLOUDFLARE_R2_BUCKET,
                 'endpoint_url': env('CLOUDFLARE_R2_ENDPOINT'),
+                # R2 requires a region; 'auto' avoids malformed SigV4 requests
+                # (without it recent botocore sends a bad HeadObject → 400).
+                'region_name': 'auto',
                 'custom_domain': env('CLOUDFLARE_R2_PUBLIC_DOMAIN', default=''),
                 'default_acl': None,
                 'querystring_auth': False,
@@ -176,8 +198,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PHONENUMBER_DEFAULT_REGION = 'GH'
 
-# Email (Google SMTP)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Email (Google SMTP by default; override with console backend in dev)
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -193,6 +215,11 @@ ARKESEL_SENDER_ID = env('ARKESEL_SENDER_ID', default='JCF')
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_RATES': {
+        # Anti-enumeration: request-code reveals whether a contact exists
+        # (the designed UX), so lookups are tightly limited per IP.
+        'request_code': '10/min',
+    },
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
@@ -205,5 +232,11 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
 ])
 CORS_ALLOW_CREDENTIALS = True
 
+# Firebase Cloud Messaging (push). Off until a service account is provisioned.
+FCM_ENABLED = env.bool('FCM_ENABLED', default=False)
+
 # Paystack
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')
+# Public key is safe to ship to clients; served to the app at runtime so it can
+# rotate without an app release.
+PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')
