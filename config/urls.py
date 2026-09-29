@@ -19,6 +19,7 @@ path('staff/', include('staff_mgmt.urls')),
     path('engagement/', include('engagement.urls')),
     path('practices/', include('practices.urls')),
     path('activities/', include('activities.urls')),
+    path('students/', include('studies.urls')),
     # Public website content management
     path('events/', include('events.urls')),
     path('blog/', include('blog.urls')),

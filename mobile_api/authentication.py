@@ -54,6 +54,18 @@ class IsMember(permissions.BasePermission):
         return isinstance(request.auth, MobileToken)
 
 
+class IsStudent(IsMember):
+    """Restrict to Contacts enrolled as students."""
+
+    message = _('This content is for enrolled students.')
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        contact = request.auth.contact
+        return bool(contact.is_active and contact.is_student)
+
+
 class IsStudentOrMember(IsMember):
     """Restrict to Contacts flagged as an active member or student."""
 

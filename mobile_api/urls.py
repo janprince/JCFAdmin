@@ -11,6 +11,7 @@ from . import practices_api
 from . import activities_api
 from . import search_api
 from . import member_home_api
+from . import student_home_api
 
 app_name = 'mobile_api'
 
@@ -70,6 +71,8 @@ urlpatterns = [
 
     # Member Home aggregate
     path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),
+
+    path('home/student/', student_home_api.StudentHomeView.as_view(), name='student_home'),
 
     # Global search (designs 30/31)
     path('search/', search_api.GlobalSearchView.as_view(), name='search'),
