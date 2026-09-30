@@ -1,7 +1,10 @@
 """
 Engagement: announcements, push device tokens, and in-app notifications.
 """
+from math import ceil
+
 from django.db import models
+from django.utils.text import slugify
 
 
 class Announcement(models.Model):
@@ -102,10 +105,27 @@ class DailyInspiration(models.Model):
     most recent published past entry."""
 
     date = models.DateField(unique=True, help_text='The day this inspiration is shown.')
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    category = models.CharField(max_length=80, blank=True, default='Awareness')
+    title = models.CharField(
+        max_length=255, blank=True,
+        help_text='Headline for the detail screen; falls back to the quote.')
     quote = models.TextField()
     author = models.CharField(max_length=255, default='Dr. Baffour Jan')
     reflection = models.TextField(
         blank=True, help_text='A short reflection prompt shown under the quote.')
+    share_excerpt = models.TextField(
+        blank=True,
+        help_text='Short line used on share cards; falls back to the quote.')
+    hero_image = models.ImageField(upload_to='inspirations/', blank=True)
+    hero_alt_text = models.CharField(max_length=255, blank=True)
+    prompt_question = models.TextField(
+        blank=True, help_text='The "Pause and Reflect" question.')
+    prompt_guidance = models.TextField(blank=True)
+    audio_file = models.FileField(upload_to='inspirations/audio/', blank=True)
+    audio_url = models.URLField(blank=True)
+    audio_duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    sharing_allowed = models.BooleanField(default=True)
     related_teaching = models.ForeignKey(
         'teachings.Teaching', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='inspirations',
@@ -117,5 +137,140 @@ class DailyInspiration(models.Model):
     class Meta:
         ordering = ['-date']
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title or self.quote)[:200] or 'inspiration'
+            self.slug = f'{base}-{self.date:%Y-%m-%d}'
+        super().save(*args, **kwargs)
+
+    @property
+    def display_title(self):
+        return self.title or self.quote
+
+    @property
+    def resolved_audio_url(self):
+        if self.audio_file:
+            return self.audio_file.url
+        return self.audio_url
+
+    def reading_time_minutes(self):
+        """Rounded up from the body at ~200 words a minute, never below 1."""
+        words = len((self.reflection or '').split())
+        for block in self.blocks.all():
+            words += len((block.text or '').split())
+            words += sum(len(str(item).split()) for item in (block.items or []))
+        return max(1, ceil(words / 200))
+
     def __str__(self):
         return f'{self.date}: {self.quote[:40]}'
+
+
+class InspirationBlock(models.Model):
+    """One block of an inspiration's reflection body. Structured rather than
+    raw HTML, so the app renders only types it understands."""
+
+    class Kind(models.TextChoices):
+        PARAGRAPH = 'paragraph', 'Paragraph'
+        HEADING = 'heading', 'Heading'
+        SUBHEADING = 'subheading', 'Subheading'
+        PULL_QUOTE = 'pull_quote', 'Pull quote'
+        IMAGE = 'image', 'Image'
+        BULLET_LIST = 'bullet_list', 'Bullet list'
+        NUMBERED_LIST = 'numbered_list', 'Numbered list'
+        DIVIDER = 'divider', 'Divider'
+
+    inspiration = models.ForeignKey(
+        DailyInspiration, on_delete=models.CASCADE, related_name='blocks')
+    block_type = models.CharField(
+        max_length=16, choices=Kind.choices, default=Kind.PARAGRAPH)
+    text = models.TextField(blank=True)
+    source = models.CharField(
+        max_length=255, blank=True, help_text='Attribution for a pull quote.')
+    image = models.ImageField(upload_to='inspirations/body/', blank=True)
+    alt_text = models.CharField(max_length=255, blank=True)
+    caption = models.CharField(max_length=255, blank=True)
+    items = models.JSONField(
+        default=list, blank=True, help_text='List entries, for list blocks.')
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f'{self.get_block_type_display()} #{self.order}'
+
+
+class InspirationSave(models.Model):
+    """A member has saved an inspiration for later."""
+
+    contact = models.ForeignKey(
+        'members.Contact', on_delete=models.CASCADE,
+        related_name='inspiration_saves')
+    inspiration = models.ForeignKey(
+        DailyInspiration, on_delete=models.CASCADE, related_name='saves')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contact', 'inspiration'], name='uniq_inspiration_save'),
+        ]
+
+
+class InspirationReflection(models.Model):
+    """A member has marked an inspiration as reflected on."""
+
+    contact = models.ForeignKey(
+        'members.Contact', on_delete=models.CASCADE,
+        related_name='inspiration_reflections')
+    inspiration = models.ForeignKey(
+        DailyInspiration, on_delete=models.CASCADE,
+        related_name='reflections')
+    reflected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['contact', 'inspiration'],
+                name='uniq_inspiration_reflection'),
+        ]
+
+class LegalDocument(models.Model):
+    """Terms of Use and Privacy Policy, authored by the foundation.
+
+    Versioned because acceptance is recorded against a version: "the user
+    agreed" means nothing without saying to what. The app never invents or
+    caches its own copy of this text - if nothing is published, it says so
+    rather than showing words nobody approved.
+    """
+
+    class Kind(models.TextChoices):
+        TERMS = 'terms', 'Terms of Use'
+        PRIVACY = 'privacy', 'Privacy Policy'
+
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    version = models.CharField(
+        max_length=20,
+        help_text='e.g. "2026-09" or "1.2". Acceptance is recorded '
+                  'against this exact value.')
+    language = models.CharField(
+        max_length=10, default='en',
+        help_text='Language code. English is the fallback when a '
+                  'translation has not been authored.')
+    title = models.CharField(max_length=255)
+    body = models.TextField(help_text='Markdown or plain text.')
+    is_published = models.BooleanField(default=False)
+    effective_from = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['kind', '-effective_from', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['kind', 'version', 'language'],
+                name='uniq_legal_version_per_language'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()} {self.version} ({self.language})'

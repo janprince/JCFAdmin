@@ -45,6 +45,22 @@ class MobileTokenAuthentication(authentication.BaseAuthentication):
         return self.keyword
 
 
+class OptionalMobileTokenAuthentication(MobileTokenAuthentication):
+    """Validates a token when one is sent, and treats a bad one as absent.
+
+    For endpoints that must answer a launching app whatever state its
+    stored credentials are in. A stale token has to leave the caller a
+    guest, not lock them out of the call that would have told them to sign
+    in again.
+    """
+
+    def authenticate(self, request):
+        try:
+            return super().authenticate(request)
+        except exceptions.AuthenticationFailed:
+            return None
+
+
 class IsMember(permissions.BasePermission):
     """Allow only requests carrying a valid mobile token."""
 
@@ -52,6 +68,18 @@ class IsMember(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return isinstance(request.auth, MobileToken)
+
+
+class IsStudent(IsMember):
+    """Restrict to Contacts enrolled as students."""
+
+    message = _('This content is for enrolled students.')
+
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        contact = request.auth.contact
+        return bool(contact.is_active and contact.is_student)
 
 
 class IsStudentOrMember(IsMember):

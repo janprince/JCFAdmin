@@ -2,6 +2,8 @@
 from django.urls import path
 
 from . import views
+from . import bootstrap_api
+from . import legal_api
 from . import content
 from . import payments
 from . import programs_api
@@ -9,11 +11,22 @@ from . import engagement_api
 from . import groups_api
 from . import practices_api
 from . import activities_api
+from . import continue_learning_api
 from . import search_api
+from . import member_home_api
+from . import student_home_api
+from . import inspiration_detail_api
+from . import live_api
 
 app_name = 'mobile_api'
 
 urlpatterns = [
+    # App bootstrap — version, maintenance and session, before anything else
+    path('bootstrap/', bootstrap_api.BootstrapView.as_view(), name='bootstrap'),
+
+    # Legal documents - the foundation's own words, versioned
+    path('legal/<str:kind>/', legal_api.LegalDocumentView.as_view(), name='legal_document'),
+
     # Auth
     path('auth/request-code/', views.RequestCodeView.as_view(), name='request_code'),
     path('auth/verify-code/', views.VerifyCodeView.as_view(), name='verify_code'),
@@ -24,7 +37,9 @@ urlpatterns = [
     path('teachings/', content.TeachingListView.as_view(), name='teaching_list'),
     path('teachings/<slug:slug>/', content.TeachingDetailView.as_view(), name='teaching_detail'),
     path('teachings/<slug:slug>/progress/', content.TeachingProgressView.as_view(), name='teaching_progress'),
-    path('learning/continue/', content.ContinueLearningView.as_view(), name='continue_learning'),
+    # The compact series + recently-viewed summary the home card reads.
+    # The full hub lives at learning/continue/ below.
+    path('learning/summary/', content.ContinueLearningView.as_view(), name='continue_learning'),
     path('series/', content.SeriesListView.as_view(), name='series_list'),
     path('series/<slug:slug>/', content.SeriesDetailView.as_view(), name='series_detail'),
 
@@ -57,6 +72,10 @@ urlpatterns = [
     # Daily inspiration (Home hero, design 19/22)
     path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
     path('inspiration/recent/', engagement_api.InspirationRecentView.as_view(), name='inspiration_recent'),
+    path('inspirations/<str:identifier>/', inspiration_detail_api.InspirationDetailView.as_view(), name='inspiration_detail'),
+    path('inspirations/<str:identifier>/share-data/', inspiration_detail_api.InspirationShareDataView.as_view(), name='inspiration_share_data'),
+    path('inspirations/<str:identifier>/save/', inspiration_detail_api.InspirationSaveView.as_view(), name='inspiration_save'),
+    path('inspirations/<str:identifier>/reflection/', inspiration_detail_api.InspirationReflectionView.as_view(), name='inspiration_reflection'),
 
     # Practices (design 27)
     path('practices/', practices_api.PracticeListView.as_view(), name='practice_list'),
@@ -65,7 +84,29 @@ urlpatterns = [
 
     # Upcoming Activities feed (design 25)
     path('activities/upcoming/', activities_api.UpcomingActivitiesView.as_view(), name='activities_upcoming'),
+    path('activities/calendar/', activities_api.ActivityCalendarView.as_view(), name='activities_calendar'),
     path('activities/reminder/', activities_api.ReminderToggleView.as_view(), name='activities_reminder'),
+    path('activities/save/', activities_api.ActivitySaveToggleView.as_view(), name='activities_save'),
+    path('activities/register/', activities_api.ActivityRegistrationView.as_view(), name='activities_register'),
+    path('activities/<int:pk>/', activities_api.ActivityDetailView.as_view(), name='activities_detail'),
+
+    # Continue Learning hub (designs 43-47)
+    path('learning/continue/', continue_learning_api.ContinueLearningView.as_view(), name='learning_continue'),
+    path('learning/lessons/<int:pk>/progress/', continue_learning_api.LessonProgressView.as_view(), name='learning_lesson_progress'),
+
+    # Member Home aggregate
+    path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),
+
+    path('home/student/', student_home_api.StudentHomeView.as_view(), name='student_home'),
+
+    # Live Now (design 24)
+    path('events/<int:event_id>/live/', live_api.LiveEventDetailView.as_view(), name='live_detail'),
+    path('events/<int:event_id>/viewer-session/', live_api.LiveViewerSessionView.as_view(), name='live_viewer_session'),
+    path('events/<int:event_id>/chat/', live_api.LiveChatView.as_view(), name='live_chat'),
+    path('events/<int:event_id>/chat/<int:message_id>/report/', live_api.LiveChatReportView.as_view(), name='live_chat_report'),
+    path('events/<int:event_id>/chat/block/<int:contact_id>/', live_api.LiveChatBlockView.as_view(), name='live_chat_block'),
+    path('events/<int:event_id>/reaction/', live_api.LiveReactionView.as_view(), name='live_reaction'),
+    path('events/<int:event_id>/save/', live_api.LiveSaveView.as_view(), name='live_save'),
 
     # Global search (designs 30/31)
     path('search/', search_api.GlobalSearchView.as_view(), name='search'),

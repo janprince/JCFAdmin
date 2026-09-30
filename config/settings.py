@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'groups',
     'practices',
     'activities',
+    'studies',
     # Mobile app API
     'mobile_api',
     # Innerspace student platform (separate, Prisma-owned database)
@@ -198,6 +199,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PHONENUMBER_DEFAULT_REGION = 'GH'
 
+# Canonical public site, used to build share links for app content.
+PUBLIC_SITE_URL = env('PUBLIC_SITE_URL', default='https://www.jancosmicfoundation.org')
+
 # Email (Google SMTP by default; override with console backend in dev)
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = 'smtp.gmail.com'
@@ -240,3 +244,13 @@ PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')
 # Public key is safe to ship to clients; served to the app at runtime so it can
 # rotate without an app release.
 PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')
+
+
+# --- Mobile app bootstrap -------------------------------------------------
+# Maintenance is a settings flag, not a database row: it has to be switchable
+# during an incident in which the database may itself be the problem.
+MOBILE_MAINTENANCE = env.bool('MOBILE_MAINTENANCE', default=False)
+MOBILE_MAINTENANCE_TITLE = env('MOBILE_MAINTENANCE_TITLE', default='')
+MOBILE_MAINTENANCE_MESSAGE = env('MOBILE_MAINTENANCE_MESSAGE', default='')
+MOBILE_MAINTENANCE_ALLOW_OFFLINE = env.bool(
+    'MOBILE_MAINTENANCE_ALLOW_OFFLINE', default=True)
