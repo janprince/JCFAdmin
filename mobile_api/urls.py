@@ -12,6 +12,7 @@ from . import activities_api
 from . import search_api
 from . import member_home_api
 from . import student_home_api
+from . import inspiration_detail_api
 
 app_name = 'mobile_api'
 
@@ -59,6 +60,9 @@ urlpatterns = [
     # Daily inspiration (Home hero, design 19/22)
     path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
     path('inspiration/recent/', engagement_api.InspirationRecentView.as_view(), name='inspiration_recent'),
+    path('inspirations/<str:identifier>/', inspiration_detail_api.InspirationDetailView.as_view(), name='inspiration_detail'),
+    path('inspirations/<str:identifier>/save/', inspiration_detail_api.InspirationSaveView.as_view(), name='inspiration_save'),
+    path('inspirations/<str:identifier>/reflection/', inspiration_detail_api.InspirationReflectionView.as_view(), name='inspiration_reflection'),
 
     # Practices (design 27)
     path('practices/', practices_api.PracticeListView.as_view(), name='practice_list'),

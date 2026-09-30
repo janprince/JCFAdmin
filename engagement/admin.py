@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Announcement, DeviceToken, Notification
+from .models import InspirationBlock, InspirationReflection, InspirationSave, Announcement, DeviceToken, Notification
 from .push import broadcast_announcement
 
 
@@ -29,3 +29,20 @@ class NotificationAdmin(admin.ModelAdmin):
     list_display = ('title', 'contact', 'read_at', 'created_at')
     list_filter = ('read_at',)
     search_fields = ('title', 'contact__full_name')
+
+
+class InspirationBlockInline(admin.TabularInline):
+    model = InspirationBlock
+    extra = 1
+
+
+@admin.register(InspirationSave)
+class InspirationSaveAdmin(admin.ModelAdmin):
+    list_display = ['contact', 'inspiration', 'created_at']
+    raw_id_fields = ['contact']
+
+
+@admin.register(InspirationReflection)
+class InspirationReflectionAdmin(admin.ModelAdmin):
+    list_display = ['contact', 'inspiration', 'reflected_at']
+    raw_id_fields = ['contact']

@@ -199,6 +199,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 PHONENUMBER_DEFAULT_REGION = 'GH'
 
+# Canonical public site, used to build share links for app content.
+PUBLIC_SITE_URL = env('PUBLIC_SITE_URL', default='https://www.jancosmicfoundation.org')
+
 # Email (Google SMTP by default; override with console backend in dev)
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = 'smtp.gmail.com'
