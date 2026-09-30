@@ -79,3 +79,7 @@ class ActivityReminder(models.Model):
     def __str__(self):
         target = self.activity or self.program
         return f'{self.contact_id} → {target}'
+
+
+# Live streaming models live in their own module for readability.
+from .live_models import *  # noqa: E402,F401,F403

@@ -13,6 +13,7 @@ from . import search_api
 from . import member_home_api
 from . import student_home_api
 from . import inspiration_detail_api
+from . import live_api
 
 app_name = 'mobile_api'
 
@@ -78,6 +79,15 @@ urlpatterns = [
     path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),
 
     path('home/student/', student_home_api.StudentHomeView.as_view(), name='student_home'),
+
+    # Live Now (design 24)
+    path('events/<int:event_id>/live/', live_api.LiveEventDetailView.as_view(), name='live_detail'),
+    path('events/<int:event_id>/viewer-session/', live_api.LiveViewerSessionView.as_view(), name='live_viewer_session'),
+    path('events/<int:event_id>/chat/', live_api.LiveChatView.as_view(), name='live_chat'),
+    path('events/<int:event_id>/chat/<int:message_id>/report/', live_api.LiveChatReportView.as_view(), name='live_chat_report'),
+    path('events/<int:event_id>/chat/block/<int:contact_id>/', live_api.LiveChatBlockView.as_view(), name='live_chat_block'),
+    path('events/<int:event_id>/reaction/', live_api.LiveReactionView.as_view(), name='live_reaction'),
+    path('events/<int:event_id>/save/', live_api.LiveSaveView.as_view(), name='live_save'),
 
     # Global search (designs 30/31)
     path('search/', search_api.GlobalSearchView.as_view(), name='search'),
