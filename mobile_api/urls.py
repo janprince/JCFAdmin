@@ -9,6 +9,7 @@ from . import engagement_api
 from . import groups_api
 from . import practices_api
 from . import activities_api
+from . import continue_learning_api
 from . import search_api
 from . import member_home_api
 from . import student_home_api
@@ -28,7 +29,9 @@ urlpatterns = [
     path('teachings/', content.TeachingListView.as_view(), name='teaching_list'),
     path('teachings/<slug:slug>/', content.TeachingDetailView.as_view(), name='teaching_detail'),
     path('teachings/<slug:slug>/progress/', content.TeachingProgressView.as_view(), name='teaching_progress'),
-    path('learning/continue/', content.ContinueLearningView.as_view(), name='continue_learning'),
+    # The compact series + recently-viewed summary the home card reads.
+    # The full hub lives at learning/continue/ below.
+    path('learning/summary/', content.ContinueLearningView.as_view(), name='continue_learning'),
     path('series/', content.SeriesListView.as_view(), name='series_list'),
     path('series/<slug:slug>/', content.SeriesDetailView.as_view(), name='series_detail'),
 
@@ -78,6 +81,10 @@ urlpatterns = [
     path('activities/save/', activities_api.ActivitySaveToggleView.as_view(), name='activities_save'),
     path('activities/register/', activities_api.ActivityRegistrationView.as_view(), name='activities_register'),
     path('activities/<int:pk>/', activities_api.ActivityDetailView.as_view(), name='activities_detail'),
+
+    # Continue Learning hub (designs 43-47)
+    path('learning/continue/', continue_learning_api.ContinueLearningView.as_view(), name='learning_continue'),
+    path('learning/lessons/<int:pk>/progress/', continue_learning_api.LessonProgressView.as_view(), name='learning_lesson_progress'),
 
     # Member Home aggregate
     path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),

@@ -3,14 +3,35 @@ from django.utils.text import slugify
 
 
 class TeachingSeries(models.Model):
-    """A grouping of teachings (e.g. an InnerSpace course or lecture series)."""
+    """A grouping of teachings (e.g. an InnerSpace course or lecture series).
+
+    This is what the mobile app calls a *course*.
+    """
+
+    class Category(models.TextChoices):
+        """Drives which packaged artwork the app falls back to when a
+        series has no cover of its own."""
+        AWARENESS = 'awareness', 'Awareness & foundations'
+        PRACTICE = 'practice', 'Meditation & practice'
+        COMMUNICATION = 'communication', 'Communication & relationships'
+        OTHER = 'other', 'Other'
 
     title = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True)
     cover = models.ImageField(upload_to='teachings/series/', blank=True)
+    category = models.CharField(
+        max_length=16, choices=Category.choices, default=Category.OTHER)
+    facilitator = models.CharField(
+        max_length=255, blank=True, default='Dr. Baffour Jan')
     order = models.PositiveIntegerField(default=0, help_text='Lower numbers appear first.')
     is_published = models.BooleanField(default=True)
+    is_recommended = models.BooleanField(
+        default=False,
+        help_text='Eligible for the Recommended for You row.')
+    recommendation_reason = models.CharField(
+        max_length=120, blank=True,
+        help_text='Shown verbatim, e.g. "Continue your learning path".')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -25,6 +46,33 @@ class TeachingSeries(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TeachingModule(models.Model):
+    """A chapter within a series.
+
+    Optional on purpose: series authored before modules existed keep their
+    lessons attached straight to the series, and the app reports a module
+    count of zero rather than inventing one.
+    """
+
+    series = models.ForeignKey(
+        TeachingSeries, on_delete=models.CASCADE, related_name='modules')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['series', 'title'], name='uniq_module_title_in_series'),
+        ]
+
+    def __str__(self):
+        return f'{self.series.title} — {self.title}'
 
 
 class Teaching(models.Model):
@@ -52,6 +100,18 @@ class Teaching(models.Model):
         VIDEO = 'video', 'Video'
         AUDIO = 'audio', 'Audio'
 
+    class LessonType(models.TextChoices):
+        """How the app opens this lesson. Wider than `media_kind`, which
+        only ever described a media file."""
+        VIDEO = 'video', 'Video'
+        AUDIO = 'audio', 'Audio'
+        WRITTEN = 'written', 'Written'
+        REFLECTION = 'reflection', 'Reflection'
+        PRACTICE = 'practice', 'Practice'
+        QUIZ = 'quiz', 'Quiz'
+        LIVE = 'live', 'Live session'
+        RESOURCE = 'resource', 'Downloadable resource'
+
     topic = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     author = models.CharField(
@@ -70,7 +130,20 @@ class Teaching(models.Model):
         TeachingSeries, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='teachings',
     )
+    module = models.ForeignKey(
+        TeachingModule, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='teachings')
     order = models.PositiveIntegerField(default=0, help_text='Order within a series.')
+    lesson_type = models.CharField(
+        max_length=12, choices=LessonType.choices, default=LessonType.VIDEO)
+    prerequisite = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='unlocks',
+        help_text='Lesson that must be completed before this one opens.')
+    downloadable = models.BooleanField(
+        default=False,
+        help_text='Whether this lesson may be taken offline. Not every '
+                  'lesson can be — licensing and live sessions differ.')
 
     # Media — supports BOTH a YouTube link and/or an R2-hosted file.
     media_kind = models.CharField(max_length=10, choices=MediaKind.choices, default=MediaKind.VIDEO)

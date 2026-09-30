@@ -121,7 +121,7 @@ class ContinueLearningTests(APITestCase):
         self.assertEqual(self.lessons[0].view_count, 1)
 
         summary = self.client.get(
-            '/api/mobile/v1/learning/continue/', **self._auth())
+            '/api/mobile/v1/learning/summary/', **self._auth())
         self.assertEqual(
             summary.data['recently_viewed'][0]['topic'], 'Lesson 1')
 
@@ -135,7 +135,7 @@ class ContinueLearningTests(APITestCase):
         self.client.get(
             f'/api/mobile/v1/teachings/{self.lessons[1].slug}/', **auth)
 
-        summary = self.client.get('/api/mobile/v1/learning/continue/', **auth)
+        summary = self.client.get('/api/mobile/v1/learning/summary/', **auth)
         self.assertEqual(summary.data['active_series'], 1)
         self.assertEqual(summary.data['lessons_completed'], 1)
         card = summary.data['series'][0]
