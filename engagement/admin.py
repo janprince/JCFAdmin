@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import InspirationBlock, InspirationReflection, InspirationSave, Announcement, DeviceToken, Notification
+from .models import LegalDocument, InspirationBlock, InspirationReflection, InspirationSave, Announcement, DeviceToken, Notification
 from .push import broadcast_announcement
 
 
@@ -46,3 +46,14 @@ class InspirationSaveAdmin(admin.ModelAdmin):
 class InspirationReflectionAdmin(admin.ModelAdmin):
     list_display = ['contact', 'inspiration', 'reflected_at']
     raw_id_fields = ['contact']
+
+
+@admin.register(LegalDocument)
+class LegalDocumentAdmin(admin.ModelAdmin):
+    """Where the foundation authors its own legal text. Nothing else
+    writes these rows, and the app never substitutes its own copy."""
+
+    list_display = ['kind', 'version', 'language', 'is_published',
+                    'effective_from', 'updated_at']
+    list_filter = ['kind', 'language', 'is_published']
+    search_fields = ['title', 'body', 'version']

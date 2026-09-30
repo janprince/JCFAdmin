@@ -3,6 +3,7 @@ from django.urls import path
 
 from . import views
 from . import bootstrap_api
+from . import legal_api
 from . import content
 from . import payments
 from . import programs_api
@@ -22,6 +23,9 @@ app_name = 'mobile_api'
 urlpatterns = [
     # App bootstrap — version, maintenance and session, before anything else
     path('bootstrap/', bootstrap_api.BootstrapView.as_view(), name='bootstrap'),
+
+    # Legal documents - the foundation's own words, versioned
+    path('legal/<str:kind>/', legal_api.LegalDocumentView.as_view(), name='legal_document'),
 
     # Auth
     path('auth/request-code/', views.RequestCodeView.as_view(), name='request_code'),

@@ -234,3 +234,43 @@ class InspirationReflection(models.Model):
                 fields=['contact', 'inspiration'],
                 name='uniq_inspiration_reflection'),
         ]
+
+class LegalDocument(models.Model):
+    """Terms of Use and Privacy Policy, authored by the foundation.
+
+    Versioned because acceptance is recorded against a version: "the user
+    agreed" means nothing without saying to what. The app never invents or
+    caches its own copy of this text - if nothing is published, it says so
+    rather than showing words nobody approved.
+    """
+
+    class Kind(models.TextChoices):
+        TERMS = 'terms', 'Terms of Use'
+        PRIVACY = 'privacy', 'Privacy Policy'
+
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    version = models.CharField(
+        max_length=20,
+        help_text='e.g. "2026-09" or "1.2". Acceptance is recorded '
+                  'against this exact value.')
+    language = models.CharField(
+        max_length=10, default='en',
+        help_text='Language code. English is the fallback when a '
+                  'translation has not been authored.')
+    title = models.CharField(max_length=255)
+    body = models.TextField(help_text='Markdown or plain text.')
+    is_published = models.BooleanField(default=False)
+    effective_from = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['kind', '-effective_from', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['kind', 'version', 'language'],
+                name='uniq_legal_version_per_language'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_kind_display()} {self.version} ({self.language})'
