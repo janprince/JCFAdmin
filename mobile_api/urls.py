@@ -73,7 +73,11 @@ urlpatterns = [
 
     # Upcoming Activities feed (design 25)
     path('activities/upcoming/', activities_api.UpcomingActivitiesView.as_view(), name='activities_upcoming'),
+    path('activities/calendar/', activities_api.ActivityCalendarView.as_view(), name='activities_calendar'),
     path('activities/reminder/', activities_api.ReminderToggleView.as_view(), name='activities_reminder'),
+    path('activities/save/', activities_api.ActivitySaveToggleView.as_view(), name='activities_save'),
+    path('activities/register/', activities_api.ActivityRegistrationView.as_view(), name='activities_register'),
+    path('activities/<int:pk>/', activities_api.ActivityDetailView.as_view(), name='activities_detail'),
 
     # Member Home aggregate
     path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),

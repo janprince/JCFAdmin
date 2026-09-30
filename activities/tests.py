@@ -45,7 +45,13 @@ class ActivitiesApiTests(APITestCase):
         titles = [i['title'] for i in feed.data['results']]
         self.assertIn('Morning Practice', titles)
 
-    def test_feed_merges_programmes_sorted_by_start(self):
+    def test_feed_lists_activities_only(self):
+        """Programmes left the browse feed when it gained keyset paging.
+
+        A programme is a multi-week course, not a dated card with a seat
+        and a format, and merging two tables cannot be paged by a cursor.
+        Programmes keep their own screen; reminders on them still work.
+        """
         Activity.objects.create(
             title='Community Circle Live', kind='live',
             starts_at=timezone.now() + timedelta(days=3))
@@ -53,11 +59,15 @@ class ActivitiesApiTests(APITestCase):
             title='Open Day', year=2026, audience='public', is_published=True,
             starts_on=timezone.localdate() + timedelta(days=1))
         res = self.client.get(FEED)
-        kinds = [i['kind'] for i in res.data['results']]
-        self.assertEqual(kinds, ['programme', 'live'])
-        self.assertTrue(res.data['results'][0]['all_day'])
+        titles = [i['title'] for i in res.data['results']]
+        self.assertEqual(titles, ['Community Circle Live'])
 
-    def test_guest_sees_only_public_items(self):
+    def test_guest_sees_members_items_but_cannot_open_them(self):
+        """The browse feed shows the tier above the caller, locked.
+
+        Hiding members-only sittings from a guest makes the schedule look
+        empty; showing them locked is what gives signing in a point.
+        """
         Activity.objects.create(
             title='Public Sitting', audience='public',
             starts_at=timezone.now() + timedelta(days=1))
@@ -65,14 +75,17 @@ class ActivitiesApiTests(APITestCase):
             title='Members Sitting', audience='members',
             starts_at=timezone.now() + timedelta(days=1))
         res = self.client.get(FEED)
-        titles = [i['title'] for i in res.data['results']]
-        self.assertEqual(titles, ['Public Sitting'])
+        access = {i['title']: i['access']['allowed']
+                  for i in res.data['results']}
+        self.assertTrue(access['Public Sitting'])
+        self.assertFalse(access['Members Sitting'])
 
         member_res = self.client.get(FEED, **self._auth())
-        member_titles = [i['title'] for i in member_res.data['results']]
-        self.assertIn('Members Sitting', member_titles)
+        member_access = {i['title']: i['access']['allowed']
+                         for i in member_res.data['results']}
+        self.assertTrue(member_access['Members Sitting'])
 
-    def test_live_soon_flag(self):
+    def test_starting_soon_flag(self):
         Activity.objects.create(
             title='Starting Now', kind='live',
             starts_at=timezone.now() + timedelta(minutes=30))
@@ -80,7 +93,7 @@ class ActivitiesApiTests(APITestCase):
             title='Next Week', kind='live',
             starts_at=timezone.now() + timedelta(days=6))
         res = self.client.get(FEED)
-        flags = {i['title']: i['live_soon'] for i in res.data['results']}
+        flags = {i['title']: i['starting_soon'] for i in res.data['results']}
         self.assertTrue(flags['Starting Now'])
         self.assertFalse(flags['Next Week'])
 
