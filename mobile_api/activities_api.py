@@ -39,7 +39,8 @@ from .authentication import IsMember, MobileTokenAuthentication
 # session is flagged "starting soon".
 FEED_WINDOW_DAYS = 120
 STARTING_SOON_MINUTES = 60
-# An activity stays in the feed while it runs, and lingers this long after.
+# An activity stays in the feed for its whole run and lingers this long
+# after it ends, so someone arriving late still finds it.
 GRACE_AFTER_END = timedelta(minutes=30)
 
 DEFAULT_LIMIT = 20
@@ -399,14 +400,16 @@ class UpcomingActivitiesView(APIView):
 
         from_date = _parse_date(params.get('from'))
         to_date = _parse_date(params.get('to'))
+        # The floor is on the *end* of an activity, not its start: a
+        # three-hour sitting that began two hours ago is still happening,
+        # and filtering on starts_at would have dropped it.
+        qs = qs.filter(ends_at__gte=now - GRACE_AFTER_END)
         if from_date:
             lower, _ = _day_bounds(from_date)
-            # Never reach back past the grace floor: this screen is
-            # *upcoming* activities, so a day that is already over reads as
-            # empty rather than as a list of things that have finished.
-            qs = qs.filter(starts_at__gte=max(lower, now - GRACE_AFTER_END))
-        else:
-            qs = qs.filter(starts_at__gte=now - GRACE_AFTER_END)
+            # A day that is already over reads as empty rather than as a
+            # list of things that have finished: this screen is *upcoming*
+            # activities.
+            qs = qs.filter(starts_at__gte=lower)
         if to_date:
             _, upper = _day_bounds(to_date)
             qs = qs.filter(starts_at__lt=upper)
@@ -418,6 +421,16 @@ class UpcomingActivitiesView(APIView):
         facets = self._facets(qs)
 
         cursor = decode_cursor(params.get('cursor'))
+        # The banner belongs to the unfiltered, unpaged first view only: a
+        # featured card floating above a filtered list is a lie about what
+        # the filter matched.
+        featured = (None if cursor is not None
+                    else self._featured(contact, now))
+        if featured is not None:
+            # It is on screen already, in the banner. Leaving it in the
+            # list too shows the same activity twice on one screenful.
+            qs = qs.exclude(pk=featured.pk)
+
         if cursor is not None:
             stamp, ident = cursor
             qs = qs.filter(
@@ -434,7 +447,9 @@ class UpcomingActivitiesView(APIView):
         has_more = len(page) > limit
         page = page[:limit]
 
-        reminded, saved, registrations = self._personal(contact, page)
+        personal_rows = page + ([featured] if featured is not None else [])
+        reminded, saved, registrations = self._personal(
+            contact, personal_rows)
         results = [
             activity_json(a, now, contact=contact, reminded_ids=reminded,
                           saved_ids=saved, registrations=registrations)
@@ -449,15 +464,14 @@ class UpcomingActivitiesView(APIView):
             'next_cursor': encode_cursor(page[-1]) if has_more and page
                            else None,
             'available_filters': facets,
+            'featured_activity': None,
         }
-        # The banner belongs to the unfiltered, unpaged first view only:
-        # a featured card floating above a filtered list is a lie about
-        # what the filter matched.
-        if cursor is None:
-            payload['featured_activity'] = self._featured(
-                contact, now, reminded, saved, registrations)
-        else:
-            payload['featured_activity'] = None
+        if featured is not None:
+            banner = activity_json(
+                featured, now, contact=contact, reminded_ids=reminded,
+                saved_ids=saved, registrations=registrations)
+            banner['featured_blurb'] = featured.featured_blurb
+            payload['featured_activity'] = banner
         return Response(payload)
 
     def _facets(self, qs):
@@ -502,20 +516,15 @@ class UpcomingActivitiesView(APIView):
             .values_list('activity_id', 'status'))
         return reminded, saved, registrations
 
-    def _featured(self, contact, now, reminded, saved, registrations):
+    def _featured(self, contact, now):
         """The server picks the banner: the soonest flagged activity the
         caller may actually attend. Nothing locked is ever featured."""
         candidates = (_base_queryset(contact, now)
                       .filter(is_featured=True, cancelled=False,
-                              starts_at__gte=now - GRACE_AFTER_END))
+                              ends_at__gte=now - GRACE_AFTER_END))
         for activity in candidates[:5]:
             if _may_attend(activity, contact):
-                payload = activity_json(
-                    activity, now, contact=contact,
-                    reminded_ids=reminded, saved_ids=saved,
-                    registrations=registrations)
-                payload['featured_blurb'] = activity.featured_blurb
-                return payload
+                return activity
         return None
 
 

@@ -86,6 +86,32 @@ class UpcomingFeedTests(TestCase):
         titles = [r['title'] for r in self.get().json()['results']]
         self.assertIn('Running', titles)
 
+    def test_a_long_activity_stays_while_it_runs(self):
+        # A retreat that started two hours ago and runs all day is still
+        # happening; filtering on starts_at alone would have dropped it.
+        ActivityFactory.create(
+            title='Day retreat', starts_at=self.now - timedelta(hours=2),
+            duration_minutes=480)
+        titles = [r['title'] for r in self.get().json()['results']]
+        self.assertIn('Day retreat', titles)
+
+    def test_an_activity_leaves_shortly_after_it_ends(self):
+        ActivityFactory.create(
+            title='Just finished',
+            starts_at=self.now - timedelta(hours=3), duration_minutes=60)
+        titles = [r['title'] for r in self.get().json()['results']]
+        self.assertNotIn('Just finished', titles)
+
+    def test_ends_at_is_maintained_on_save(self):
+        activity = ActivityFactory.create(duration_minutes=90)
+        self.assertEqual(
+            activity.ends_at, activity.starts_at + timedelta(minutes=90))
+        activity.duration_minutes = 30
+        activity.save(update_fields=['duration_minutes'])
+        activity.refresh_from_db()
+        self.assertEqual(
+            activity.ends_at, activity.starts_at + timedelta(minutes=30))
+
     def test_inactive_activities_are_never_listed(self):
         ActivityFactory.create(title='Draft', is_active=False)
         titles = [r['title'] for r in self.get().json()['results']]
@@ -322,6 +348,37 @@ class UpcomingFeedTests(TestCase):
         page_one = self.get(limit=1).json()
         self.assertIsNotNone(page_one['featured_activity'])
         page_two = self.get(limit=1, cursor=page_one['next_cursor']).json()
+        self.assertIsNone(page_two['featured_activity'])
+
+    def test_the_featured_activity_is_not_repeated_in_the_list(self):
+        ActivityFactory.create(title='Banner', is_featured=True)
+        ActivityFactory.create(title='Ordinary')
+        body = self.get().json()
+        self.assertEqual(body['featured_activity']['title'], 'Banner')
+        titles = [r['title'] for r in body['results']]
+        self.assertEqual(titles, ['Ordinary'])
+
+    def test_the_banner_still_reports_my_reminder(self):
+        member = make_contact('+233200000004', is_member=True)
+        activity = ActivityFactory.create(title='Banner', is_featured=True)
+        ActivityReminder.objects.create(contact=member, activity=activity)
+        featured = self.get(member).json()['featured_activity']
+        self.assertTrue(featured['reminder_set'])
+
+    def test_a_featured_activity_returns_to_the_list_once_paged_past(self):
+        ActivityFactory.create(
+            title='Banner', is_featured=True,
+            starts_at=self.now + timedelta(days=1))
+        for index in range(3):
+            ActivityFactory.create(
+                starts_at=self.now + timedelta(days=index + 2))
+        page_one = self.get(limit=2).json()
+        page_two = self.get(limit=2, cursor=page_one['next_cursor']).json()
+        seen = [r['title'] for r in page_one['results']]
+        seen += [r['title'] for r in page_two['results']]
+        # It is never listed while it is the banner, and the banner is only
+        # drawn on page one — so it appears exactly once on screen.
+        self.assertNotIn('Banner', seen)
         self.assertIsNone(page_two['featured_activity'])
 
     def test_cancelled_activities_are_not_featured(self):

@@ -50,6 +50,9 @@ class Activity(models.Model):
         default=ActivityType.OTHER)
     starts_at = models.DateTimeField()
     duration_minutes = models.PositiveSmallIntegerField(default=60)
+    ends_at = models.DateTimeField(
+        null=True, blank=True, editable=False,
+        help_text='Derived from starts_at + duration_minutes on save.')
     all_day = models.BooleanField(
         default=False,
         help_text='Show a date without a clock time (retreats, festivals).')
@@ -115,14 +118,24 @@ class Activity(models.Model):
         indexes = [
             models.Index(fields=['starts_at', 'id']),
             models.Index(fields=['is_active', 'starts_at']),
+            models.Index(fields=['ends_at']),
         ]
 
     def __str__(self):
         return f'{self.title} @ {self.starts_at:%d %b %Y %H:%M}'
 
-    @property
-    def ends_at(self):
-        return self.starts_at + timedelta(minutes=self.duration_minutes)
+    def save(self, *args, **kwargs):
+        # `ends_at` is kept as a real column rather than computed in the
+        # query: the feed must keep an activity that is still running, and
+        # "starts_at + duration_minutes minutes" is not an expression
+        # Postgres and SQLite both accept. A stored, indexed column is one
+        # comparison on either backend, and keyset pagination on
+        # (starts_at, id) stays intact.
+        self.ends_at = self.starts_at + timedelta(
+            minutes=self.duration_minutes)
+        if (update_fields := kwargs.get('update_fields')) is not None:
+            kwargs['update_fields'] = {*update_fields, 'ends_at'}
+        super().save(*args, **kwargs)
 
     @property
     def is_online(self):
