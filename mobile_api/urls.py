@@ -2,6 +2,7 @@
 from django.urls import path
 
 from . import views
+from . import bootstrap_api
 from . import content
 from . import payments
 from . import programs_api
@@ -19,6 +20,9 @@ from . import live_api
 app_name = 'mobile_api'
 
 urlpatterns = [
+    # App bootstrap — version, maintenance and session, before anything else
+    path('bootstrap/', bootstrap_api.BootstrapView.as_view(), name='bootstrap'),
+
     # Auth
     path('auth/request-code/', views.RequestCodeView.as_view(), name='request_code'),
     path('auth/verify-code/', views.VerifyCodeView.as_view(), name='verify_code'),

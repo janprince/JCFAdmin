@@ -244,3 +244,13 @@ PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='')
 # Public key is safe to ship to clients; served to the app at runtime so it can
 # rotate without an app release.
 PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='')
+
+
+# --- Mobile app bootstrap -------------------------------------------------
+# Maintenance is a settings flag, not a database row: it has to be switchable
+# during an incident in which the database may itself be the problem.
+MOBILE_MAINTENANCE = env.bool('MOBILE_MAINTENANCE', default=False)
+MOBILE_MAINTENANCE_TITLE = env('MOBILE_MAINTENANCE_TITLE', default='')
+MOBILE_MAINTENANCE_MESSAGE = env('MOBILE_MAINTENANCE_MESSAGE', default='')
+MOBILE_MAINTENANCE_ALLOW_OFFLINE = env.bool(
+    'MOBILE_MAINTENANCE_ALLOW_OFFLINE', default=True)
