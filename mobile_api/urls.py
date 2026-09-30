@@ -61,6 +61,7 @@ urlpatterns = [
     path('inspiration/today/', engagement_api.InspirationTodayView.as_view(), name='inspiration_today'),
     path('inspiration/recent/', engagement_api.InspirationRecentView.as_view(), name='inspiration_recent'),
     path('inspirations/<str:identifier>/', inspiration_detail_api.InspirationDetailView.as_view(), name='inspiration_detail'),
+    path('inspirations/<str:identifier>/share-data/', inspiration_detail_api.InspirationShareDataView.as_view(), name='inspiration_share_data'),
     path('inspirations/<str:identifier>/save/', inspiration_detail_api.InspirationSaveView.as_view(), name='inspiration_save'),
     path('inspirations/<str:identifier>/reflection/', inspiration_detail_api.InspirationReflectionView.as_view(), name='inspiration_reflection'),
 

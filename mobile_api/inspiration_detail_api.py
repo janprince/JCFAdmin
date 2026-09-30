@@ -18,6 +18,22 @@ from .authentication import IsMember, MobileTokenAuthentication
 
 RELATED_LIMIT = 4
 
+# Templates the app can render. Kept server-side so a new style can be
+# switched off without an app release; the artwork itself ships with the app.
+SHARE_TEMPLATES = [
+    {'id': 'cosmic', 'name': 'Cosmic', 'recommended_text_color': 'light',
+     'formats': ['square', 'story'], 'enabled': True},
+    {'id': 'dawn', 'name': 'Dawn', 'recommended_text_color': 'light',
+     'formats': ['square'], 'enabled': True},
+    {'id': 'stillness', 'name': 'Stillness', 'recommended_text_color': 'light',
+     'formats': ['square'], 'enabled': True},
+    {'id': 'light', 'name': 'Light', 'recommended_text_color': 'dark',
+     'formats': ['square'], 'enabled': True},
+]
+DEFAULT_TEMPLATE_ID = 'cosmic'
+# An editorially safe share length — never the whole reflection.
+SHARE_EXCERPT_LIMIT = 220
+
 
 def _published():
     return DailyInspiration.objects.filter(
@@ -217,3 +233,38 @@ class InspirationReflectionView(APIView):
         InspirationReflection.objects.filter(
             contact=request.member, inspiration=inspiration).delete()
         return Response({'reflected': False})
+
+
+class InspirationShareDataView(APIView):
+    """GET /inspirations/<id-or-slug>/share-data/ — just what a share card
+    needs. Public: guests may share a public inspiration."""
+
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [AllowAny]
+
+    def get(self, request, identifier):
+        inspiration = _lookup(identifier)
+        if inspiration is None:
+            return Response(
+                {'detail': 'This inspiration is no longer available.'},
+                status=404)
+
+        excerpt = (inspiration.share_excerpt or inspiration.quote).strip()
+        if len(excerpt) > SHARE_EXCERPT_LIMIT:
+            # Trim on a word boundary rather than mid-word.
+            excerpt = excerpt[:SHARE_EXCERPT_LIMIT].rsplit(' ', 1)[0] + '\u2026'
+
+        return Response({
+            'inspiration_id': inspiration.id,
+            'slug': inspiration.slug,
+            'share_excerpt': excerpt,
+            'author': inspiration.author or None,
+            'source': inspiration.category or None,
+            'published_at': inspiration.date.isoformat(),
+            'canonical_url': _canonical_url(inspiration),
+            'sharing_allowed': inspiration.sharing_allowed,
+            'default_template_id': DEFAULT_TEMPLATE_ID,
+            'templates': SHARE_TEMPLATES,
+            'official_website_label': settings.PUBLIC_SITE_URL
+                .replace('https://', '').replace('http://', '').rstrip('/'),
+        })

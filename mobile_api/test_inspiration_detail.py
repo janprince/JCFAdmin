@@ -175,3 +175,45 @@ class InspirationDetailTests(APITestCase):
         related = {r['slug']: r['saved']
                    for r in res.data['related_inspirations']}
         self.assertTrue(related[self.older.slug])
+
+
+class InspirationShareDataTests(APITestCase):
+    def setUp(self):
+        self.inspiration = DailyInspiration.objects.create(
+            date=timezone.localdate(),
+            title='Freedom begins with awareness',
+            quote='Freedom begins when awareness becomes your way of living.',
+            category='Awareness',
+        )
+
+    def test_guest_can_fetch_share_data(self):
+        res = self.client.get(url(self.inspiration.slug, 'share-data/'))
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['default_template_id'], 'cosmic')
+        self.assertTrue(res.data['sharing_allowed'])
+        self.assertTrue(res.data['canonical_url'].startswith('https://'))
+
+    def test_only_cosmic_offers_the_story_format(self):
+        res = self.client.get(url(self.inspiration.slug, 'share-data/'))
+        story = [t['id'] for t in res.data['templates']
+                 if 'story' in t['formats']]
+        self.assertEqual(story, ['cosmic'])
+
+    def test_a_long_excerpt_is_trimmed_on_a_word_boundary(self):
+        self.inspiration.share_excerpt = 'Awareness is the doorway. ' * 20
+        self.inspiration.save()
+        res = self.client.get(url(self.inspiration.slug, 'share-data/'))
+        excerpt = res.data['share_excerpt']
+        self.assertLessEqual(len(excerpt), 221)
+        self.assertTrue(excerpt.endswith('…'))
+        self.assertNotIn('  ', excerpt)
+
+    def test_sharing_can_be_prohibited(self):
+        self.inspiration.sharing_allowed = False
+        self.inspiration.save()
+        res = self.client.get(url(self.inspiration.slug, 'share-data/'))
+        self.assertFalse(res.data['sharing_allowed'])
+
+    def test_removed_inspiration_returns_404(self):
+        res = self.client.get(url('gone', 'share-data/'))
+        self.assertEqual(res.status_code, 404)
