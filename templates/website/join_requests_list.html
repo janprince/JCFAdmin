@@ -1,10 +1,11 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}Join requests | JCF Management{% endblock %}
-{% block page_title %}Join requests{% endblock %}
+{% block title %}Centre join requests | JCF Management{% endblock %}
+{% block page_title %}Centre join requests{% endblock %}
 {% block page_subtitle %}Approving a request adds the person as a member of that centre and emails them.{% endblock %}
 
 {% block content %}
+{% include 'website/_join_tabs.html' with active='centres' %}
 <div class="card jcf-list">
     {% include "partials/_tabs.html" with label="Filter by status" %}
 

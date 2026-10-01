@@ -204,7 +204,11 @@ REST_FRAMEWORK = {
 }
 
 # CORS — allow the public website to access the API
+FOUNDATION_REGISTRATION_RATE = env('FOUNDATION_REGISTRATION_RATE', default='20/hour')
+
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'https://www.jancosmicfoundation.org',
+    'https://jancosmicfoundation.org',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ])

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     GalleryItem, VolunteerOpportunity, Testimonial, TeamMember,
     ImpactStat, ContactSubmission, VolunteerApplication,
-    JoinCentreRequest, NewsletterSubscriber,
+    JoinCentreRequest, NewsletterSubscriber, FoundationRegistration,
 )
 
 
@@ -70,3 +70,11 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     list_display = ('email', 'is_active', 'subscribed_at')
     list_filter = ('is_active',)
     search_fields = ('email',)
+
+
+@admin.register(FoundationRegistration)
+class FoundationRegistrationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'country', 'region', 'created_at', 'reviewed_at')
+    list_filter = ('country',)
+    search_fields = ('name', 'email', 'country', 'region')
+    readonly_fields = ('created_at', 'reviewed_at', 'reviewed_by')

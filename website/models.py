@@ -166,3 +166,22 @@ class NewsletterSubscriber(models.Model):
 
     def __str__(self):
         return self.email
+
+
+class FoundationRegistration(models.Model):
+    """Foundation-wide interest registration; no centre approval or portal account."""
+    name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    phone = PhoneNumberField(blank=True)
+    country = models.CharField(max_length=100)
+    region = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey('accounts.User', null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name='reviewed_registrations')
+
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+    def __str__(self):
+        return self.name

@@ -158,3 +158,34 @@ class NewsletterSubscriberSerializer(serializers.ModelSerializer):
         model = NewsletterSubscriber
         fields = ['id', 'email', 'subscribed_at']
         read_only_fields = ['id', 'subscribed_at']
+
+
+class FoundationRegistrationSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=254)
+    phone = serializers.CharField(max_length=40, required=False, allow_blank=True, default='')
+    country = serializers.CharField(max_length=100)
+    region = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
+
+    def validate_email(self, value):
+        return value.lower()
+
+    def validate_phone(self, value):
+        if not value:
+            return ''
+        if not value.startswith('+'):
+            raise serializers.ValidationError('Include the country code, for example +233.')
+        try:
+            parsed = phonenumbers.parse(value, None)
+            if not phonenumbers.is_valid_number(parsed):
+                raise serializers.ValidationError('Enter a valid international phone number, or leave it blank.')
+            return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        except phonenumbers.NumberParseException:
+            raise serializers.ValidationError('Enter a valid international phone number, or leave it blank.')
+
+    def create(self, validated_data):
+        from .models import FoundationRegistration
+        email = validated_data.pop('email')
+        # A public retry must never replace someone's details using only their email.
+        registration, _ = FoundationRegistration.objects.get_or_create(email=email, defaults=validated_data)
+        return registration

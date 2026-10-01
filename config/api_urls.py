@@ -6,6 +6,7 @@ import json
 import logging
 
 from django.urls import path
+from website.registration_api import FoundationRegistrationAPIView
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -330,6 +331,7 @@ urlpatterns = [
     # Form submissions (POST only)
     path('contact/', ContactSubmissionCreateAPIView.as_view(), name='contact_submit'),
     path('volunteer-apply/', VolunteerApplicationCreateAPIView.as_view(), name='volunteer_apply'),
+    path('join-foundation/', FoundationRegistrationAPIView.as_view(), name='join_foundation'),
     path('join-centre/', JoinCentreRequestCreateAPIView.as_view(), name='join_centre'),
     path('newsletter/', NewsletterSubscribeAPIView.as_view(), name='newsletter_subscribe'),
 

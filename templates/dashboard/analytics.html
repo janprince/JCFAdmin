@@ -16,7 +16,7 @@
 <div class="jcf-overview-grid{% if not office_access.community %} jcf-overview-publishing{% endif %}">
     <div class="jcf-overview-stack">
         {% if office_access.inbox %}<section class="card" aria-labelledby="inbox-title">
-            <div class="jcf-attention-head"><div><h2 id="inbox-title">Waiting for your team</h2><p>{% if inbox_count %}{{ inbox_count }} message{{ inbox_count|pluralize }} and request{{ inbox_count|pluralize }} to review.{% else %}Your community inbox is up to date.{% endif %}</p></div><span class="jcf-attention-total" aria-hidden="true">{{ inbox_count }}</span></div>
+            <div class="jcf-attention-head"><div><h2 id="inbox-title">Waiting for your team</h2><p>{% if inbox_count %}{{ inbox_count }} item{{ inbox_count|pluralize }} to review.{% else %}Your community inbox is up to date.{% endif %}</p></div><span class="jcf-attention-total" aria-hidden="true">{{ inbox_count }}</span></div>
             <ul class="jcf-work-list">{% for task in inbox_tasks %}<li><a href="{{ task.url }}" class="jcf-work-link"><i class="ph ph-{{ task.icon }}" aria-hidden="true"></i><span><strong>{{ task.title }}</strong><small>{{ task.description }}</small></span><span class="jcf-work-count">{{ task.count }}<span class="visually-hidden"> pending</span></span><i class="ph ph-caret-right" aria-hidden="true"></i></a></li>{% endfor %}</ul>
             {% if overdue_consultation_count %}<p class="jcf-overview-note"><a href="{% url 'consultations:consultation_list' %}?show=overdue">{{ overdue_consultation_count }} past consultation{{ overdue_consultation_count|pluralize }} still need{{ overdue_consultation_count|pluralize:"s," }} a status update.</a></p>{% endif %}
         </section>{% endif %}

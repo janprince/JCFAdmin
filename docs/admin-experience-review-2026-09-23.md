@@ -62,6 +62,8 @@ The shared logout action was corrected because it was directly broken. A consist
 
 ### 3. Complete Foundation signup as a distinct journey
 
+**Implemented in the subsequent Join integration pass.** See [Foundation registration](foundation-registration.md) for the API, inbox, validation and rollout. The following describes the original finding.
+
 The public website's new `/join` form is a Foundation-wide registration followed by Telegram access. Existing `JoinCentreRequest` records require a centre, a phone number, an approval decision, and may trigger email and member creation. They are not the same process.
 
 Add the Foundation registration endpoint and an appropriate admin view for name, email, optional phone, country, region, and registration date. Agree deduplication and contact-record linkage. Do not silently send the public form to the centre approval endpoint. The redesigned sidebar explicitly calls the existing queue “Centre join requests.”

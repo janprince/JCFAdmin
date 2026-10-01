@@ -4,6 +4,8 @@ from . import views
 app_name = 'website'
 
 urlpatterns = [
+    path('foundation-registrations/', views.FoundationRegistrationListView.as_view(), name='foundation_registration_list'),
+    path('foundation-registrations/<int:pk>/review/', views.review_foundation_registration, name='foundation_registration_review'),
     # Gallery
     path('gallery/', views.GalleryListView.as_view(), name='gallery_list'),
     path('gallery/add/', views.GalleryCreateView.as_view(), name='gallery_create'),

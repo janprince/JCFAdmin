@@ -1,0 +1,15 @@
+{% extends 'layouts/dashboard.html' %}
+{% block title %}Foundation registrations | JCF Management{% endblock %}
+{% block page_title %}Foundation registrations{% endblock %}
+{% block page_subtitle %}People who introduced themselves through the Join page. They receive the Telegram invitation immediately after registering.{% endblock %}
+{% block content %}
+{% include 'website/_join_tabs.html' with active='foundation' %}
+<div class="card jcf-list">
+{% include 'partials/_tabs.html' with label='Filter by review status' %}
+<form method="get" class="jcf-toolbar" role="search">{% keep_params 'status' %}{% include 'partials/_search.html' with placeholder='Search name, email or location' %}<select class="form-select jcf-select" name="country" aria-label="Country"><option value="">All countries</option>{% for country in countries %}<option{% if request.GET.country == country %} selected{% endif %}>{{ country }}</option>{% endfor %}</select><button type="submit" class="btn btn-light">Filter</button>{% if search_query or request.GET.country %}<a href="{% querystring q=None country=None page=None %}">Clear filters</a>{% endif %}</form>
+<div class="table-responsive"><table class="table jcf-table mb-0"><thead><tr><th>Person</th><th>Phone</th><th>Country / region</th><th>Received</th><th>Review status</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>
+{% for registration in registrations %}<tr><td>{% include 'partials/_person.html' with name=registration.name meta=registration.email %}</td><td class="jcf-num">{{ registration.phone|phone|or_dash }}</td><td>{{ registration.country }}{% if registration.region %}<small class="d-block text-muted">{{ registration.region }}</small>{% endif %}</td><td>{{ registration.created_at|date:'j M Y, H:i' }}</td><td>{% if registration.reviewed_at %}<span class="jcf-status jcf-status--neutral">Reviewed</span><small class="d-block text-muted">{{ registration.reviewed_at|date:'j M Y' }}{% if registration.reviewed_by %} · {{ registration.reviewed_by.get_full_name|default:registration.reviewed_by.email }}{% endif %}</small>{% else %}<span class="jcf-status jcf-status--info">New</span>{% endif %}</td><td>{% if not registration.reviewed_at %}<form method="post" action="{% url 'website:foundation_registration_review' registration.pk %}">{% csrf_token %}<button type="submit" class="btn btn-light btn-sm" aria-label="Mark registration from {{ registration.name }} as reviewed">Mark reviewed</button></form>{% else %}<span class="jcf-cell-meta">No action needed</span>{% endif %}</td></tr>
+{% empty %}{% include 'partials/_empty_row.html' with colspan=6 icon='users-three' title='No registrations here yet' text='Introductions from the public Join page will appear here.' %}{% endfor %}
+</tbody></table></div>{% if is_paginated %}<div class="jcf-list__foot">{% include 'partials/_pagination.html' %}</div>{% endif %}</div>
+<p class="text-muted mt-3">Reviewing a registration helps the team keep track. It does not grant portal access, enrol someone at a centre, or confirm that they joined Telegram.</p>
+{% endblock %}

@@ -7,6 +7,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.db.models import Q
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from dashboard.listing import count_by, tabs
@@ -17,7 +20,7 @@ from .forms import (
 from .models import (
     GalleryItem, VolunteerOpportunity, Testimonial, TeamMember,
     ImpactStat, ContactSubmission, VolunteerApplication,
-    JoinCentreRequest, NewsletterSubscriber,
+    JoinCentreRequest, NewsletterSubscriber, FoundationRegistration,
 )
 
 
@@ -464,3 +467,44 @@ class NewsletterSubscriberListView(LoginRequiredMixin, ListView):
             ('unsubscribed', 'Unsubscribed', counts.get(False, 0)),
         ], total=sum(counts.values()))
         return context
+
+
+class FoundationRegistrationListView(LoginRequiredMixin, ListView):
+    model = FoundationRegistration
+    template_name = 'website/foundation_registrations.html'
+    context_object_name = 'registrations'
+    paginate_by = 50
+
+    def get_queryset(self):
+        qs = FoundationRegistration.objects.select_related('reviewed_by')
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(country__icontains=q) | Q(region__icontains=q))
+        country = self.request.GET.get('country', '')
+        if country:
+            qs = qs.filter(country__iexact=country)
+        status = self.request.GET.get('status')
+        if status in {'new', 'reviewed'}:
+            qs = qs.filter(reviewed_at__isnull=status == 'new')
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        all_records = FoundationRegistration.objects.all()
+        new = all_records.filter(reviewed_at__isnull=True).count()
+        total = all_records.count()
+        context.update(search_query=self.request.GET.get('q', ''),
+                       countries=all_records.order_by('country').values_list('country', flat=True).distinct(),
+                       tabs=tabs(self.request, 'status', [('new', 'New', new), ('reviewed', 'Reviewed', total-new)], total=total))
+        return context
+
+
+@login_required
+@require_POST
+def review_foundation_registration(request, pk):
+    registration = get_object_or_404(FoundationRegistration, pk=pk)
+    # Reviewing is an internal inbox action, never an approval for Telegram.
+    FoundationRegistration.objects.filter(pk=registration.pk, reviewed_at__isnull=True).update(
+        reviewed_at=timezone.now(), reviewed_by=request.user)
+    messages.success(request, f'Registration from {registration.name} marked as reviewed.')
+    return redirect('website:foundation_registration_list')

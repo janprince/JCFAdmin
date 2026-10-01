@@ -14,7 +14,7 @@ from teachings.models import Teaching
 from causes.models import Donation
 from events.models import Event
 from blog.models import Post
-from website.models import ContactSubmission, VolunteerApplication, JoinCentreRequest
+from website.models import ContactSubmission, VolunteerApplication, JoinCentreRequest, FoundationRegistration
 
 
 class AnalyticsView(LoginRequiredMixin, TemplateView):
@@ -39,6 +39,7 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
             context['giving_month'] = today
         if 'inbox' in access:
             tasks = [
+                ('Foundation registrations', 'New introductions from the Join page', 'users-three', FoundationRegistration.objects.filter(reviewed_at__isnull=True).count(), reverse('website:foundation_registration_list') + '?status=new'),
                 ('Contact messages', 'Unread messages from the public website', 'envelope-simple', ContactSubmission.objects.filter(is_read=False).count(), reverse('website:contact_list') + '?status=unread'),
                 ('Centre join requests', 'People waiting to connect with a centre', 'users-three', JoinCentreRequest.objects.filter(status='pending').count(), reverse('website:join_request_list') + '?status=pending'),
                 ('Volunteer applications', 'Offers of time and skills to review', 'hand-heart', VolunteerApplication.objects.filter(status='pending').count(), reverse('website:volunteer_app_list') + '?status=pending'),

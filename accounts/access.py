@@ -40,7 +40,7 @@ def area_for_route(namespace, name):
     if namespace == 'staff':
         return 'accounts' if name.startswith(('user_', 'role_')) else 'staff'
     if namespace == 'website':
-        if name.startswith(('contact_', 'join_request_', 'volunteer_app_', 'newsletter_')):
+        if name.startswith(('foundation_registration_', 'contact_', 'join_request_', 'volunteer_app_', 'newsletter_')):
             return 'inbox'
         if name.startswith(('gallery_', 'volunteer_', 'testimonial_', 'team_', 'impact_')):
             return 'content'

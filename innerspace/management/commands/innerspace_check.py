@@ -24,9 +24,12 @@ from innerspace.routers import INNERSPACE_DB
 MODELS = [Student, Membership, Payment, AccessRequest]
 
 # Columns we deliberately do not map. Password hashes have no business being
-# loaded into an admin page, and nothing here needs to read them.
+# loaded into an admin page, and nothing here needs to read them. `role` marks
+# Sanctum (drbaffourjan's own content admin at /sanctum) admins; it has a
+# database default, so rows inserted from here come out as STUDENT without
+# Django knowing the column exists.
 IGNORED_COLUMNS = {
-    'users': {'password'},
+    'users': {'password', 'role'},
 }
 
 
