@@ -81,6 +81,21 @@
         });
     });
 
+    // The whole row opens its record, like the link in its first cell.
+    document.querySelectorAll('table.jcf-table').forEach(table => {
+        table.querySelectorAll(':scope > tbody > tr').forEach(row => {
+            const primary = row.cells[0] && row.cells[0].querySelector('a[href]:not([href^="#"])');
+            if (primary) { row.classList.add('jcf-row-link'); row.dataset.href = primary.href; }
+        });
+        table.addEventListener('click', event => {
+            const row = event.target.closest('tr.jcf-row-link');
+            if (!row || event.target.closest('a, button, input, select, textarea, label, .dropdown, [data-bs-toggle]')) return;
+            if (String(window.getSelection())) return;
+            if (event.metaKey || event.ctrlKey) window.open(row.dataset.href, '_blank', 'noopener');
+            else window.location.href = row.dataset.href;
+        });
+    });
+
     // Make overflowing tables keyboard-scrollable and explain the offscreen columns.
     document.querySelectorAll('.table-responsive').forEach((container, index) => {
         const hint = document.createElement('p'); hint.className = 'jcf-scroll-note';

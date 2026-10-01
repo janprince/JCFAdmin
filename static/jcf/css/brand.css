@@ -1,105 +1,107 @@
 /* ---------------------------------------------------------------------------
-   JCF text logo
+   JCF logo lockup
    ---------------------------------------------------------------------------
-   Replaces the Paces logo images. Rendered as type so it stays crisp at any
-   size and follows the skin's own colours.
+   The Foundation's own logo sits on a white tile, so its blue globe reads on
+   the indigo sidebar and on white alike, with the office name beside it:
+
+       [tile]  Foundation Office          name: bold, sentence case
+               JAN COSMIC FOUNDATION      sub:  small, tracked capitals
 
    Three lockups, all built from the same pieces:
-     .jcf-logo            full wordmark  — expanded sidebar, topbar, login
-     .jcf-logo--sm        monogram only  — condensed / offcanvas sidebar
-     .jcf-logo--auth      full wordmark, larger — login card
+     .jcf-logo            tile + name    — expanded sidebar, topbar
+     .jcf-logo--sm        tile only      — condensed sidebar, phone topbar
+     .jcf-logo--auth      larger         — sign-in and password pages
 
-   Paces swaps `.logo-light` (dark backgrounds) and `.logo-dark` (light ones),
-   so the neutral half of the lockup takes its colour from those wrappers.
-   The monogram keeps its gradient in both.
+   Text colour comes from the surrounding link (white in the sidebar, ink on
+   the sign-in page), so the lockup needs no light/dark variants.
 --------------------------------------------------------------------------- */
 
 .jcf-logo {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 11px;
     line-height: 1;
     white-space: nowrap;
     vertical-align: middle;
-    /* Fallback for the .logo-light / .logo-dark rules below. */
-    color: #1b2e4a;
+    color: inherit;
 }
 
-.jcf-logo__mark {
-    font-family: var(--theme-font-sans-serif), sans-serif;
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.045em;
-    background-image: linear-gradient(120deg, var(--theme-primary, #0a74ff) 10%, var(--theme-secondary, #7b5af7) 90%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    /* The gradient sits on a transparent glyph — give it a solid fallback
-       wherever background-clip:text is unsupported. */
-    -webkit-text-fill-color: transparent;
+.jcf-logo__tile {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(36, 36, 62, 0.08);
 }
 
-.jcf-logo__rule {
-    width: 1px;
-    height: 1.25rem;
-    background-color: currentColor;
-    opacity: 0.2;
+/* Beats Paces' `.logo-lg img` / `.logo-sm img`, which fix a height. */
+.jcf-logo .jcf-logo__tile img {
+    display: block;
+    width: 27px;
+    height: auto;
 }
 
-.jcf-logo__word {
-    font-family: var(--theme-font-sans-serif), sans-serif;
-    font-size: 0.5625rem;
-    font-weight: 600;
-    line-height: 1.35;
-    letter-spacing: 0.19em;
+.jcf-logo__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    text-align: start;
+}
+
+.jcf-logo__name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.jcf-logo__sub {
+    font-size: 9.5px;
+    font-weight: 650;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
     text-transform: uppercase;
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
-/* Monogram-only lockup: condensed sidebar, ~70px of room. */
 .jcf-logo--sm {
     gap: 0;
 }
 
-.jcf-logo--sm .jcf-logo__mark {
-    font-size: 1.375rem;
+.jcf-logo--auth .jcf-logo__tile {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
 }
 
-/* Login card — same lockup with more air around it. */
-.jcf-logo--auth .jcf-logo__mark {
-    font-size: 2.125rem;
+.jcf-logo--auth .jcf-logo__tile img,
+.jcf-logo.jcf-logo--auth .jcf-logo__tile img {
+    width: 36px;
 }
 
-.jcf-logo--auth .jcf-logo__rule {
-    height: 1.75rem;
+.jcf-logo--auth .jcf-logo__name {
+    font-size: 17px;
 }
 
-.jcf-logo--auth .jcf-logo__word {
-    font-size: 0.6875rem;
-    letter-spacing: 0.22em;
+.jcf-logo--auth .jcf-logo__sub {
+    font-size: 10.5px;
 }
 
-/* Paces shows one of these per background; the wrapper decides the neutral
-   colour, and `.logo` itself is a link, so override its inherited colour. */
-.logo-light .jcf-logo,
-a.logo-light .jcf-logo {
-    color: #ffffff;
-}
-
+/* Sign-in page: ink on white, and on the dark theme's surface. */
 .logo-dark .jcf-logo,
-a.logo-dark .jcf-logo {
-    color: #1b2e4a;
+.jcf-auth .jcf-logo {
+    color: var(--theme-heading-color, #25283a);
 }
 
-html[data-bs-theme="dark"] .logo-dark .jcf-logo,
-html[data-bs-theme="dark"] a.logo-dark .jcf-logo {
-    color: #e3e6ea;
-}
-
-/* The sidebar logo box centres an <img> by default; text needs the same. */
-.sidenav-menu .logo .jcf-logo,
-.logo-topbar .jcf-logo {
-    display: inline-flex;
+/* Sidebar and its offcanvas copy are always indigo. */
+.sidenav-menu .jcf-logo,
+.logo-light .jcf-logo {
+    color: #fff;
 }
 
 /* ---------------------------------------------------------------------------

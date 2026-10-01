@@ -1,23 +1,9 @@
 /* ---------------------------------------------------------------------------
    JCF shell: sidebar, topbar, page header
    ---------------------------------------------------------------------------
-   Loaded after app.min.css. base.html pins data-menu-color / data-topbar-color
-   to "light"; these rules tune Paces' light variants for the saas skin.
-
-   Intent: the chrome should recede. A white sidebar and a see-through topbar
-   leave the page header and the content as the only things with weight.
+   Loaded after app.min.css. base.html pins the saas skin with a dark sidebar
+   and a light topbar; office.css (loaded last) sets the final colour tokens.
 --------------------------------------------------------------------------- */
-
-/* --- Type --------------------------------------------------------------- */
-
-/* IBM Plex Sans replaces the saas skin's Poppins: narrower, calmer, and its
-   figures line up in tables. Loaded by base.html. */
-html[data-skin="saas"] {
-    --theme-font-sans-serif: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --theme-font-family-secondary: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --theme-font-monospace: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    --theme-body-font-size: 13.5px;
-}
 
 code,
 kbd,
@@ -27,21 +13,178 @@ samp {
 
 /* --- Sidebar ------------------------------------------------------------ */
 
-/* The sidebar keeps the saas skin's dark navy (pinned in base.html); only
-   the section titles change — normal case, and quieter than the links. */
-.sidenav-menu .side-nav-title {
-    padding-top: 1.25rem;
-    padding-bottom: 0.375rem;
-    font-size: 12px;
+/* Structure borrowed from the back-office reference: a logo tile, quiet
+   capitalised section headings, full-width rows with a gold bar on the
+   current page, a count wherever records are waiting, and the signed-in
+   person at the foot. Colours stay on the Foundation indigo. */
+
+.sidenav-menu > .logo {
+    display: flex;
+    align-items: center;
+    height: auto;
+    min-height: 76px;
+    padding: 20px 20px 14px;
+    line-height: 1;
+}
+
+.sidenav-menu .side-nav {
+    padding: 0 0 12px;
+}
+
+/* Rows run edge to edge so the gold bar sits on the sidebar's edge. */
+.sidenav-menu .side-nav .side-nav-item {
+    padding: 0;
+}
+
+/* Paces fills an active group's header; only the current page is filled. */
+.sidenav-menu .side-nav > .side-nav-item.active > .side-nav-link:not([aria-current="page"]) {
+    background: transparent;
+}
+
+.sidenav-menu .side-nav .side-nav-title {
+    padding: 18px 20px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: #fff;
+    opacity: 0.42;
+}
+
+.sidenav-menu .side-nav .side-nav-item .side-nav-link {
+    gap: 12px;
+    min-height: 42px;
+    margin: 0;
+    padding: 10px 18px 10px 17px;
+    border-radius: 0;
+    border-inline-start: 3px solid transparent;
+    font-size: 13.5px;
+    font-weight: 550;
+    color: rgba(255, 255, 255, 0.74);
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.sidenav-menu .side-nav .side-nav-item .side-nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.sidenav-menu .side-nav .side-nav-item .side-nav-link .menu-icon .ph {
+    font-size: 19px;
+}
+
+/* An open group's header is brighter, so the eye finds where it is. */
+.sidenav-menu .side-nav .side-nav-item .side-nav-link[aria-expanded="true"] {
+    color: #fff;
+}
+
+.sidenav-menu .side-nav .side-nav-item .side-nav-link[aria-current="page"] {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    border-inline-start-color: var(--jcf-gold);
+    box-shadow: none;
+}
+
+.sidenav-menu .side-nav .sub-menu {
+    gap: 0;
+    padding: 0 0 6px;
+}
+
+/* Sub-links line up under their group's label, not its icon. */
+.sidenav-menu .side-nav .sub-menu .side-nav-item .side-nav-link {
+    min-height: 36px;
+    padding: 8px 18px 8px 48px;
+    font-size: 13px;
     font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--theme-sidenav-item-color);
+}
+
+.sidenav-menu .side-nav .sub-menu .side-nav-link::before {
+    display: none;
+}
+
+/* Records waiting on staff. Gold, because it asks for attention. */
+.jcf-nav-count {
+    margin-inline-start: auto;
+    min-width: 22px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.45;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: #f3dda9;
+    background: rgba(211, 174, 99, 0.2);
+}
+
+.jcf-nav-count + .menu-arrow {
+    margin-inline-start: 6px;
+}
+
+/* An open group shows each link's own count instead. */
+.side-nav-link[aria-expanded="true"] > .jcf-nav-count--group {
+    display: none;
+}
+
+/* The signed-in person, as in the reference. Account actions stay in the
+   topbar menu, which is reachable on every screen size. */
+.jcf-sidebar-foot {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 11px;
+    padding: 14px 20px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.jcf-sidebar-foot .jcf-avatar {
+    color: #24243e;
+    background: var(--jcf-gold);
+    font-weight: 700;
+}
+
+.jcf-sidebar-foot__text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.jcf-sidebar-foot__name {
+    overflow: hidden;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.jcf-sidebar-foot__role {
+    font-size: 11px;
     opacity: 0.6;
 }
 
-.sidenav-menu .menu-icon .ph {
-    font-size: 19px;
+/* Icon rail: no words, so no counts or headings either. */
+html[data-sidenav-size="condensed"] .jcf-nav-count,
+html[data-sidenav-size="condensed"] .sidenav-menu .side-nav .side-nav-title {
+    display: none;
+}
+
+/* Phones: the sidebar is off-canvas, so the topbar carries the logo tile.
+   Paces shows it below 768px but drops it at 375px and under — most phones —
+   with !important; the tile is small enough to keep. */
+@media (max-width: 375px) {
+    .app-topbar .logo-topbar {
+        display: block !important;
+        padding: 0 4px 0 0;
+    }
+}
+
+html[data-sidenav-size="condensed"] .sidenav-menu > .logo {
+    justify-content: center;
+    min-height: 70px;
+    padding: 16px 0;
 }
 
 /* --- Topbar ------------------------------------------------------------- */

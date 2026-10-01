@@ -224,6 +224,8 @@ is committed first, and a mail failure surfaces as a warning, never a rollback.
 DEBUG=True
 SECRET_KEY=<secret>
 DATABASE_URL=postgres://localhost:5432/jcf_management
+# The working .env may point DATABASE_URL at Neon instead. Check the host
+# before migrate or test; override it to localhost to run tests.
 # Innerspace platform DB. Supabase session pooler or direct connection —
 # not the transaction pooler. Blank disables the Innerspace pages.
 INNERSPACE_DATABASE_URL=postgres://...
@@ -240,20 +242,27 @@ INNERSPACE_DATABASE_URL=postgres://...
   Semantic status colors remain distinct. Light/dark modes both work.
 - Sidebar and topbar colors are pinned dark/light in `base.html`, including
   cached Paces config. Match selector specificity when overriding Paces skins.
-- `dashboard/navigation.py` defines task groups and resolves the most specific
-  active URL. `{% office_navigation %}` renders the sidebar. The page finder
-  uses those authorized navigation links; it searches pages, not records.
+- `dashboard/navigation.py` defines sections (Daily work, Foundation,
+  Publishing, Administration), task groups, and resolves the most specific
+  active URL. `{% office_navigation %}` renders the sidebar. Gold badges count
+  records waiting on staff, fetched in one UNION ALL query (keep it to one —
+  it runs on every page). The page finder uses those authorized navigation
+  links; it searches pages, not records.
+- Tables scroll sideways on phones by choice; do not convert them to cards.
 - Keep the shared list/form components in `static/jcf/css/ui.css`, layout in
   `shell.css`, and final visual tokens in `office.css`. Do not edit minified
   Paces assets for application styling.
 - Icons are vendored Phosphor (`ph ph-*`, `ph-light ph-*`). Use descriptive
   accessible names on icon-only controls. Status colors must also have text.
-- The text logo reads “JCF / Foundation office.” Login uses the existing real
+- The logo is the Foundation mark (`static/jcf/img/jcf-mark.png`) on a white
+  tile, beside “Foundation Office / JAN COSMIC FOUNDATION”. The sidebar foot
+  shows the signed-in person. Login uses the existing real
   Foundation photograph (`static/paces/images/auth-jcf.jpg`).
 - The overview prioritizes incoming work, consultations, giving, gatherings,
   and draft publishing. Financial totals must be grouped by currency.
 - General donations have a null cause. Centre requests and general Foundation
-  registrations are different workflows; the latter API remains outstanding.
+  registrations are different workflows. `/api/join-foundation/` now saves Foundation registrations
+  for the public Join page; see `docs/foundation-registration.md`.
 - Forms with `_form_actions.html` get unsaved-change feedback. Errors and
   warnings remain until dismissed; only success feedback auto-dismisses.
 - Review rationale, validation, and remaining priorities are documented in

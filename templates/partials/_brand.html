@@ -1,8 +1,11 @@
-{% comment %}
-Full JCF wordmark. `size` is optional: "auth" renders the larger login lockup.
+{% load static %}{% comment %}
+Foundation logo in a tile, with the office name beside it. `size` is optional:
+"auth" renders the larger login lockup.
 {% endcomment %}
 <span class="jcf-logo{% if size == 'auth' %} jcf-logo--auth{% endif %}">
-    <span class="jcf-logo__mark">JCF</span>
-    <span class="jcf-logo__rule"></span>
-    <span class="jcf-logo__word">Foundation<br>office</span>
+    <span class="jcf-logo__tile"><img src="{% static 'jcf/img/jcf-mark.png' %}" alt="" width="120" height="110"></span>
+    <span class="jcf-logo__text">
+        <span class="jcf-logo__name">Foundation Office</span>
+        <span class="jcf-logo__sub">Jan Cosmic Foundation</span>
+    </span>
 </span>

@@ -1,8 +1,14 @@
 <aside class="sidenav-menu" aria-label="Foundation navigation">
-    <a href="{% url 'dashboard:analytics' %}" class="logo" aria-label="Jan Cosmic Foundation office home">
+    <a href="{% url 'dashboard:analytics' %}" class="logo" aria-label="Foundation Office home">
         <span class="logo-lg">{% include "partials/_brand.html" %}</span><span class="logo-sm">{% include "partials/_brand_mark.html" %}</span>
     </a>
     <button class="button-close-offcanvas" aria-label="Close navigation"><i class="ph ph-x" aria-hidden="true"></i></button>
     <div class="scrollbar" data-simplebar=""><nav id="sidenav-menu" aria-label="Main">{% office_navigation %}</nav></div>
-    <div class="jcf-sidebar-foot"><span class="jcf-office-dot" aria-hidden="true"></span><span>Jan Cosmic Foundation<br><small>Teaching. Community. Service.</small></span></div>
+    <div class="jcf-sidebar-foot">
+        {% avatar request.user.get_full_name fallback=request.user.email %}
+        <span class="jcf-sidebar-foot__text">
+            <span class="jcf-sidebar-foot__name">{{ request.user.get_full_name|default:request.user.email }}</span>
+            <span class="jcf-sidebar-foot__role">{% if request.user.is_superuser %}System administrator{% else %}{{ request.user.profile.get_role_display|default:"No role assigned" }}{% endif %}</span>
+        </span>
+    </div>
 </aside>

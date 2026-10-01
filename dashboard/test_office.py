@@ -59,7 +59,7 @@ class OfficeTests(TestCase):
         VolunteerApplication.objects.create(name='Volunteer', email='volunteer@example.com', phone='+233240000011', availability='Weekends')
         response = self.client.get(reverse('dashboard:analytics'))
         self.assertEqual(response.context['inbox_count'], 2)
-        self.assertEqual([task['count'] for task in response.context['inbox_tasks']], [1, 0, 1])
+        self.assertEqual([task['count'] for task in response.context['inbox_tasks']], [0, 1, 0, 1])
         self.assertEqual(len(response.context['contact_trend']), 6)
 
     def test_general_giving_filter_and_payment_reference_search(self):
@@ -113,6 +113,22 @@ class OfficeTests(TestCase):
         self.assertEqual(active, ['Donations'])
         self.assertIn('Staff', [group['label'] for group in groups])
         self.assertTrue(next(g for g in groups if g['label'] == 'Giving')['active'])
+
+    def test_navigation_badges_count_waiting_records_in_one_query(self):
+        ContactSubmission.objects.create(name='Unread', email='unread@example.com', subject='Visit', message='Hello')
+        ContactSubmission.objects.create(name='Read', email='read@example.com', subject='Visit', message='Hello', is_read=True)
+        VolunteerApplication.objects.create(name='Volunteer', email='volunteer@example.com', phone='+233240000011', availability='Weekends')
+        request = RequestFactory().get(reverse('dashboard:analytics'))
+        request.user = self.user; request.resolver_match = resolve(request.path)
+        navigation_for(request)  # the first call also loads the user's role
+        with self.assertNumQueries(1):
+            groups = navigation_for(request)
+        counts = {link['label']: link['count'] for group in groups for link in group['links']}
+        self.assertEqual(counts['Contact messages'], 1)
+        self.assertEqual(counts['Volunteer applications'], 1)
+        self.assertFalse(counts['Foundation registrations'])
+        self.assertIsNone(counts['Members'])
+        self.assertEqual(next(g for g in groups if g['label'] == 'Inbox')['count'], 2)
 
     def test_sign_out_control_uses_post_and_works(self):
         response = self.client.get(reverse('dashboard:analytics'))

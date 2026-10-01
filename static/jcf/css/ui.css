@@ -435,6 +435,11 @@ a.jcf-person__name:hover {
     white-space: nowrap;
 }
 
+/* Rows open their record (ui.js); links and menus inside keep their own. */
+.jcf-row-link {
+    cursor: pointer;
+}
+
 .jcf-cell-title {
     font-weight: 600;
     color: var(--theme-body-color);

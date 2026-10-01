@@ -58,11 +58,7 @@
                 <div class="dropdown">
                     <a class="topbar-link dropdown-toggle drop-arrow-none jcf-user" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false" aria-label="Account menu">
                         {% avatar request.user.get_full_name fallback=request.user.email %}
-                        <span class="jcf-user__text d-none d-lg-flex">
-                            <span class="jcf-user__name">{{ request.user.get_full_name|default:request.user.email }}</span>
-                            <span class="jcf-user__role">{% if request.user.is_superuser %}System administrator{% else %}{{ request.user.profile.get_role_display|default:"No role assigned" }}{% endif %}</span>
-                        </span>
-                        <i class="ph ph-caret-down d-none d-lg-inline" aria-hidden="true"></i>
+                        <i class="ph ph-caret-down d-none d-sm-inline" aria-hidden="true"></i>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end">
                         <div class="dropdown-header">
