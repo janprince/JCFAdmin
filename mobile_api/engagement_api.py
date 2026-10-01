@@ -103,26 +103,67 @@ class AnnouncementReadView(APIView):
 
 
 class DeviceRegisterView(APIView):
-    """POST {token, platform} -> register/refresh an FCM token (links member if authed)."""
+    """POST a push token -> register or refresh it (links the member if authed).
+
+    DELETE {registration_key} -> deactivate that install's registrations.
+    The key, not the token, is the handle: a token in a request path ends up
+    in access logs and crash reports, and anyone reading one there could send
+    that device a notification.
+    """
 
     authentication_classes = [MobileTokenAuthentication]
     permission_classes = [AllowAny]
+
+    # Everything else the app may send. Anything not listed is ignored
+    # rather than written, so a new client field cannot set a column by
+    # accident.
+    OPTIONAL_FIELDS = ('registration_key', 'locale', 'timezone',
+                       'app_version', 'permission_status')
 
     def post(self, request):
         token = str(request.data.get('token', '')).strip()
         platform = request.data.get('platform')
         if not token or platform not in DeviceToken.Platform.values:
             raise ValidationError('token and a valid platform (ios/android) are required.')
+
         contact = request.auth.contact if request.auth else None
-        DeviceToken.objects.update_or_create(
-            token=token,
-            defaults={'platform': platform, 'contact': contact, 'is_active': True},
-        )
+        defaults = {'platform': platform, 'contact': contact, 'is_active': True}
+        for field in self.OPTIONAL_FIELDS:
+            value = request.data.get(field)
+            if value is not None:
+                # Truncated, not rejected: a longer-than-expected locale is
+                # no reason to refuse a registration.
+                max_length = DeviceToken._meta.get_field(field).max_length
+                defaults[field] = str(value).strip()[:max_length]
+
+        DeviceToken.objects.update_or_create(token=token, defaults=defaults)
+
+        # Token rotation: the same install reporting a new token retires the
+        # old row instead of leaving two active registrations that would
+        # each receive a copy of every notification.
+        key = defaults.get('registration_key')
+        if key:
+            DeviceToken.objects.filter(
+                registration_key=key, is_active=True,
+            ).exclude(token=token).update(is_active=False)
+
         return Response({'registered': True}, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        key = str(request.data.get('registration_key', '')).strip()
+        if not key:
+            raise ValidationError('registration_key is required.')
+        DeviceToken.objects.filter(registration_key=key).update(is_active=False)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DeviceUnregisterView(APIView):
-    """DELETE /devices/<token>/ -> deactivate a token (e.g. on logout)."""
+    """DELETE /devices/<token>/ -> deactivate a token.
+
+    Kept for clients already shipping this call. New callers use the
+    registration key on DeviceRegisterView instead: this one puts the token
+    in the request path, where logs and crash reports will keep it.
+    """
 
     authentication_classes = [MobileTokenAuthentication]
     permission_classes = [AllowAny]

@@ -63,6 +63,19 @@ class DeviceToken(models.Model):
     )
     token = models.CharField(max_length=255, unique=True)
     platform = models.CharField(max_length=10, choices=Platform.choices)
+    # The app's own idempotency handle for one install: a secure random
+    # value it keeps in preferences, never a hardware identifier. It lets a
+    # rotated token replace its predecessor instead of accumulating rows,
+    # and it is the only handle used to deactivate a registration — tokens
+    # never travel in a URL.
+    registration_key = models.CharField(max_length=64, blank=True, db_index=True)
+    locale = models.CharField(max_length=16, blank=True)
+    timezone = models.CharField(max_length=64, blank=True)
+    app_version = models.CharField(max_length=32, blank=True)
+    # What the operating system last told the app. Recorded so a send can
+    # skip devices that have revoked permission, and so "allowed but never
+    # delivered to" is visible rather than guessed at.
+    permission_status = models.CharField(max_length=32, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(auto_now=True)

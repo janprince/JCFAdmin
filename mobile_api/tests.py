@@ -594,6 +594,84 @@ class EngagementTests(APITestCase):
         self.assertEqual(resp.status_code, 204)
         self.assertFalse(DeviceToken.objects.get(token='fcm-z').is_active)
 
+    def test_register_device_records_context(self):
+        resp = self.client.post(
+            reverse('mobile_api:device_register'),
+            {
+                'token': 'fcm-ctx', 'platform': 'android',
+                'registration_key': 'key-1', 'locale': 'fr',
+                'timezone': 'Africa/Accra', 'permission_status': 'authorized',
+            },
+            **self._auth(), format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        dt = DeviceToken.objects.get(token='fcm-ctx')
+        self.assertEqual(dt.registration_key, 'key-1')
+        self.assertEqual(dt.locale, 'fr')
+        self.assertEqual(dt.timezone, 'Africa/Accra')
+        self.assertEqual(dt.permission_status, 'authorized')
+
+    def test_register_device_ignores_unknown_fields(self):
+        """A client field we do not model must not reach the database."""
+        resp = self.client.post(
+            reverse('mobile_api:device_register'),
+            {'token': 'fcm-extra', 'platform': 'ios', 'is_active': False,
+             'contact': 999},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        dt = DeviceToken.objects.get(token='fcm-extra')
+        self.assertTrue(dt.is_active)
+        self.assertIsNone(dt.contact)
+
+    def test_token_rotation_retires_the_previous_registration(self):
+        """One install must not end up with two active rows receiving copies."""
+        for token in ('fcm-old', 'fcm-new'):
+            self.client.post(
+                reverse('mobile_api:device_register'),
+                {'token': token, 'platform': 'android',
+                 'registration_key': 'key-rotate'},
+                **self._auth(), format='json',
+            )
+        self.assertFalse(DeviceToken.objects.get(token='fcm-old').is_active)
+        self.assertTrue(DeviceToken.objects.get(token='fcm-new').is_active)
+
+    def test_rotation_leaves_other_installs_alone(self):
+        DeviceToken.objects.create(
+            token='fcm-other', platform='ios', registration_key='key-other')
+        self.client.post(
+            reverse('mobile_api:device_register'),
+            {'token': 'fcm-mine', 'platform': 'android',
+             'registration_key': 'key-mine'},
+            format='json',
+        )
+        self.assertTrue(DeviceToken.objects.get(token='fcm-other').is_active)
+
+    def test_unregister_by_registration_key(self):
+        DeviceToken.objects.create(
+            token='fcm-signout', platform='android',
+            registration_key='key-signout', contact=self.member)
+        resp = self.client.delete(
+            reverse('mobile_api:device_register'),
+            {'registration_key': 'key-signout'}, format='json',
+        )
+        self.assertEqual(resp.status_code, 204)
+        self.assertFalse(DeviceToken.objects.get(token='fcm-signout').is_active)
+
+    def test_unregister_requires_a_key(self):
+        resp = self.client.delete(
+            reverse('mobile_api:device_register'), {}, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_oversized_context_is_truncated_not_rejected(self):
+        resp = self.client.post(
+            reverse('mobile_api:device_register'),
+            {'token': 'fcm-long', 'platform': 'ios', 'locale': 'x' * 200},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(DeviceToken.objects.get(token='fcm-long').locale), 16)
+
     # notifications
     def test_notifications_list_and_mark_read(self):
         n = Notification.objects.create(contact=self.member, title='Hello')
