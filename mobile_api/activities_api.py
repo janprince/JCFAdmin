@@ -13,12 +13,11 @@ Two rules this module is built around:
 * **Destinations are identifiers, not routes.** An item says
   `{"type": "live", "event_id": 12}`; the app maps that to its own router.
 
-Visibility is a ladder rather than a hard filter. A guest sees public
-activities plus members-only ones marked locked (that lock is the reason to
-sign in); a member additionally sees students-only ones locked; a student
-sees everything open. Nothing a caller may not attend is ever hidden so
-completely that the schedule looks empty, and nothing two tiers above them
-is advertised.
+Visibility follows the two tiers. A guest sees public activities only; a
+signed-in student sees those and the gated ones, open. `access.allowed`
+still carries a locked state, for a direct link or a contact whose
+approval has lapsed, but nothing gated is advertised to a guest. See
+`tiers.py` for the rules and why.
 """
 import base64
 from datetime import datetime, time, timedelta
@@ -33,7 +32,8 @@ from activities.models import (Activity, ActivityRegistration,
                                ActivityReminder, ActivitySave)
 from programs.models import Program
 
-from .authentication import IsMember, MobileTokenAuthentication
+from . import tiers
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 # How far ahead the unfiltered feed looks, and how soon before start a live
 # session is flagged "starting soon".
@@ -56,36 +56,16 @@ PRIMARY_FILTERS = ('all', 'live', 'online', 'in_person')
 def _audiences_for(contact):
     """Audiences a caller may *attend*. Used by the home screens, which
     advertise nothing the reader cannot walk into."""
-    values = [Activity.Audience.PUBLIC]
-    if contact is not None:
-        if contact.is_member or contact.is_student:
-            values.append(Activity.Audience.MEMBERS)
-        if contact.is_student:
-            values.append(Activity.Audience.STUDENTS)
-    return values
+    return tiers.attendable_audiences(contact)
 
 
 def _visible_audiences(contact):
-    """Audiences a caller may *see*, including the tier above them."""
-    if contact is None:
-        return [Activity.Audience.PUBLIC, Activity.Audience.MEMBERS]
-    if contact.is_student:
-        return [Activity.Audience.PUBLIC, Activity.Audience.MEMBERS,
-                Activity.Audience.STUDENTS]
-    if contact.is_member:
-        return [Activity.Audience.PUBLIC, Activity.Audience.MEMBERS,
-                Activity.Audience.STUDENTS]
-    return [Activity.Audience.PUBLIC, Activity.Audience.MEMBERS]
+    """Audiences a caller may *see*, locked ones included."""
+    return tiers.visible_audiences(contact)
 
 
 def _may_attend(activity, contact):
-    if activity.audience == Activity.Audience.PUBLIC:
-        return True
-    if contact is None:
-        return False
-    if activity.audience == Activity.Audience.MEMBERS:
-        return contact.is_member or contact.is_student
-    return contact.is_student
+    return tiers.may_open(activity.audience, contact)
 
 
 def _access_json(activity, contact):
@@ -94,10 +74,10 @@ def _access_json(activity, contact):
         reason = ''
     elif contact is None:
         reason = 'sign_in'
-    elif activity.audience == Activity.Audience.STUDENTS:
-        reason = 'students_only'
     else:
-        reason = 'members_only'
+        # Signed in but not approved — an inactive contact. Not something
+        # the reader can fix by signing in again, so it says so.
+        reason = 'students_only'
     return {
         'allowed': allowed,
         'required_audience': activity.audience,
@@ -610,7 +590,7 @@ class ReminderToggleView(APIView):
     "remind me". Stored server-side; push delivery lands with FCM."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request):
         contact = request.member
@@ -655,7 +635,7 @@ class ActivitySaveToggleView(APIView):
     """
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request):
         contact = request.member
@@ -677,7 +657,7 @@ class ActivityRegistrationView(APIView):
     a place. The server decides between a seat and the waitlist."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request):
         contact = request.member

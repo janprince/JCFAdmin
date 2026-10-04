@@ -33,10 +33,11 @@ def send_push(tokens, title, body, data=None) -> int:
 
 def audience_contacts(audience):
     qs = Contact.objects.filter(is_active=True)
-    if audience == Announcement.Audience.MEMBERS:
-        return qs.filter(Q(is_member=True) | Q(is_student=True))
     if audience == Announcement.Audience.STUDENTS:
-        return qs.filter(is_student=True)
+        # An approved contact, by either flag. `is_member` remains a CRM
+        # marker in JCFAdmin and still means "approved", so dropping it
+        # here would silently stop reaching people who get these today.
+        return qs.filter(Q(is_student=True) | Q(is_member=True))
     return qs  # public -> everyone
 
 

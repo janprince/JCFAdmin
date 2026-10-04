@@ -9,9 +9,12 @@ from django.utils.text import slugify
 
 class Announcement(models.Model):
     class Audience(models.TextChoices):
+        # The app has two tiers: guests and signed-in students. The old
+        # MEMBERS value is gone; existing rows were migrated to STUDENTS
+        # rather than to PUBLIC, so nothing that was gated quietly became
+        # visible to everyone.
         PUBLIC = 'public', 'Public (everyone)'
-        MEMBERS = 'members', 'Members & students only'
-        STUDENTS = 'students', 'Students only'
+        STUDENTS = 'students', 'Signed-in students only'
 
     title = models.CharField(max_length=255)
     body = models.TextField()

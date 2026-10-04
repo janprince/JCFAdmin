@@ -405,7 +405,7 @@ class ProgramTests(APITestCase):
             requires_payment=False, is_published=True,
         )
         self.retreat = Program.objects.create(
-            title='Annual Retreat', year=2026, audience=Program.Audience.MEMBERS,
+            title='Annual Retreat', year=2026, audience=Program.Audience.STUDENTS,
             requires_payment=True, is_published=True,
         )
         CostLineItem.objects.create(program=self.retreat, label='Registration', amount=400, unit=CostLineItem.Unit.FLAT)
@@ -551,7 +551,7 @@ class EngagementTests(APITestCase):
             title='Public News', body='hi', audience=Announcement.Audience.PUBLIC,
         )
         self.mem = Announcement.objects.create(
-            title='Members Only', body='secret', audience=Announcement.Audience.MEMBERS,
+            title='Members Only', body='secret', audience=Announcement.Audience.STUDENTS,
         )
 
     def _auth(self, contact=None):

@@ -10,16 +10,20 @@ from rest_framework.views import APIView
 from consultations.models import Consultation
 from engagement.models import (Announcement, AnnouncementRead,
                                DailyInspiration, DeviceToken, Notification)
-from .authentication import IsMember, MobileTokenAuthentication
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 
 def allowed_audience_values(contact):
+    """What this caller may see: public always, students once signed in.
+
+    `is_member` still counts as approved — it is a CRM flag, not an app
+    tier — so a contact who was a member yesterday sees the same content
+    today.
+    """
     values = {Announcement.Audience.PUBLIC}
-    if contact is not None:
-        if contact.is_member or contact.is_student:
-            values.add(Announcement.Audience.MEMBERS)
-        if contact.is_student:
-            values.add(Announcement.Audience.STUDENTS)
+    if contact is not None and contact.is_active and (
+            contact.is_student or contact.is_member):
+        values.add(Announcement.Audience.STUDENTS)
     return values
 
 
@@ -90,7 +94,7 @@ class AnnouncementReadView(APIView):
     """POST /announcements/<pk>/read/ — clear the unread dot."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, pk):
         announcement = Announcement.objects.filter(
@@ -175,7 +179,7 @@ class DeviceUnregisterView(APIView):
 
 class NotificationListView(generics.ListAPIView):
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
@@ -184,7 +188,7 @@ class NotificationListView(generics.ListAPIView):
 
 class NotificationReadView(APIView):
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, pk):
         updated = Notification.objects.filter(
@@ -195,7 +199,7 @@ class NotificationReadView(APIView):
 
 class AppointmentListView(generics.ListAPIView):
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
@@ -204,7 +208,7 @@ class AppointmentListView(generics.ListAPIView):
 
 class AppointmentCreateView(generics.CreateAPIView):
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
     serializer_class = AppointmentSerializer
 
     def perform_create(self, serializer):

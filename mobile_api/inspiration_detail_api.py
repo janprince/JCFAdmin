@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from engagement.models import (DailyInspiration, InspirationReflection,
                                InspirationSave)
 
-from .authentication import IsMember, MobileTokenAuthentication
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 RELATED_LIMIT = 4
 
@@ -187,7 +187,7 @@ class InspirationSaveView(APIView):
     """POST/DELETE /inspirations/<id-or-slug>/save/ — members only."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, identifier):
         inspiration = _lookup(identifier)
@@ -213,7 +213,7 @@ class InspirationReflectionView(APIView):
     """
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, identifier):
         inspiration = _lookup(identifier)

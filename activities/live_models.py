@@ -31,9 +31,9 @@ class LiveSession(models.Model):
         AVAILABLE = 'available', 'Available'
 
     class AccessTier(models.TextChoices):
+        # Two tiers; the old MEMBERS value migrated to STUDENTS.
         PUBLIC = 'public', 'Public'
-        MEMBERS = 'members', 'Members & students'
-        STUDENTS = 'students', 'Students only'
+        STUDENTS = 'students', 'Signed-in students only'
 
     activity = models.OneToOneField(
         'activities.Activity', on_delete=models.CASCADE,
@@ -130,11 +130,10 @@ class LiveSession(models.Model):
     def allows(self, contact):
         if self.access_tier == self.AccessTier.PUBLIC:
             return True
-        if contact is None or not contact.is_active:
-            return False
-        if self.access_tier == self.AccessTier.STUDENTS:
-            return contact.is_student
-        return contact.is_member or contact.is_student
+        # Either flag means an approved contact; `is_member` is a CRM
+        # marker, not an app tier. See mobile_api/tiers.py.
+        return bool(contact is not None and contact.is_active
+                    and (contact.is_student or contact.is_member))
 
     def live_viewer_count(self, now=None):
         now = now or timezone.now()

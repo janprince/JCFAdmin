@@ -16,9 +16,11 @@ class Practice(models.Model):
         GENERAL = 'general', 'General'
 
     class Audience(models.TextChoices):
+        # Two tiers: guests and signed-in students. The old MEMBERS value
+        # is gone and its rows were migrated to STUDENTS, never to PUBLIC,
+        # so nothing gated quietly became visible to everyone.
         PUBLIC = 'public', 'Public (free intro)'
-        MEMBERS = 'members', 'Members & students'
-        STUDENTS = 'students', 'Students only'
+        STUDENTS = 'students', 'Signed-in students only'
 
     title = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
@@ -27,7 +29,7 @@ class Practice(models.Model):
         max_length=12, choices=Category.choices, default=Category.GENERAL)
     minutes = models.PositiveSmallIntegerField(default=10)
     audience = models.CharField(
-        max_length=10, choices=Audience.choices, default=Audience.MEMBERS)
+        max_length=10, choices=Audience.choices, default=Audience.STUDENTS)
     audio_file = models.FileField(
         upload_to='practices/audio/', blank=True,
         help_text='Guided audio hosted on R2.')

@@ -61,34 +61,34 @@ class OptionalMobileTokenAuthentication(MobileTokenAuthentication):
             return None
 
 
-class IsMember(permissions.BasePermission):
-    """Allow only requests carrying a valid mobile token."""
+class IsSignedIn(permissions.BasePermission):
+    """Allow only requests carrying a valid mobile token.
 
-    message = _('Member authentication required.')
+    Named for what it checks. It was called IsMember, which read as a tier
+    test and never was one — it only ever asked whether a token was
+    present, and several views relied on exactly that.
+    """
+
+    message = _('Sign-in required.')
 
     def has_permission(self, request, view):
         return isinstance(request.auth, MobileToken)
 
 
-class IsStudent(IsMember):
-    """Restrict to Contacts enrolled as students."""
+class IsStudent(IsSignedIn):
+    """Restrict to an approved, active Contact.
 
-    message = _('This content is for enrolled students.')
+    The app has two tiers: guests, who are not signed in, and students,
+    who are. `is_member` is still a JCFAdmin CRM flag and still marks an
+    approved contact, so it grants the same access here as `is_student` —
+    nobody who could use the app yesterday is locked out today.
+    """
 
-    def has_permission(self, request, view):
-        if not super().has_permission(request, view):
-            return False
-        contact = request.auth.contact
-        return bool(contact.is_active and contact.is_student)
-
-
-class IsStudentOrMember(IsMember):
-    """Restrict to Contacts flagged as an active member or student."""
-
-    message = _('This content is for registered members or students.')
+    message = _('This content is for signed-in students.')
 
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
         contact = request.auth.contact
-        return bool(contact.is_active and (contact.is_member or contact.is_student))
+        return bool(contact.is_active
+                    and (contact.is_student or contact.is_member))

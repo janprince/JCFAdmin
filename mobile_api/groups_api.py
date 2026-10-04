@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from groups.models import Group, GroupMembership
-from .authentication import IsStudentOrMember, MobileTokenAuthentication
+from .authentication import IsStudent, MobileTokenAuthentication
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -38,7 +38,7 @@ class GroupListView(generics.ListAPIView):
     """Active groups, each annotated with the caller's membership status."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
     serializer_class = GroupSerializer
 
     def get_queryset(self):
@@ -55,7 +55,7 @@ class MyGroupsView(generics.ListAPIView):
     """Groups the caller has been approved into."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
     serializer_class = GroupSerializer
 
     def get_queryset(self):
@@ -76,7 +76,7 @@ class JoinRequestView(APIView):
     """POST /groups/<pk>/join/ — ask to join; staff approve in the dashboard."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
 
     def post(self, request, pk):
         try:

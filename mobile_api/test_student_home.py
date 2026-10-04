@@ -47,13 +47,26 @@ class StudentHomeTests(APITestCase):
     def test_guest_is_rejected(self):
         self.assertEqual(self.client.get(HOME).status_code, 401)
 
-    def test_member_who_is_not_a_student_is_rejected(self):
+    def test_contact_approved_by_the_member_flag_gets_the_home(self):
+        # This screen is now the home for everyone signed in, enrolled or
+        # not. Refusing a member-flagged contact would lock out people who
+        # could use the app yesterday.
         member = Contact.objects.create(
             full_name='Ama Member', phone='+233200000052',
             email='ama-not-student@example.com', is_active=True,
             is_member=True)
+        res = self.client.get(HOME, **self._auth(member))
+        self.assertEqual(res.status_code, 200)
+        # No enrolment, so the course sections are empty rather than zeroed.
+        self.assertIsNone(res.json()['primary_enrolment'])
+
+    def test_an_inactive_contact_is_still_rejected(self):
+        lapsed = Contact.objects.create(
+            full_name='Lapsed', phone='+233200000053',
+            email='lapsed-home@example.com', is_active=False,
+            is_member=True)
         self.assertEqual(
-            self.client.get(HOME, **self._auth(member)).status_code, 403)
+            self.client.get(HOME, **self._auth(lapsed)).status_code, 403)
 
     # --- enrolment selection ---
 

@@ -13,7 +13,6 @@ from . import practices_api
 from . import activities_api
 from . import continue_learning_api
 from . import search_api
-from . import member_home_api
 from . import student_home_api
 from . import inspiration_detail_api
 from . import live_api
@@ -94,9 +93,8 @@ urlpatterns = [
     path('learning/continue/', continue_learning_api.ContinueLearningView.as_view(), name='learning_continue'),
     path('learning/lessons/<int:pk>/progress/', continue_learning_api.LessonProgressView.as_view(), name='learning_lesson_progress'),
 
-    # Member Home aggregate
-    path('home/member/', member_home_api.MemberHomeView.as_view(), name='member_home'),
-
+    # Signed-in home aggregate. There was a second one at home/member/;
+    # the app has two tiers now and this serves everyone who signs in.
     path('home/student/', student_home_api.StudentHomeView.as_view(), name='student_home'),
 
     # Live Now (design 24)

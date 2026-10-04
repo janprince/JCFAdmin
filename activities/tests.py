@@ -62,28 +62,28 @@ class ActivitiesApiTests(APITestCase):
         titles = [i['title'] for i in res.data['results']]
         self.assertEqual(titles, ['Community Circle Live'])
 
-    def test_guest_sees_members_items_but_cannot_open_them(self):
-        """The browse feed shows the tier above the caller, locked.
+    def test_a_guest_is_not_shown_gated_items_at_all(self):
+        """With one gated tier, a guest is not told it exists.
 
-        Hiding members-only sittings from a guest makes the schedule look
-        empty; showing them locked is what gives signing in a point.
+        The old feed showed a guest the tier above them locked, as a
+        reason to sign in. That teaser went with the member tier: there
+        is now one gated tier, and advertising it would expose sittings
+        that were students-only.
         """
         Activity.objects.create(
             title='Public Sitting', audience='public',
             starts_at=timezone.now() + timedelta(days=1))
         Activity.objects.create(
-            title='Members Sitting', audience='members',
+            title='Gated Sitting', audience='students',
             starts_at=timezone.now() + timedelta(days=1))
         res = self.client.get(FEED)
-        access = {i['title']: i['access']['allowed']
-                  for i in res.data['results']}
-        self.assertTrue(access['Public Sitting'])
-        self.assertFalse(access['Members Sitting'])
+        titles = [i['title'] for i in res.data['results']]
+        self.assertEqual(titles, ['Public Sitting'])
 
-        member_res = self.client.get(FEED, **self._auth())
-        member_access = {i['title']: i['access']['allowed']
-                         for i in member_res.data['results']}
-        self.assertTrue(member_access['Members Sitting'])
+        signed_in = self.client.get(FEED, **self._auth())
+        access = {i['title']: i['access']['allowed']
+                  for i in signed_in.data['results']}
+        self.assertTrue(access['Gated Sitting'])
 
     def test_starting_soon_flag(self):
         Activity.objects.create(

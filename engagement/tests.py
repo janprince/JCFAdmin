@@ -53,14 +53,15 @@ class EngagementDashboardTests(APITestCase):
             'title': 'Students retreat briefing', 'body': 'x',
             'audience': 'students', 'is_published': 'on',
         })
-        # A member does not see it; a student does.
-        member_res = self.client.get(
-            '/api/mobile/v1/announcements/', **self._member_api(self.member))
-        self.assertEqual(member_res.data['results'], [])
-        student_res = self.client.get(
-            '/api/mobile/v1/announcements/', **self._member_api(self.student))
-        self.assertEqual(student_res.data['results'][0]['title'],
-                         'Students retreat briefing')
+        # Both approved contacts see it — one signed-in tier — and a
+        # guest still does not.
+        for contact in (self.member, self.student):
+            res = self.client.get(
+                '/api/mobile/v1/announcements/', **self._member_api(contact))
+            self.assertEqual(res.data['results'][0]['title'],
+                             'Students retreat briefing')
+        guest_res = self.client.get('/api/mobile/v1/announcements/')
+        self.assertEqual(guest_res.data['results'], [])
 
     def test_pin_toggle(self):
         a = Announcement.objects.create(title='T', body='b')
@@ -72,7 +73,7 @@ class EngagementDashboardTests(APITestCase):
 
     def test_compose_to_members_lands_in_member_inboxes(self):
         res = self.client.post(reverse('engagement:notification_compose'), {
-            'audience': 'members',
+            'audience': 'students',
             'title': 'Retreat photos are up',
             'body': 'See the gallery.',
         })

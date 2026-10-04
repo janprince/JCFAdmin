@@ -24,8 +24,7 @@ class NotificationComposeForm(forms.Form):
     """Compose an in-app notification for the mobile inbox."""
 
     AUDIENCE_CHOICES = [
-        ('members', 'All members & students'),
-        ('students', 'Students only'),
+        ('students', 'All signed-in students'),
         ('single', 'One person (by email or phone)'),
     ]
 
@@ -65,10 +64,9 @@ class NotificationComposeForm(forms.Form):
         audience = self.cleaned_data['audience']
         if audience == 'single':
             return [self.cleaned_data['contact']]
-        qs = Contact.objects.filter(is_active=True)
-        if audience == 'students':
-            return list(qs.filter(is_student=True))
-        return list(qs.filter(Q(is_member=True) | Q(is_student=True)))
+        # Every approved contact, by either flag — see audience_contacts.
+        return list(Contact.objects.filter(is_active=True).filter(
+            Q(is_student=True) | Q(is_member=True)))
 
 
 class DailyInspirationForm(forms.ModelForm):

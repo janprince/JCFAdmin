@@ -9,17 +9,12 @@ from rest_framework.views import APIView
 
 from practices.models import WEEKLY_GOAL, Practice, PracticeLog
 
-from .authentication import IsStudentOrMember, MobileTokenAuthentication
+from . import tiers
+from .authentication import IsStudent, MobileTokenAuthentication
 
 
 def _audiences_for(contact):
-    values = [Practice.Audience.PUBLIC]
-    if contact is not None:
-        if contact.is_member or contact.is_student:
-            values.append(Practice.Audience.MEMBERS)
-        if contact.is_student:
-            values.append(Practice.Audience.STUDENTS)
-    return values
+    return tiers.attendable_audiences(contact)
 
 
 def _practice_json(practice):
@@ -71,7 +66,7 @@ class PracticeSummaryView(APIView):
     """GET /practice/summary/ — streak, this week, today's practice."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
 
     def get(self, request):
         contact = request.member
@@ -119,7 +114,7 @@ class PracticeLogView(APIView):
     """POST /practice/log/ {practice_id?, minutes?} — record today's session."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
 
     def post(self, request):
         practice = None

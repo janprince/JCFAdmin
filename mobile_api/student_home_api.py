@@ -2,8 +2,12 @@
 
 One authenticated call for the student home: enrolment and programme
 progress, the lesson and practice to do next, the next live class, canonical
-progress aggregates, the next milestone, the assigned mentor, priority
-updates and quick actions.
+progress aggregates, the next milestone, the assigned mentor, daily
+inspiration, priority updates and quick actions.
+
+This is the home for everyone who is signed in, enrolled on a course or
+not, so every section is optional. Someone with no enrolment still gets
+inspiration, updates and quick actions rather than a page of zeroes.
 
 Progress values are computed here from published lessons and recorded
 progress, so the app never derives them from a partial page of data.
@@ -16,12 +20,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from activities.models import Activity, ActivityReminder
-from engagement.models import (Announcement, AnnouncementRead, Notification)
+from engagement.models import (Announcement, AnnouncementRead,
+                               DailyInspiration, Notification)
 from practices.models import PracticeLog
 from studies.models import Enrolment, Mentorship, Milestone, PracticeAssignment
 from teachings.models import Teaching, TeachingProgress
 
+from . import tiers
 from .authentication import IsStudent, MobileTokenAuthentication
+from .engagement_api import InspirationSerializer
 from .practices_api import _streak
 
 # How soon before a live class the join button opens.
@@ -314,7 +321,7 @@ def _updates(contact, now):
         .values_list('announcement_id', flat=True))
     for row in Announcement.objects.filter(
             is_published=True,
-            audience__in=['public', 'members', 'students'])[:5]:
+            audience__in=tiers.visible_audiences(contact))[:5]:
         items.append({
             'id': f'announcement-{row.id}',
             'type': 'announcement',
@@ -371,6 +378,16 @@ class StudentHomeView(APIView):
                 contact, enrolment, lessons, completed, percent),
             'next_milestone': _next_milestone(enrolment, percent),
             'mentor': _mentor(contact),
+            # Carried over from the member home when the two merged: it is
+            # the one thing that screen had which this one lacked, and the
+            # only section a signed-in person with no course is sure to see.
+            'daily_inspirations': [
+                InspirationSerializer(i).data
+                for i in DailyInspiration.objects.filter(
+                    is_published=True, date__lte=timezone.localdate())
+                .select_related('related_teaching')
+                .order_by('-date')[:3]
+            ],
             'updates': _updates(contact, now),
             'quick_actions': [
                 {'id': 'courses', 'sort_order': 1},

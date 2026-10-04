@@ -338,7 +338,7 @@ class UpcomingFeedTests(TestCase):
     def test_featured_never_advertises_something_locked(self):
         ActivityFactory.create(
             title='Members only', is_featured=True,
-            audience=Activity.Audience.MEMBERS)
+            audience=Activity.Audience.STUDENTS)
         self.assertIsNone(self.get().json()['featured_activity'])
 
     def test_featured_is_omitted_on_later_pages(self):
@@ -387,26 +387,20 @@ class UpcomingFeedTests(TestCase):
 
     # --- visibility ladder ----------------------------------------------
 
-    def test_guest_sees_members_only_activity_locked(self):
-        ActivityFactory.create(
-            title='Members', audience=Activity.Audience.MEMBERS)
-        item = self.get().json()['results'][0]
-        self.assertFalse(item['access']['allowed'])
-        self.assertTrue(item['access']['sign_in_required'])
-        self.assertEqual(item['access']['reason'], 'sign_in')
-
-    def test_guest_never_sees_students_only_activity(self):
+    def test_guest_never_sees_gated_activity(self):
+        # One gated tier, and a guest is not told it exists. The locked
+        # teaser a guest used to get for member-tier content is gone with
+        # the tier; access.allowed still covers a direct link.
         ActivityFactory.create(
             title='Students', audience=Activity.Audience.STUDENTS)
         self.assertEqual(self.get().json()['results'], [])
 
-    def test_member_sees_students_activity_locked(self):
+    def test_contact_approved_by_the_member_flag_opens_gated_activity(self):
         member = make_contact('+233200000001', is_member=True)
         ActivityFactory.create(
             title='Students', audience=Activity.Audience.STUDENTS)
         item = self.get(member).json()['results'][0]
-        self.assertFalse(item['access']['allowed'])
-        self.assertEqual(item['access']['reason'], 'students_only')
+        self.assertTrue(item['access']['allowed'])
 
     def test_student_opens_everything(self):
         student = make_contact('+233200000002', is_student=True)
@@ -418,7 +412,7 @@ class UpcomingFeedTests(TestCase):
         ActivityFactory.create(
             title='Open', audience=Activity.Audience.PUBLIC)
         ActivityFactory.create(
-            title='Locked', audience=Activity.Audience.MEMBERS)
+            title='Locked', audience=Activity.Audience.STUDENTS)
         titles = [r['title']
                   for r in self.get(access='open_to_me').json()['results']]
         self.assertEqual(titles, ['Open'])
@@ -607,12 +601,29 @@ class RegistrationEndpointTests(TestCase):
         self.assertEqual(response.json()['external_url'],
                          'https://example.org/signup')
 
-    def test_cannot_register_for_something_out_of_reach(self):
+    def test_approved_contact_can_register_for_gated_activity(self):
+        # Gated now means "signed in", and this contact is.
         activity = ActivityFactory.create(
             registration_required=True,
             audience=Activity.Audience.STUDENTS,
             starts_at=self.now + timedelta(days=2))
-        self.assertEqual(self.post(activity_id=activity.id).status_code, 403)
+        self.assertEqual(self.post(activity_id=activity.id).status_code, 201)
+
+    def test_cannot_register_for_something_out_of_reach(self):
+        # Signed in, but no longer approved: a lapsed contact holding a
+        # token must not get through a gate on the strength of the token.
+        lapsed = make_contact('+233200000021', is_member=True)
+        lapsed.is_active = False
+        lapsed.save(update_fields=['is_active'])
+        activity = ActivityFactory.create(
+            registration_required=True,
+            audience=Activity.Audience.STUDENTS,
+            starts_at=self.now + timedelta(days=2))
+        response = self.client.post(
+            self.url, {'activity_id': activity.id},
+            content_type='application/json',
+            HTTP_AUTHORIZATION=f'Bearer {token_for(lapsed).access_token}')
+        self.assertEqual(response.status_code, 403)
 
     def test_cancelling_releases_the_seat(self):
         activity = ActivityFactory.create(
