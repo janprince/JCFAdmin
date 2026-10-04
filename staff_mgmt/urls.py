@@ -13,5 +13,11 @@ urlpatterns = [
     path('access/<int:pk>/deactivate/', access_views.UserStatusView.as_view(), {'action': 'deactivate'}, name='user_deactivate'),
     path('', views.StaffListView.as_view(), name='staff_list'),
     path('add/', views.StaffCreateView.as_view(), name='staff_create'),
+    path('<int:pk>/', views.StaffDetailView.as_view(), name='staff_detail'),
     path('<int:pk>/edit/', views.StaffUpdateView.as_view(), name='staff_update'),
+    path('<int:pk>/journey/', views.EntryCreateView.as_view(), name='entry_create'),
+    path('journey/<int:pk>/delete/', views.EntryDeleteView.as_view(), name='entry_delete'),
+    path('units/', views.UnitListView.as_view(), name='unit_list'),
+    path('units/add/', views.UnitCreateView.as_view(), name='unit_create'),
+    path('units/<int:pk>/edit/', views.UnitUpdateView.as_view(), name='unit_update'),
 ]

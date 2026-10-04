@@ -27,7 +27,7 @@ class PortalAccessTests(TestCase):
         cls.root = User.objects.create_superuser(username='root', email='root@example.com', password=PASSWORD)
         cls.target = User.objects.create_user(username='target', email='target@example.com', password=PASSWORD, first_name='Target')
         cls.contact = Contact.objects.create(full_name='Sample Worker', email='worker@example.com')
-        cls.worker = Worker.objects.create(contact=cls.contact, role='Coordinator', salary=100)
+        cls.worker = Worker.objects.create(contact=cls.contact, title='Coordinator', allowance=100)
         cls.message = ContactSubmission.objects.create(name='Private Sender', email='private@example.com', subject='Private enquiry', message='Private body')
 
     def setUp(self):

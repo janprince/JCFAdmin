@@ -9,7 +9,7 @@ AREAS = {
     'content': 'Website content',
     'giving': 'Initiatives & donations',
     'innerspace': 'Inner Space students & access decisions',
-    'staff': 'Staff records & salaries',
+    'staff': 'Service team, units & allowances',
     'accounts': 'Portal accounts & roles',
 }
 ROLE_AREAS = {
@@ -20,9 +20,9 @@ ROLE_AREAS = {
 }
 ROLE_DESCRIPTIONS = {
     'admin': 'Full portal access, including creating accounts and assigning roles.',
-    'administrator': 'Foundation operations, publishing, giving, Inner Space and staff records. Cannot manage portal accounts.',
-    'secretary': 'Contacts, centres, consultations and incoming requests. No giving, salaries or account administration.',
-    'media_operations': 'Teachings, events, writings and website content. No private contact records, giving or staff administration.',
+    'administrator': 'Foundation operations, publishing, giving, Inner Space and the service team. Cannot manage portal accounts.',
+    'secretary': 'Contacts, centres, consultations and incoming requests. No giving, service team allowances or account administration.',
+    'media_operations': 'Teachings, events, writings and website content. No private contact records, giving or service team administration.',
 }
 
 def areas_for(user):

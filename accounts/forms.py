@@ -30,7 +30,7 @@ class PortalUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['first_name'].required = True
         self.fields['email'].help_text = 'They will use this email address to sign in.'
-        workers = Worker.objects.select_related('contact')
+        workers = Worker.objects.select_related('contact', 'unit').prefetch_related('other_units')
         if self.instance.pk:
             profile = getattr(self.instance, 'profile', None)
             self.fields['role'].initial = profile.role if profile else ''
@@ -38,10 +38,32 @@ class PortalUserForm(forms.ModelForm):
             workers = workers.filter(Q(portal_profile__isnull=True) | Q(portal_profile__user=self.instance))
         else:
             self.fields['role'].initial = Profile.Role.SECRETARY
-            workers = workers.filter(portal_profile__isnull=True)
+            workers = workers.filter(portal_profile__isnull=True).exclude(status=Worker.Status.INACTIVE)
         self.fields['worker'].queryset = workers.order_by('contact__full_name')
+        self.fields['worker'].label_from_instance = lambda w: f'{w} · {w.unit}' if w.unit else str(w)
         self.fields['worker'].empty_label = 'No linked staff record'
         style_fields(self)
+
+    def clean(self):
+        data = super().clean()
+        worker, role = data.get('worker'), data.get('role')
+        if not worker or not role:
+            return data
+        if not self.instance.pk and worker.status == Worker.Status.INACTIVE:
+            self.add_error('worker', f'{worker} has ended their service. Update their service record first if they are returning.')
+        # Service units bound new choices. Re-saving an account whose role and
+        # link are unchanged is not blocked by a unit setting changed since.
+        profile = getattr(self.instance, 'profile', None) if self.instance.pk else None
+        unchanged = profile and profile.role == role and profile.worker_id == worker.pk
+        allowed = worker.allowed_portal_roles()
+        if allowed is not None and role not in allowed and not unchanged:
+            units = ', '.join(unit.name for unit in worker.all_units())
+            if allowed:
+                labels = dict(Profile.Role.choices)
+                self.add_error('role', f"{worker}'s service units ({units}) allow: {', '.join(labels[r] for r in allowed)}.")
+            else:
+                self.add_error('role', f"{worker}'s service units ({units}) do not use the portal. An Admin can allow a role on the unit under Service units.")
+        return data
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()

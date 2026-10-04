@@ -14,6 +14,11 @@
 <div class="dropdown">
     <button type="button" class="btn btn-light btn-icon" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions"><i class="ph ph-dots-three-outline" aria-hidden="true"></i></button>
     <ul class="dropdown-menu dropdown-menu-end">
+        {% if office_access.staff %}
+        {% if contact.worker %}<li><a class="dropdown-item" href="{% url 'staff:staff_detail' contact.worker.pk %}"><i class="ph ph-identification-badge" aria-hidden="true"></i>View service record</a></li>
+        {% else %}<li><a class="dropdown-item" href="{% url 'staff:staff_create' %}?contact={{ contact.pk }}"><i class="ph ph-hand-heart" aria-hidden="true"></i>Add to service team</a></li>{% endif %}
+        <li><hr class="dropdown-divider"></li>
+        {% endif %}
         <li><button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="ph ph-trash" aria-hidden="true"></i>Delete contact</button></li>
     </ul>
 </div>

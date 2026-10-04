@@ -1,19 +1,87 @@
 {% extends "layouts/dashboard.html" %}
 
-{% block title %}Staff | JCF Management{% endblock %}
-{% block page_title %}Staff{% endblock %}
-{% block page_subtitle %}People employed by the foundation.{% endblock %}
+{% block title %}Service team | JCF Management{% endblock %}
+{% block page_title %}Service team{% endblock %}
+{% block page_subtitle %}Full-time, part-time and volunteer members who serve the Foundation.{% endblock %}
 
 {% block page_actions %}
-<a href="{% url 'staff:staff_create' %}" class="btn btn-primary"><i class="ph ph-plus" aria-hidden="true"></i>Add staff member</a>
+<a href="{% url 'staff:staff_create' %}" class="btn btn-primary"><i class="ph ph-plus" aria-hidden="true"></i>Add service member</a>
 {% endblock %}
 
 {% block content %}
 {% include 'staff/_section_tabs.html' with active='directory' %}
+
+<div class="card jcf-stats mb-3" aria-label="Service team at a glance">
+    <a class="jcf-stat" href="{% url 'staff:staff_list' %}">
+        <p class="jcf-stat__label">Serving now</p>
+        <p class="jcf-stat__value">{{ serving_count }}</p>
+    </a>
+    {% for value, label in type_choices %}
+    <a class="jcf-stat" href="?type={{ value }}">
+        <p class="jcf-stat__label">{% if value == 'volunteer' %}Volunteers{% else %}{{ label }}{% endif %}</p>
+        <p class="jcf-stat__value">{% if value == 'full_time' %}{{ commitment.full_time|default:0 }}{% elif value == 'part_time' %}{{ commitment.part_time|default:0 }}{% else %}{{ commitment.volunteer|default:0 }}{% endif %}</p>
+    </a>
+    {% endfor %}
+    <a class="jcf-stat" href="?support=allowance">
+        <p class="jcf-stat__label">Monthly allowances</p>
+        {% for row in allowances %}
+        <p class="jcf-stat__value">{{ row.allowance_currency }} {{ row.total|floatformat:"0g" }}</p>
+        {% empty %}
+        <p class="jcf-stat__value">—</p>
+        {% endfor %}
+    </a>
+</div>
+
+{% if anniversaries %}
+<section class="card jcf-anniversaries mb-3" aria-labelledby="anniversaries-title">
+    <div class="jcf-card-body">
+        <i class="ph-light ph-sparkle" aria-hidden="true"></i>
+        <div>
+            <h2 class="jcf-card-head__title" id="anniversaries-title">Service anniversaries this month</h2>
+            <ul>
+                {% for worker in anniversaries %}
+                <li><a href="{% url 'staff:staff_detail' worker.pk %}">{{ worker.contact.full_name|person_name }}</a> — {{ worker.years }} year{{ worker.years|pluralize }} on {{ worker.started_on|date:"j M" }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if needs_review %}
+<div class="alert alert-warning d-flex gap-2 align-items-start" role="status">
+    <i class="ph ph-warning fs-18" aria-hidden="true"></i>
+    <div>
+        <strong>{{ needs_review|length }} portal account{{ needs_review|pluralize:" needs,s need" }} a second look.</strong>
+        <ul class="mb-0 mt-1 ps-3">
+            {% for worker in needs_review %}<li><a href="{% url 'staff:staff_detail' worker.pk %}" class="alert-link">{{ worker.contact.full_name|person_name }}</a> — {{ worker.access_concerns|join:" " }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 <div class="card jcf-list">
+    {% include "partials/_tabs.html" with label="Filter by status" %}
+
     <form method="get" class="jcf-toolbar" role="search">
-        {% include "partials/_search.html" with placeholder="Search by name" %}
-        {% if search_query %}<a href="{% querystring q=None page=None %}" class="jcf-toolbar__clear">Clear search</a>{% endif %}
+        {% keep_params 'status' %}
+        {% include "partials/_search.html" with placeholder="Search name, service role or skill" %}
+        <select name="unit" class="form-select jcf-select" onchange="this.form.submit()" aria-label="Filter by service unit">
+            <option value="">All units</option>
+            {% for unit in units %}<option value="{{ unit.pk }}"{% if unit_filter == unit.pk|stringformat:"d" %} selected{% endif %}>{{ unit.name }}</option>{% endfor %}
+        </select>
+        <select name="type" class="form-select jcf-select" onchange="this.form.submit()" aria-label="Filter by commitment">
+            <option value="">Any commitment</option>
+            {% for value, label in type_choices %}<option value="{{ value }}"{% if type_filter == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <select name="support" class="form-select jcf-select" onchange="this.form.submit()" aria-label="Filter by allowance">
+            <option value="">Any support</option>
+            <option value="allowance"{% if support_filter == 'allowance' %} selected{% endif %}>Receives an allowance</option>
+            <option value="none"{% if support_filter == 'none' %} selected{% endif %}>Serves without allowance</option>
+        </select>
+        {% if search_query or unit_filter or type_filter or support_filter %}
+        <a href="{% querystring q=None unit=None type=None support=None page=None %}" class="jcf-toolbar__clear">Clear filters</a>
+        {% endif %}
     </form>
 
     <div class="table-responsive">
@@ -21,25 +89,50 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Duties</th>
-                    {% if office_access.accounts %}<th>Portal access</th>{% endif %}
-                    <th class="text-end">Salary</th>
+                    <th>Service unit</th>
+                    <th>Commitment</th>
+                    <th>Serving since</th>
+                    <th class="text-end">Monthly allowance</th>
+                    {% if office_access.accounts %}<th>Portal</th>{% endif %}
+                    <th>Status</th>
                     <th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
                 {% for s in staff %}
-                {% url 'members:contact_detail' s.contact.pk as view_url %}
+                {% url 'staff:staff_detail' s.pk as view_url %}
                 {% url 'staff:staff_update' s.pk as edit_url %}
                 <tr>
-                    <td>{% include "partials/_person.html" with name=s.contact.full_name meta=s.role url=view_url %}</td>
-                    <td>{% if s.duties %}<span class="jcf-truncate" title="{{ s.duties }}">{{ s.duties }}</span>{% else %}{{ ""|or_dash }}{% endif %}</td>
-                    {% if office_access.accounts %}<td>{% if s.portal_profile %}{% if s.portal_profile.user.is_superuser %}<span class="jcf-cell-meta">System administrator</span>{% else %}<a href="{% url 'staff:user_update' s.portal_profile.user_id %}">{{ s.portal_profile.get_role_display }}</a>{% if not s.portal_profile.user.is_active %}<small class="d-block text-muted">Inactive</small>{% endif %}{% endif %}{% else %}<a href="{% url 'staff:user_create' %}?worker={{ s.pk }}">Set up access</a>{% endif %}</td>{% endif %}
-                    <td class="text-end jcf-num">{% if s.salary is not None %}GHS {{ s.salary|floatformat:"2g" }}{% else %}{{ ""|or_dash }}{% endif %}</td>
+                    <td>{% include "partials/_person.html" with name=s.contact.full_name meta=s.title url=view_url %}</td>
+                    <td>
+                        {% with units=s.all_units %}
+                        {% if units %}<div class="jcf-tags">{% for unit in units %}<span class="jcf-tag{% if not forloop.first %} jcf-tag--quiet{% endif %}"{% if not forloop.first %} title="Also serves in {{ unit.name }}"{% endif %}>{{ unit.name }}</span>{% endfor %}</div>{% else %}{{ ""|or_dash }}{% endif %}
+                        {% endwith %}
+                    </td>
+                    <td>{{ s.get_service_type_display }}</td>
+                    <td>{% if s.started_on %}<span class="jcf-num">{{ s.started_on|date:"M Y" }}</span><span class="jcf-cell-meta">{{ s.length_of_service }}</span>{% else %}<span class="jcf-cell-meta">Not recorded</span>{% endif %}</td>
+                    <td class="text-end jcf-num">{% if s.allowance %}{{ s.allowance_currency }} {{ s.allowance|floatformat:"2g" }}{% else %}<span class="jcf-cell-meta">None</span>{% endif %}</td>
+                    {% if office_access.accounts %}
+                    <td>
+                        {% if s.portal_profile %}
+                            {% if s.portal_profile.user.is_superuser %}<span class="jcf-cell-meta">System administrator</span>
+                            {% else %}<a href="{% url 'staff:user_update' s.portal_profile.user_id %}">{{ s.portal_profile.get_role_display }}</a>
+                                {% if not s.portal_profile.user.is_active %}<small class="d-block text-muted">Signed out · inactive</small>{% endif %}
+                                {% if s.access_concerns %}<span class="jcf-status jcf-status--warning d-inline-flex mt-1" title="{{ s.access_concerns|join:' ' }}">Review</span>{% endif %}
+                            {% endif %}
+                        {% elif s.is_serving %}<a href="{% url 'staff:user_create' %}?worker={{ s.pk }}">Set up access</a>
+                        {% else %}{{ ""|or_dash }}{% endif %}
+                    </td>
+                    {% endif %}
+                    <td>{% include "staff/_worker_status.html" with worker=s %}</td>
                     <td class="jcf-table__actions">{% include "partials/_row_menu.html" with view_url=view_url edit_url=edit_url label=s.contact.full_name|person_name %}</td>
                 </tr>
                 {% empty %}
-                {% if office_access.accounts %}{% include 'partials/_empty_row.html' with colspan=5 icon='identification-badge' title='No staff found' %}{% else %}{% include 'partials/_empty_row.html' with colspan=4 icon='identification-badge' title='No staff found' %}{% endif %}
+                {% if office_access.accounts %}
+                {% include 'partials/_empty_row.html' with colspan=8 icon='identification-badge' title='No service members here' text='Try another filter, or add someone who has begun serving.' %}
+                {% else %}
+                {% include 'partials/_empty_row.html' with colspan=7 icon='identification-badge' title='No service members here' text='Try another filter, or add someone who has begun serving.' %}
+                {% endif %}
                 {% endfor %}
             </tbody>
         </table>

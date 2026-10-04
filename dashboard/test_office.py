@@ -111,7 +111,7 @@ class OfficeTests(TestCase):
         groups = navigation_for(request)
         active = [link['label'] for group in groups for link in group['links'] if link['active']]
         self.assertEqual(active, ['Donations'])
-        self.assertIn('Staff', [group['label'] for group in groups])
+        self.assertIn('Service team', [group['label'] for group in groups])
         self.assertTrue(next(g for g in groups if g['label'] == 'Giving')['active'])
 
     def test_navigation_badges_count_waiting_records_in_one_query(self):

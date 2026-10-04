@@ -4,8 +4,25 @@
     {
       "name": "jcf-dev",
       "runtimeExecutable": ".venv/bin/python",
-      "runtimeArgs": ["manage.py", "runserver", "8009"],
+      "runtimeArgs": [
+        "manage.py",
+        "runserver",
+        "8009"
+      ],
       "port": 8009
+    },
+    {
+      "name": "jcf-local",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "DATABASE_URL=postgres://localhost:5432/jcf_management",
+        "INNERSPACE_DATABASE_URL=",
+        ".venv/bin/python",
+        "manage.py",
+        "runserver",
+        "8010"
+      ],
+      "port": 8010
     }
   ]
 }

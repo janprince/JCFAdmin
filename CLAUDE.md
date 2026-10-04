@@ -27,7 +27,7 @@ accounts/            # Custom User (email login), Profile, auth backend, signals
 members/             # Member, DataFile — member/student records + file attachments
 consultations/       # Consultation — booking & scheduling for spiritual master
 inquiries/           # Inquiry — inline on member detail page (subject, remark, guidance)
-staff_mgmt/          # Worker, Representative — foundation staff & reps
+staff_mgmt/          # Service team: ServiceUnit, Worker (service member), ServiceEntry (journey)
 teachings/           # Teaching — spiritual content tracking (topic, format, language, status)
 dashboard/           # Analytics view with ApexCharts
 innerspace/          # Innerspace student platform — SECOND, Prisma-owned database
@@ -94,9 +94,13 @@ python manage.py innerspace_check   # verify the Innerspace DB mapping
 | `/inquiries/add/<pk>/` | add_inquiry | inquiries |
 | `/inquiries/<pk>/edit/` | update_inquiry | inquiries |
 | `/inquiries/<pk>/delete/` | delete_inquiry | inquiries |
-| `/staff/` | StaffListView | staff_mgmt |
+| `/staff/` | StaffListView (service team directory) | staff_mgmt |
 | `/staff/add/` | StaffCreateView | staff_mgmt |
+| `/staff/<pk>/` | StaffDetailView | staff_mgmt |
 | `/staff/<pk>/edit/` | StaffUpdateView | staff_mgmt |
+| `/staff/<pk>/journey/` | EntryCreateView (POST) | staff_mgmt |
+| `/staff/units/` | UnitListView | staff_mgmt |
+| `/staff/units/<pk>/edit/` | UnitUpdateView | staff_mgmt |
 | `/teachings/` | TeachingListView | teachings |
 | `/teachings/add/` | TeachingCreateView | teachings |
 | `/teachings/<pk>/edit/` | TeachingUpdateView | teachings |
@@ -306,6 +310,8 @@ Auth pages extend `layouts/auth.html` and override `{% block auth_content %}`.
 
 - Staff directory records and portal accounts are separate. Account management lives at `/staff/access/`; optional `Profile.worker` links them.
 - `accounts/access.py` is the authoritative role policy; `accounts/middleware.py` enforces portal routes and first-login password setup. Add a policy entry when adding protected modules/routes.
+- The service team (`staff_mgmt`) records commitment (full-time / part-time / volunteer), status (active / on leave / inactive), service units, start/end dates and an optional monthly allowance per currency. `Worker` keeps its name because `Profile.worker` links to it. Edits that change commitment, units, status or allowance write an automatic `ServiceEntry` (`staff_mgmt/journey.py`); staff add milestones, thanks, check-ins and retreats by hand.
+- `ServiceUnit.portal_roles` bounds the roles an account linked to a member of that unit can be given (`PortalUserForm.clean`). It never grants anything — areas still come from the role. Members with no unit are unconstrained; only Admins can change a unit's roles. Ended service with a live account, or a role outside the units, is flagged for review, not auto-revoked.
 - Admin manages portal access; Administrator manages all operational areas; Secretary manages community, inbox and consultations; Media Operations manages publishing/content. Django admin is reserved for system superusers.
 - Navigation, dashboard sections and Inner Space action permissions derive from that policy. Never rely only on hiding a link.
 - Password reset/deactivation are CSRF-protected POSTs. Account changes are audited; no plaintext password logging or email. New/reset initial passwords must be changed on first sign-in.

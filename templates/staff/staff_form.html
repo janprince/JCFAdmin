@@ -1,36 +1,126 @@
-{% extends "layouts/dashboard.html" %}
+{% extends "layouts/dashboard.html" %}{% load static %}
 
-{% block title %}{% if form.instance.pk %}Edit staff member{% else %}Add staff member{% endif %} | JCF Management{% endblock %}
-{% block page_title %}{% if form.instance.pk %}Edit staff member{% else %}Add staff member{% endif %}{% endblock %}
-{% block page_subtitle %}{% endblock %}
+{% block title %}{% if object %}Edit service record{% else %}Add service member{% endif %} | JCF Management{% endblock %}
+{% block page_title %}{% if object %}{{ object.contact.full_name|person_name }}{% else %}Add service member{% endif %}{% endblock %}
+{% block page_subtitle %}{% if object %}Edit their service record.{% else %}Welcome someone to the Foundation Service Team.{% endif %}{% endblock %}
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'staff:staff_list' %}">Staff</a></li>
-<li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</li>
+<li class="breadcrumb-item"><a href="{% url 'staff:staff_list' %}">Service team</a></li>
+<li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
 {% endblock %}
 
 {% block content %}
-{% url 'staff:staff_list' as cancel_url %}
-<form method="post" class="jcf-form">
+{% if object %}{% url 'staff:staff_detail' object.pk as cancel_url %}{% else %}{% url 'staff:staff_list' as cancel_url %}{% endif %}
+<form method="post" data-service-form novalidate>
     {% csrf_token %}
-    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
-
-    <section class="card">
-        <div class="jcf-card-body">
-                <div class="row g-3">
-                    <div class="col-12">{% include "partials/_field.html" with field=form.contact help="Staff are linked to an existing contact record." %}</div>
-                    <div class="col-sm-7">{% include "partials/_field.html" with field=form.role %}</div>
-                    <div class="col-sm-5">{% include "partials/_field.html" with field=form.salary label="Monthly salary (GHS)" %}</div>
-                    <div class="col-12">{% include "partials/_field.html" with field=form.duties %}</div>
+    {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <div class="jcf-form-grid">
+        <div class="jcf-form-grid__main">
+            {% if not object %}
+            <section class="card" aria-labelledby="who-title">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="who-title">Who is serving</h2></div>
+                <div class="jcf-card-body">
+                    <fieldset class="jcf-segmented mb-3">
+                        <legend class="visually-hidden">Is this person already in our contacts?</legend>
+                        {% for radio in form.person %}<label>{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>{% endfor %}
+                    </fieldset>
+                    <div data-person-panel="existing">
+                        <div class="jcf-field{% if form.contact.errors %} jcf-field--error{% endif %}">
+                            <label class="form-label" for="{{ form.contact.id_for_label }}">Contact<span class="jcf-required" aria-hidden="true">*</span></label>
+                            <label class="jcf-search jcf-picker__search">
+                                <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                                <input type="search" data-picker-filter="{{ form.contact.id_for_label }}" placeholder="Type a name to narrow the list" aria-label="Narrow the contact list" autocomplete="off">
+                            </label>
+                            {{ form.contact }}
+                            <div class="form-text" id="{{ form.contact.id_for_label }}_helptext">Only contacts who are not yet on the service team are listed. <span data-picker-count></span></div>
+                            {% if form.contact.errors %}<div class="jcf-field__error" id="{{ form.contact.id_for_label }}_error" role="alert">{% for error in form.contact.errors %}<div>{{ error }}</div>{% endfor %}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div data-person-panel="new">
+                        <div class="row g-3">
+                            <div class="col-12">{% include "partials/_field.html" with field=form.new_name %}</div>
+                            <div class="col-sm-6">{% include "partials/_field.html" with field=form.new_phone help="A contact record is created for them as well." %}</div>
+                            <div class="col-sm-6">{% include "partials/_field.html" with field=form.new_email %}</div>
+                        </div>
+                    </div>
                 </div>
-        </div>
-    </section>
+            </section>
+            {% endif %}
 
-    {% if form.instance.pk %}
-    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Save changes" %}
+            <section class="card" aria-labelledby="service-title">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="service-title">Their service</h2></div>
+                <div class="jcf-card-body">
+                    <fieldset class="jcf-field mb-3{% if form.service_type.errors %} jcf-field--error{% endif %}">
+                        <legend class="form-label">Commitment<span class="jcf-required" aria-hidden="true">*</span></legend>
+                        <div class="jcf-choices">
+                            {% for radio in form.service_type %}
+                            <label class="jcf-choice">
+                                {{ radio.tag }}
+                                <span class="jcf-choice__body">
+                                    <strong>{{ radio.choice_label }}</strong>
+                                    <small>{% if radio.data.value == 'full_time' %}Service is their main daily commitment.{% elif radio.data.value == 'part_time' %}Serves regularly alongside other work.{% else %}Offers their time freely, as they are able.{% endif %}</small>
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% for error in form.service_type.errors %}<div class="jcf-field__error" role="alert">{{ error }}</div>{% endfor %}
+                    </fieldset>
+                    <div class="row g-3">
+                        <div class="col-sm-6">{% include "partials/_field.html" with field=form.unit %}</div>
+                        <div class="col-sm-6">{% include "partials/_field.html" with field=form.title %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.other_units %}</div>
+                        <div class="col-sm-6">{% include "partials/_field.html" with field=form.started_on %}</div>
+                        <div class="col-sm-6">{% include "partials/_field.html" with field=form.availability %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.duties %}</div>
+                        <div class="col-12">{% include "partials/_field.html" with field=form.skills %}</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <aside class="jcf-form-grid__side">
+            <section class="card" aria-labelledby="status-title">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="status-title">Status</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.status help="On leave keeps them on the team — for rest, retreat or family." %}
+                    <div data-ended-panel>{% include "partials/_field.html" with field=form.ended_on help="Defaults to today." %}</div>
+                    {% if object.portal_profile and object.portal_profile.user.is_active %}<p class="form-text mb-0" data-ended-panel><i class="ph ph-info" aria-hidden="true"></i> They have a portal account. Ending their service does not sign them out — an Admin should deactivate it.</p>{% endif %}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="support-title">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="support-title">Support</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.receives_allowance nohelp=True %}
+                    <div class="row g-2" data-allowance-panel>
+                        <div class="col-7">{% include "partials/_field.html" with field=form.allowance nohelp=True %}</div>
+                        <div class="col-5">{% include "partials/_field.html" with field=form.allowance_currency nohelp=True %}</div>
+                    </div>
+                    <p class="form-text mb-0">A monthly allowance or stipend that supports their continued service. Leave off for those who serve without financial support.</p>
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="emergency-title" id="emergency">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="emergency-title">In an emergency</h2></div>
+                <div class="jcf-card-body d-grid gap-3">
+                    {% include "partials/_field.html" with field=form.emergency_name label="Name" %}
+                    {% include "partials/_field.html" with field=form.emergency_phone label="Phone" %}
+                </div>
+            </section>
+
+            <section class="card" aria-labelledby="notes-title">
+                <div class="jcf-card-head"><h2 class="jcf-card-head__title" id="notes-title">Private notes</h2></div>
+                <div class="jcf-card-body">{% include "partials/_field.html" with field=form.notes label="Notes" %}</div>
+            </section>
+        </aside>
+    </div>
+    {% if object %}
+    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Save service record" %}
     {% else %}
-    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Add staff member" %}
+    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Add to service team" %}
     {% endif %}
 </form>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'jcf/js/staff.js' %}"></script>{% endblock %}

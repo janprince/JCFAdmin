@@ -19,10 +19,14 @@ Manage an account to update its name, email, staff link or role. Reset initial p
 | Website content | Manage | Manage | — | Manage |
 | Initiatives and donations | Manage | Manage | — | — |
 | Inner Space students and access decisions | Manage | Manage | — | — |
-| Staff records, duties, salaries | Manage | Manage | — | — |
+| Service team, units, allowances | Manage | Manage | — | — |
 | Portal accounts and roles | Manage | — | — | — |
 
-Every recognized role has a tailored overview and can change its own password. These are fixed roles, defined centrally in `accounts/access.py`; staff job titles remain descriptive and do not grant permissions. There are no implied read-only permissions outside the listed areas.
+Every recognized role has a tailored overview and can change its own password. These are fixed roles, defined centrally in `accounts/access.py`; service roles (job titles) remain descriptive and do not grant permissions.
+
+## Service units and roles
+
+Each service unit lists the portal roles its members may hold (seeded: Media & Communications → Media Operations; IT → Admin; JCF Administration → Secretary or Administrator; JCF Farms → none). When an account is linked to a service member, its role must be one their units allow — the main unit and any they also serve in. Opening **Set up access** from a service record preselects the least-privileged allowed role. Only Admins can change a unit's roles. Tightening a unit does not change existing accounts: they still save unchanged, and the service team page lists them for review, along with accounts whose holder has ended their service. There are no implied read-only permissions outside the listed areas.
 
 ## Enforcement and administrator protections
 

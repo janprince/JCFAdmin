@@ -43,7 +43,7 @@ DEFINITIONS = [
     ('Foundation', 'Giving', 'hand-heart', [('Initiatives', 'causes:cause_list'), ('Donations', 'causes:donation_list')]),
     ('Publishing', 'Teaching & events', 'book-open-text', [('Teachings', 'teachings:teaching_list'), ('Writings', 'blog:post_list'), ('Events', 'events:event_list')]),
     ('Publishing', 'Website content', 'globe-simple', [('Gallery', 'website:gallery_list'), ('Team members', 'website:team_list'), ('Testimonials', 'website:testimonial_list'), ('Volunteer roles', 'website:volunteer_list'), ('Impact statistics', 'website:impact_list')]),
-    ('Administration', 'Staff', 'identification-badge', [('Staff directory', 'staff:staff_list'), ('Portal access', 'staff:user_list')]),
+    ('Administration', 'Service team', 'identification-badge', [('Service members', 'staff:staff_list'), ('Service units', 'staff:unit_list'), ('Portal access', 'staff:user_list')]),
 ]
 
 

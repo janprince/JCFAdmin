@@ -991,3 +991,272 @@ a.jcf-stat:hover {
     border-color: var(--jcf-tag-border);
     background-color: var(--jcf-neutral-bg);
 }
+
+/* --- Service team ------------------------------------------------------- */
+
+/* Two-way choice drawn as one control: "Already in our contacts | New". */
+.jcf-segmented {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid var(--jcf-tag-border);
+    border-radius: 10px;
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-segmented label {
+    position: relative;
+    margin: 0;
+    cursor: pointer;
+}
+
+.jcf-segmented input {
+    position: absolute;
+    opacity: 0;
+}
+
+.jcf-segmented span {
+    display: block;
+    padding: 6px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-segmented input:checked + span {
+    color: var(--theme-body-color);
+    background: var(--theme-secondary-bg, #fff);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.jcf-segmented input:focus-visible + span {
+    outline: 2px solid var(--jcf-focus, var(--theme-primary));
+    outline-offset: 1px;
+}
+
+.jcf-picker__search {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 6px;
+}
+
+.jcf-picker__search + select[size] {
+    padding: 4px;
+}
+
+.jcf-picker__search + select[size] option {
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+/* Radio options with a line of explanation each: commitment type. */
+.jcf-choices {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px;
+}
+
+.jcf-choice {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--theme-border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.jcf-choice:hover {
+    background: var(--jcf-hover-bg);
+}
+
+.jcf-choice:has(input:checked) {
+    border-color: rgba(var(--theme-primary-rgb), 0.55);
+    background: rgba(var(--theme-primary-rgb), 0.05);
+}
+
+.jcf-choice input {
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.jcf-choice__body strong {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.jcf-choice__body small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-checks label.is-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.jcf-tag--quiet {
+    color: var(--theme-secondary-color);
+    background: transparent;
+}
+
+/* Gentle notes above a list: anniversaries, how units work. */
+.jcf-anniversaries .jcf-card-body,
+.jcf-explainer .jcf-card-body {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+}
+
+.jcf-anniversaries .jcf-card-body > i,
+.jcf-explainer .jcf-card-body > i {
+    flex-shrink: 0;
+    font-size: 26px;
+    color: var(--jcf-gold, #d3ae63);
+}
+
+.jcf-anniversaries ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 20px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-explainer p {
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-unit-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 24px;
+    color: var(--theme-primary);
+    background: rgba(var(--theme-primary-rgb), 0.08);
+}
+
+.jcf-tile--archived {
+    opacity: 0.7;
+}
+
+.jcf-unit-facts {
+    display: grid;
+    gap: 6px;
+    margin: 16px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--theme-border-color);
+    font-size: 13px;
+}
+
+.jcf-unit-facts > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.jcf-unit-facts dt {
+    font-weight: 400;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-unit-facts dd {
+    margin: 0;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+.jcf-unit-facts dd span {
+    color: var(--theme-secondary-color);
+}
+
+/* Service journey: a quiet vertical timeline. */
+.jcf-journey {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.jcf-journey__item {
+    position: relative;
+    display: flex;
+    gap: 14px;
+    padding-bottom: 20px;
+}
+
+.jcf-journey__item:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    top: 32px;
+    bottom: 4px;
+    left: 15px;
+    width: 1px;
+    background: var(--theme-border-color);
+}
+
+.jcf-journey__dot {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 15px;
+    color: var(--jcf-neutral-fg);
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-journey__item--appreciation .jcf-journey__dot { color: var(--jcf-tone-4-fg); background: var(--jcf-tone-4-bg); }
+.jcf-journey__item--milestone .jcf-journey__dot { color: var(--jcf-warning-fg); background: var(--jcf-warning-bg); }
+.jcf-journey__item--training .jcf-journey__dot { color: var(--jcf-tone-1-fg); background: var(--jcf-tone-1-bg); }
+.jcf-journey__item--check_in .jcf-journey__dot { color: var(--jcf-tone-2-fg); background: var(--jcf-tone-2-bg); }
+
+.jcf-journey__body {
+    flex: 1;
+    min-width: 0;
+    padding-top: 5px;
+    font-size: 13.5px;
+}
+
+.jcf-journey__meta {
+    margin: 0 0 2px;
+    font-size: 12.5px;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-journey__meta strong {
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-journey form {
+    align-self: flex-start;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.jcf-journey__item:hover form,
+.jcf-journey form:focus-within {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .jcf-journey form { opacity: 1; }
+}

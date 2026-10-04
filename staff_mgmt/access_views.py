@@ -14,7 +14,7 @@ from django.views.generic import ListView, TemplateView
 from accounts.access import areas_for, role_cards
 from accounts.forms import PortalUserForm, PortalUserCreateForm, InitialPasswordForm
 from accounts.models import User, Profile, PortalAccessEvent
-from .models import Worker
+from .models import ServiceUnit, Worker
 
 
 @method_decorator(never_cache, name='dispatch')
@@ -42,6 +42,13 @@ def editable_target(pk):
     return user
 
 
+def service_roles(form):
+    """{worker pk: [allowed roles] | None} for the role hint beside the staff-record picker."""
+    return {str(worker.pk): {'name': str(worker), 'units': [unit.name for unit in worker.all_units()],
+                             'roles': worker.allowed_portal_roles()}
+            for worker in form.fields['worker'].queryset}
+
+
 def record(actor, target, action, detail=''):
     PortalAccessEvent.objects.create(actor=actor, target=target, action=action, detail=detail)
 
@@ -52,7 +59,7 @@ class UserListView(AccountManagerMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        qs = User.objects.select_related('profile__worker__contact').order_by('-is_active', 'first_name', 'email')
+        qs = User.objects.select_related('profile__worker__contact', 'profile__worker__unit').prefetch_related('profile__worker__other_units').order_by('-is_active', 'first_name', 'email')
         query = self.request.GET.get('q', '').strip()
         if query:
             qs = qs.filter(Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(email__icontains=query))
@@ -75,7 +82,8 @@ class UserListView(AccountManagerMixin, ListView):
 class RoleGuideView(AccountManagerMixin, TemplateView):
     template_name = 'staff/role_guide.html'
     def get_context_data(self, **kwargs):
-        return {**super().get_context_data(**kwargs), 'roles': role_cards()}
+        return {**super().get_context_data(**kwargs), 'roles': role_cards(),
+                'units': ServiceUnit.objects.filter(is_active=True)}
 
 
 class UserCreateView(AccountManagerMixin, View):
@@ -88,10 +96,14 @@ class UserCreateView(AccountManagerMixin, View):
                 return redirect('staff:user_update', pk=linked.user_id)
             names = worker.contact.full_name.strip().split(' ', 1)
             initial = {'worker': worker.pk, 'first_name': names[0], 'last_name': names[1] if len(names) > 1 else '', 'email': worker.contact.email}
+            allowed = worker.allowed_portal_roles()
+            if allowed:
+                initial['role'] = allowed[0]
         return self.display(request, PortalUserCreateForm(initial=initial))
 
     def display(self, request, form):
-        return render(request, 'staff/user_form.html', {'form': form, 'roles': role_cards(), 'creating': True})
+        return render(request, 'staff/user_form.html', {'form': form, 'roles': role_cards(), 'creating': True,
+                                                         'service_roles': service_roles(form), 'role_labels': dict(Profile.Role.choices)})
 
     def post(self, request):
         form = PortalUserCreateForm(request.POST)
@@ -111,7 +123,7 @@ class UserCreateView(AccountManagerMixin, View):
 class UserUpdateView(AccountManagerMixin, View):
     def display(self, request, user, form):
         return render(request, 'staff/user_form.html', {
-            'form': form, 'account': user, 'roles': role_cards(),
+            'form': form, 'account': user, 'roles': role_cards(), 'service_roles': service_roles(form), 'role_labels': dict(Profile.Role.choices),
             'events': user.access_events.select_related('actor')[:12],
             'sign_in_url': request.build_absolute_uri(reverse('login')),
         })

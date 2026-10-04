@@ -1,0 +1,185 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}{{ worker.contact.full_name|person_name }} | Service team | JCF Management{% endblock %}
+{% block page_title %}{{ worker.contact.full_name|person_name }}{% endblock %}
+{% block page_subtitle %}{% if worker.title %}{{ worker.title }}{% if worker.unit %} · {% endif %}{% endif %}{{ worker.unit.name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'staff:staff_list' %}">Service team</a></li>
+<li class="breadcrumb-item active">{{ worker.contact.full_name|person_name }}</li>
+{% endblock %}
+
+{% block page_actions %}
+<button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addEntryModal"><i class="ph ph-sparkle" aria-hidden="true"></i>Add to journey</button>
+<a href="{% url 'staff:staff_update' worker.pk %}" class="btn btn-primary"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Edit service record</a>
+{% endblock %}
+
+{% block content %}
+{% if concerns %}
+<div class="alert alert-warning d-flex gap-2 align-items-start" role="status">
+    <i class="ph ph-warning fs-18" aria-hidden="true"></i>
+    <div>
+        {% for concern in concerns %}<div>{{ concern }}</div>{% endfor %}
+        {% if manages_accounts %}<a href="{% url 'staff:user_update' worker.portal_profile.user_id %}" class="alert-link">Review their portal access</a>{% else %}<span>Ask an Admin to review their portal access.</span>{% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-xl-4">
+        <div class="card mb-3">
+            <div class="jcf-card-body d-flex align-items-center gap-3">
+                {% avatar worker.contact.full_name size="lg" %}
+                <div class="min-w-0">
+                    <div class="jcf-tags">
+                        {% include "staff/_worker_status.html" %}
+                        <span class="jcf-tag">{{ worker.get_service_type_display }}</span>
+                    </div>
+                    {% if worker.started_on %}<p class="jcf-cell-meta mt-2 mb-0">Serving {% if worker.status == 'inactive' %}for{% else %}since {{ worker.started_on|date:"F Y" }} ·{% endif %} {{ worker.length_of_service }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="jcf-card-body border-top">
+                <ul class="jcf-contact-lines">
+                    {% if worker.contact.phone %}<li><i class="ph ph-phone" aria-hidden="true"></i><a href="tel:{{ worker.contact.phone }}" class="text-reset jcf-num">{{ worker.contact.phone|phone }}</a></li>{% endif %}
+                    {% if worker.contact.email %}<li><i class="ph ph-envelope-simple" aria-hidden="true"></i><a href="mailto:{{ worker.contact.email }}" class="text-reset text-truncate">{{ worker.contact.email }}</a></li>{% endif %}
+                    {% if office_access.community %}<li><i class="ph ph-address-book" aria-hidden="true"></i><a href="{% url 'members:contact_detail' worker.contact.pk %}">Open contact record</a></li>{% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Service</h2></div>
+            <div class="jcf-card-body">
+                <dl class="jcf-dl">
+                    <dt>Main unit</dt><dd>{% if worker.unit %}<a href="{% url 'staff:staff_list' %}?unit={{ worker.unit.pk }}">{{ worker.unit.name }}</a>{% else %}{{ ""|or_dash }}{% endif %}</dd>
+                    {% if worker.other_units.all %}<dt>Also serves in</dt><dd>{% for unit in worker.other_units.all %}{% if unit.pk != worker.unit_id %}<a href="{% url 'staff:staff_list' %}?unit={{ unit.pk }}">{{ unit.name }}</a>{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}</dd>{% endif %}
+                    {% if units_led %}<dt>Leads</dt><dd>{{ units_led|join:", " }}</dd>{% endif %}
+                    <dt>Service role</dt><dd>{{ worker.title|or_dash }}</dd>
+                    <dt>Began service</dt><dd>{{ worker.started_on|date:"j M Y"|or_dash }}</dd>
+                    {% if worker.status == 'inactive' %}<dt>Service ended</dt><dd>{{ worker.ended_on|date:"j M Y"|or_dash }}</dd>{% endif %}
+                    <dt>Usually serves</dt><dd>{{ worker.availability|or_dash }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Support</h2></div>
+            <div class="jcf-card-body">
+                {% if worker.allowance %}
+                <p class="jcf-stat__label">Monthly allowance</p>
+                <p class="jcf-stat__value mb-0">{{ worker.allowance_currency }} {{ worker.allowance|floatformat:"2g" }}</p>
+                {% else %}
+                <p class="mb-0">Serves without a monthly allowance.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Emergency contact</h2></div>
+            <div class="jcf-card-body">
+                {% if worker.emergency_name or worker.emergency_phone %}
+                <ul class="jcf-contact-lines">
+                    {% if worker.emergency_name %}<li><i class="ph ph-user" aria-hidden="true"></i><span>{{ worker.emergency_name }}</span></li>{% endif %}
+                    {% if worker.emergency_phone %}<li><i class="ph ph-phone" aria-hidden="true"></i><a href="tel:{{ worker.emergency_phone }}" class="text-reset jcf-num">{{ worker.emergency_phone|phone }}</a></li>{% endif %}
+                </ul>
+                {% else %}
+                <p class="mb-0 text-muted">Not recorded. <a href="{% url 'staff:staff_update' worker.pk %}#emergency">Add one</a> — it matters most for field and farm work.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Portal access</h2></div>
+            <div class="jcf-card-body">
+                {% if worker.portal_profile %}
+                    {% with account=worker.portal_profile.user %}
+                    <p class="mb-1"><strong>{% if account.is_superuser %}System administrator{% else %}{{ worker.portal_profile.get_role_display }}{% endif %}</strong> · {% if account.is_active %}can sign in{% else %}inactive{% endif %}</p>
+                    <p class="jcf-cell-meta mb-0">{{ account.email }} · last signed in {{ account.last_login|date:"j M Y"|default:"never" }}</p>
+                    {% if manages_accounts and not account.is_superuser %}<a href="{% url 'staff:user_update' account.pk %}" class="btn btn-light btn-sm mt-3">Manage access</a>{% endif %}
+                    {% endwith %}
+                {% else %}
+                    <p class="mb-0 text-muted">No portal account. Most service members don’t need one.</p>
+                    {% if manages_accounts and worker.is_serving %}<a href="{% url 'staff:user_create' %}?worker={{ worker.pk }}" class="btn btn-light btn-sm mt-3">Set up access</a>{% endif %}
+                {% endif %}
+                {% if allowed_roles is not None %}<p class="form-text mb-0 mt-3">Their service units allow {% if allowed_roles %}the {{ allowed_roles|join:" or " }} role{{ allowed_roles|pluralize }}{% else %}no portal role{% endif %}.</p>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Responsibilities</h2></div>
+            <div class="jcf-card-body">
+                {% if worker.duties %}<p class="jcf-prewrap mb-0">{{ worker.duties }}</p>{% else %}<p class="text-muted mb-0">Not described yet.</p>{% endif %}
+                {% if skills %}
+                <h3 class="jcf-stat__label mt-3 mb-2">Gifts &amp; skills</h3>
+                <div class="jcf-tags">{% for skill in skills %}<a class="jcf-tag" href="{% url 'staff:staff_list' %}?q={{ skill|urlencode }}&amp;status=all" title="Find others with this skill">{{ skill }}</a>{% endfor %}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="jcf-card-head">
+                <div>
+                    <h2 class="jcf-card-head__title">Service journey</h2>
+                    <p class="jcf-card-head__text">Milestones, thanks and changes, newest first</p>
+                </div>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addEntryModal"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            </div>
+            <div class="jcf-card-body">
+                <ol class="jcf-journey">
+                    {% for entry in journey %}
+                    <li class="jcf-journey__item jcf-journey__item--{{ entry.kind }}">
+                        <span class="jcf-journey__dot" aria-hidden="true"><i class="ph ph-{% if entry.kind == 'appreciation' %}heart{% elif entry.kind == 'milestone' %}flag{% elif entry.kind == 'training' %}graduation-cap{% elif entry.kind == 'check_in' %}chats-circle{% elif entry.kind == 'change' %}arrows-clockwise{% else %}note{% endif %}"></i></span>
+                        <div class="jcf-journey__body">
+                            <p class="jcf-journey__meta"><strong>{{ entry.get_kind_display }}</strong> · <time datetime="{{ entry.occurred_on|date:'Y-m-d' }}">{{ entry.occurred_on|date:"j M Y" }}</time>{% if entry.recorded_by %} · {{ entry.recorded_by.get_full_name|default:entry.recorded_by.email }}{% endif %}</p>
+                            <p class="jcf-prewrap mb-0">{{ entry.text }}</p>
+                        </div>
+                        {% if not entry.is_automatic %}
+                        <form method="post" action="{% url 'staff:entry_delete' entry.pk %}" data-confirm="Remove this entry from their journey?">
+                            {% csrf_token %}
+                            <button type="submit" class="jcf-row-action jcf-row-action--danger" aria-label="Remove {{ entry.get_kind_display|lower }} from {{ entry.occurred_on|date:'j M Y' }}" title="Remove"><i class="ph ph-trash" aria-hidden="true"></i></button>
+                        </form>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li>{% include "partials/_empty.html" with icon="path" title="No journey yet" text="Record a milestone, a training or retreat, a check-in, or a word of thanks." %}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+
+        {% if worker.notes %}
+        <div class="card">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Private notes</h2></div>
+            <div class="jcf-card-body"><p class="jcf-prewrap mb-0">{{ worker.notes }}</p></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal fade" id="addEntryModal" tabindex="-1" aria-labelledby="addEntryTitle" aria-hidden="true"{% if entry_form.errors %} data-jcf-open{% endif %}>
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="post" action="{% url 'staff:entry_create' worker.pk %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEntryTitle">Add to {{ worker.contact.full_name|person_name }}’s journey</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-sm-7">{% include "partials/_field.html" with field=entry_form.kind %}</div>
+                    <div class="col-sm-5">{% include "partials/_field.html" with field=entry_form.occurred_on %}</div>
+                    <div class="col-12">{% include "partials/_field.html" with field=entry_form.text %}</div>
+                </div>
+                <p class="form-text mb-0 mt-3">Changes to their commitment, units, status and allowance are recorded automatically.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add to journey</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
