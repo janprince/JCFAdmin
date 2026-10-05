@@ -30,7 +30,7 @@ class PracticeApiTests(APITestCase):
             'title': 'Balanced-State Practice',
             'description': 'Center your mind.',
             'category': 'general', 'minutes': 20,
-            'audience': 'members', 'order': 0, 'is_active': 'on',
+            'audience': 'students', 'order': 0, 'is_active': 'on',
             'audio_url': 'https://cdn.example.com/balanced.mp3',
         })
         self.assertEqual(res.status_code, 302)
@@ -42,7 +42,7 @@ class PracticeApiTests(APITestCase):
 
     def test_guest_sees_only_public_practices(self):
         Practice.objects.create(title='Free Intro', audience='public')
-        Practice.objects.create(title='Members Only', audience='members')
+        Practice.objects.create(title='Members Only', audience='students')
         res = self.client.get('/api/mobile/v1/practices/')
         titles = [p['title'] for p in res.data['results']]
         self.assertEqual(titles, ['Free Intro'])

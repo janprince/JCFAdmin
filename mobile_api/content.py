@@ -17,6 +17,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from teachings.models import Teaching, TeachingProgress, TeachingSeries
+from . import tiers
 from .authentication import MobileTokenAuthentication
 
 
@@ -26,7 +27,7 @@ def _can_premium(request) -> bool:
     if token is None:
         return False
     contact = token.contact
-    return bool(contact.is_active and (contact.is_member or contact.is_student))
+    return tiers.is_approved(contact)
 
 
 class PremiumContextMixin:
@@ -154,7 +155,7 @@ class SeriesDetailView(PremiumContextMixin, generics.RetrieveAPIView):
 # --- Continue Learning (design 26) ---
 
 from rest_framework.views import APIView  # noqa: E402
-from .authentication import IsStudentOrMember  # noqa: E402
+from .authentication import IsStudent# noqa: E402
 
 
 class TeachingProgressView(APIView):
@@ -162,7 +163,7 @@ class TeachingProgressView(APIView):
     completed?} — upsert the member's progress in a teaching."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
 
     def post(self, request, slug):
         try:
@@ -194,7 +195,7 @@ class ContinueLearningView(APIView):
     per-series progress cards + recently viewed (design 26)."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsStudentOrMember]
+    permission_classes = [IsStudent]
 
     def get(self, request):
         contact = request.member

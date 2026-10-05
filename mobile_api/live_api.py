@@ -24,7 +24,7 @@ from activities.live_models import (LiveChatBlock, LiveChatMessage,
                                     LiveSession, LiveViewerSession)
 from activities.models import Activity, ActivityReminder
 
-from .authentication import IsMember, MobileTokenAuthentication
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 CHAT_PAGE = 50
 # A floor on posting, independent of any per-session slow mode.
@@ -324,7 +324,7 @@ class LiveChatReportView(APIView):
     """POST /events/<id>/chat/<message_id>/report/ — flag for moderation."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, event_id, message_id):
         message = LiveChatMessage.objects.filter(
@@ -341,7 +341,7 @@ class LiveChatBlockView(APIView):
     messages from this member's own view."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, event_id, contact_id):
         if int(contact_id) == request.member.id:
@@ -356,7 +356,7 @@ class LiveReactionView(APIView):
     """POST /events/<id>/reaction/ {kind} — aggregated, rate-limited."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, event_id):
         session = _session(event_id)
@@ -386,7 +386,7 @@ class LiveSaveView(APIView):
     """POST/DELETE /events/<id>/save/ — members only."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, event_id):
         session = _session(event_id)

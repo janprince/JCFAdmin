@@ -20,6 +20,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from . import tiers
 from .authentication import OptionalMobileTokenAuthentication
 
 # The oldest build this API still speaks to, and the newest published one.
@@ -92,12 +93,13 @@ class BootstrapView(APIView):
         )
         platform = (request.headers.get('X-Platform', '') or '').lower()
 
+        # Two tiers now. An approved contact is a student whichever flag
+        # marks them; a signed-in contact who is not approved is neither,
+        # and 'contact' keeps that case distinguishable from a guest.
         if contact is None:
             user_type = 'guest'
-        elif contact.is_student:
+        elif tiers.is_approved(contact):
             user_type = 'student'
-        elif contact.is_member:
-            user_type = 'member'
         else:
             user_type = 'contact'
 

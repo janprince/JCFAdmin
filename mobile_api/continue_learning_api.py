@@ -30,7 +30,8 @@ from rest_framework.views import APIView
 from studies.models import Enrolment
 from teachings.models import Teaching, TeachingProgress, TeachingSeries
 
-from .authentication import IsMember, MobileTokenAuthentication
+from . import tiers
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 200
@@ -80,7 +81,7 @@ def _limit_from(params):
 def _may_open(teaching, contact):
     if not teaching.is_premium:
         return True
-    return bool(contact and (contact.is_member or contact.is_student))
+    return tiers.is_approved(contact)
 
 
 def _enrolment_for(series, enrolments):
@@ -222,7 +223,7 @@ class ContinueLearningView(APIView):
     """
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def get(self, request):
         contact = request.member
@@ -599,7 +600,7 @@ class LessonProgressView(APIView):
     """
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, pk):
         contact = request.member

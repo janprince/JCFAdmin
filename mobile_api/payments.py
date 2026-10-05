@@ -19,7 +19,7 @@ from decimal import Decimal, InvalidOperation
 from causes.models import Cause, Donation
 from causes.paystack import initialize_transaction, verify_transaction
 from causes.serializers import CauseListSerializer, CauseSerializer, DonationSerializer
-from .authentication import IsMember, MobileTokenAuthentication
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 
 class PaymentConfigView(APIView):
@@ -145,7 +145,7 @@ class MyDonationsView(generics.ListAPIView):
     """A logged-in member's donation history."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
     serializer_class = DonationSerializer
 
     def get_queryset(self):

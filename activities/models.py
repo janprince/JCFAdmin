@@ -19,9 +19,11 @@ class Activity(models.Model):
         GATHERING = 'gathering', 'Gathering / other'
 
     class Audience(models.TextChoices):
+        # Two tiers: guests and signed-in students. The old MEMBERS value
+        # is gone and its rows were migrated to STUDENTS, never to PUBLIC,
+        # so nothing gated quietly became visible to everyone.
         PUBLIC = 'public', 'Public (everyone)'
-        MEMBERS = 'members', 'Members & students'
-        STUDENTS = 'students', 'Students only'
+        STUDENTS = 'students', 'Signed-in students only'
 
     class ActivityType(models.TextChoices):
         """What the activity *is* — the badge on the card, and the

@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from .authentication import IsMember, MobileTokenAuthentication
+from .authentication import IsSignedIn, MobileTokenAuthentication
 from .models import MAX_CODE_ATTEMPTS, LoginCode, MobileToken
 from .otp import (RESEND_COOLDOWN_SECONDS, find_any_contact, find_contact,
                   is_approved, looks_like_email, mask_email, mask_phone,
@@ -163,7 +163,7 @@ class MeView(APIView):
     """GET -> the authenticated member's profile. DELETE -> logout (revoke token)."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def get(self, request):
         return Response(MemberSerializer(request.auth.contact).data)

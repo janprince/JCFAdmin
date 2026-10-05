@@ -58,11 +58,13 @@ class BootstrapTests(TestCase):
                     'initial_route'):
             self.assertIn(key, body)
 
-    def test_a_member_is_reported_as_a_member(self):
+    def test_a_contact_approved_by_the_member_flag_is_a_student(self):
+        # There is no member tier any more. `is_member` is a CRM flag and
+        # still means approved, so the app reports the one signed-in tier.
         contact = make_contact('+233700000001', is_member=True)
         body = self.client.get(self.url, **self.auth(contact)).json()
         self.assertTrue(body['session']['authenticated'])
-        self.assertEqual(body['session']['user_type'], 'member')
+        self.assertEqual(body['session']['user_type'], 'student')
 
     def test_a_student_is_reported_as_a_student(self):
         contact = make_contact('+233700000002', is_student=True)

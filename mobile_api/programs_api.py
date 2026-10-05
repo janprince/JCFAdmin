@@ -14,29 +14,16 @@ from django.conf import settings
 from causes.paystack import initialize_transaction, verify_transaction
 from programs.models import AccommodationTier, CostLineItem, Program, Registration
 from programs.services import RoomSoldOut, confirm_registration
-from .authentication import IsMember, MobileTokenAuthentication
+from . import tiers
+from .authentication import IsSignedIn, MobileTokenAuthentication
 
 
 def is_eligible(contact, program) -> bool:
-    if program.audience == Program.Audience.PUBLIC:
-        return True
-    if contact is None:
-        return False
-    if program.audience == Program.Audience.MEMBERS:
-        return bool(contact.is_member or contact.is_student)
-    if program.audience == Program.Audience.STUDENTS:
-        return bool(contact.is_student)
-    return False
+    return tiers.may_open(program.audience, contact)
 
 
 def allowed_audiences(contact):
-    audiences = {Program.Audience.PUBLIC}
-    if contact is not None:
-        if contact.is_member or contact.is_student:
-            audiences.add(Program.Audience.MEMBERS)
-        if contact.is_student:
-            audiences.add(Program.Audience.STUDENTS)
-    return audiences
+    return set(tiers.attendable_audiences(contact))
 
 
 # --- Serializers ---
@@ -145,7 +132,7 @@ class RegisterView(APIView):
     """POST programs/<slug>/register/ {quantity, accommodation_tier_id?, answers?}."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, slug):
         program = generics.get_object_or_404(Program, slug=slug, is_published=True)
@@ -214,7 +201,7 @@ class InitializeRegistrationPaymentView(APIView):
     """POST registrations/<reference>/initialize/ -> Paystack authorization_url."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, reference):
         registration = generics.get_object_or_404(
@@ -246,7 +233,7 @@ class VerifyRegistrationView(APIView):
     """POST registrations/<reference>/verify/ {paystack_reference} -> confirm."""
 
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
 
     def post(self, request, reference):
         registration = generics.get_object_or_404(
@@ -283,7 +270,7 @@ class VerifyRegistrationView(APIView):
 
 class MyRegistrationsView(generics.ListAPIView):
     authentication_classes = [MobileTokenAuthentication]
-    permission_classes = [IsMember]
+    permission_classes = [IsSignedIn]
     serializer_class = RegistrationSerializer
 
     def get_queryset(self):

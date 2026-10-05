@@ -122,7 +122,7 @@ class LiveEventTests(APITestCase):
         self.assertIsNotNone(res.data['stream'])
 
     def test_a_members_only_session_hides_the_stream_from_guests(self):
-        self.session.access_tier = 'members'
+        self.session.access_tier = 'students'
         self.session.save()
         res = self.client.get(url(self.activity.id, 'live/'))
         self.assertFalse(res.data['access']['allowed'])
@@ -133,10 +133,18 @@ class LiveEventTests(APITestCase):
         self.assertTrue(res.data['access']['allowed'])
         self.assertIsNotNone(res.data['stream'])
 
-    def test_a_students_only_session_excludes_a_plain_member(self):
+    def test_a_gated_session_admits_a_contact_approved_by_either_flag(self):
+        # Previously a members-flagged contact was refused a students-only
+        # session. With one signed-in tier they are the same person.
         self.session.access_tier = 'students'
         self.session.save()
         res = self.client.get(url(self.activity.id, 'live/'), **self._auth())
+        self.assertTrue(res.data['access']['allowed'])
+
+    def test_a_gated_session_still_excludes_a_guest(self):
+        self.session.access_tier = 'students'
+        self.session.save()
+        res = self.client.get(url(self.activity.id, 'live/'))
         self.assertFalse(res.data['access']['allowed'])
         self.assertIsNone(res.data['stream'])
 

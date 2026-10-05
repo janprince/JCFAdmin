@@ -13,6 +13,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Q
 
+from . import tiers
 from members.models import Contact
 from website.notifications import send_sms_arkesel
 
@@ -46,9 +47,8 @@ def find_any_contact(identifier: str):
 
 
 def is_approved(contact) -> bool:
-    """Approved for the app: active AND flagged member or student."""
-    return bool(contact and contact.is_active
-                and (contact.is_member or contact.is_student))
+    """Approved for the app. One definition, in tiers."""
+    return tiers.is_approved(contact)
 
 
 def find_contact(identifier: str):

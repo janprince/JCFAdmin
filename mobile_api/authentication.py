@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import authentication, exceptions, permissions
 
+from . import tiers
 from .models import MobileToken
 
 
@@ -61,34 +62,30 @@ class OptionalMobileTokenAuthentication(MobileTokenAuthentication):
             return None
 
 
-class IsMember(permissions.BasePermission):
-    """Allow only requests carrying a valid mobile token."""
+class IsSignedIn(permissions.BasePermission):
+    """Allow only requests carrying a valid mobile token.
 
-    message = _('Member authentication required.')
+    Named for what it checks. It was called IsMember, which read as a tier
+    test and never was one — it only ever asked whether a token was
+    present, and several views relied on exactly that.
+    """
+
+    message = _('Sign-in required.')
 
     def has_permission(self, request, view):
         return isinstance(request.auth, MobileToken)
 
 
-class IsStudent(IsMember):
-    """Restrict to Contacts enrolled as students."""
+class IsStudent(IsSignedIn):
+    """Restrict to an approved, active Contact.
 
-    message = _('This content is for enrolled students.')
+    Two tiers: guests, who are not signed in, and students, who are.
+    What counts as approved is defined once, in tiers.
+    """
 
-    def has_permission(self, request, view):
-        if not super().has_permission(request, view):
-            return False
-        contact = request.auth.contact
-        return bool(contact.is_active and contact.is_student)
-
-
-class IsStudentOrMember(IsMember):
-    """Restrict to Contacts flagged as an active member or student."""
-
-    message = _('This content is for registered members or students.')
+    message = _('This content is for signed-in students.')
 
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        contact = request.auth.contact
-        return bool(contact.is_active and (contact.is_member or contact.is_student))
+        return tiers.is_approved(request.auth.contact)

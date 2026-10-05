@@ -2,9 +2,12 @@
 The student domain: what a JCF student is enrolled in, what they have been
 assigned, the milestones they are working toward and who mentors them.
 
-Members browse; students are *enrolled*. Everything here is authored by
-staff in the dashboard — the app never invents an enrolment, an assignment
-or a milestone.
+Everything here is authored by staff in the dashboard — the app never
+invents an enrolment, an assignment or a milestone.
+
+Enrolling someone also admits them to the app: Enrolment.save sets
+`Contact.is_member`, which is the approval flag the website writes too.
+See mobile_api/tiers.py for why that flag and not `is_student`.
 """
 from datetime import timedelta
 
@@ -67,6 +70,25 @@ class Enrolment(models.Model):
         return list(
             self.series.teachings.filter(status=Teaching.Status.PUBLISHED)
             .order_by('order', 'id'))
+
+    def save(self, *args, **kwargs):
+        """Creating an enrolment admits the contact to the app.
+
+        Enrolling someone is JCF saying they belong here, but nothing used
+        to write that down: a person could have a programme, a curriculum,
+        assignments and a mentor, and still be refused at the sign-in
+        screen because no one had ticked a box on their contact record.
+
+        Only on creation, and only the approval flag. Re-saving an
+        enrolment must not re-admit someone staff have since unflagged,
+        and `is_active` is a deliberate staff decision that is not ours
+        to overturn.
+        """
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+        if creating and not self.contact.is_member:
+            self.contact.is_member = True
+            self.contact.save(update_fields=['is_member'])
 
     def __str__(self):
         return f'{self.contact.full_name} — {self.program.title}'

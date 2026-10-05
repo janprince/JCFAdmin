@@ -16,6 +16,7 @@ from practices.models import Practice
 from programs.models import Program
 from teachings.models import Teaching
 
+from . import tiers
 from .authentication import MobileTokenAuthentication
 from .content import _can_premium
 from .models import SearchQuery
@@ -25,13 +26,7 @@ POPULAR_WINDOW_DAYS = 60
 
 
 def _audiences_for(contact):
-    values = ['public']
-    if contact is not None:
-        if contact.is_member or contact.is_student:
-            values.append('members')
-        if contact.is_student:
-            values.append('students')
-    return values
+    return tiers.attendable_audiences(contact)
 
 
 def _teaching_results(q, can_premium):
@@ -50,7 +45,7 @@ def _teaching_results(q, can_premium):
         'thumbnail_url': t.thumbnail.url if t.thumbnail else '',
         'duration_seconds': t.duration_seconds,
         'date': t.created_at.date().isoformat(),
-        'audience': 'members' if t.is_premium else 'public',
+        'audience': 'students' if t.is_premium else 'public',
         'locked': t.is_premium and not can_premium,
         'views': t.view_count,
     } for t in rows]

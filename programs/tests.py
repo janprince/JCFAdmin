@@ -29,7 +29,7 @@ class ProgramsDashboardTests(APITestCase):
         data = {
             'title': 'Annual Retreat', 'year': 2027,
             'description': 'Ten days of silence.',
-            'audience': 'members', 'currency': 'GHS',
+            'audience': 'students', 'currency': 'GHS',
             'is_published': 'on',
             'form_schema_text': json.dumps([
                 {'name': 'emergency_contact', 'label': 'Emergency contact',

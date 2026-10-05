@@ -14,9 +14,11 @@ from django.utils.text import slugify
 
 class Program(models.Model):
     class Audience(models.TextChoices):
+        # Two tiers: guests and signed-in students. The old MEMBERS value
+        # is gone and its rows were migrated to STUDENTS, never to PUBLIC,
+        # so nothing gated quietly became visible to everyone.
         PUBLIC = 'public', 'Public (everyone)'
-        MEMBERS = 'members', 'Members & students only'
-        STUDENTS = 'students', 'Students only'
+        STUDENTS = 'students', 'Signed-in students only'
 
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
