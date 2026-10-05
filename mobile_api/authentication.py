@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import authentication, exceptions, permissions
 
+from . import tiers
 from .models import MobileToken
 
 
@@ -78,10 +79,8 @@ class IsSignedIn(permissions.BasePermission):
 class IsStudent(IsSignedIn):
     """Restrict to an approved, active Contact.
 
-    The app has two tiers: guests, who are not signed in, and students,
-    who are. `is_member` is still a JCFAdmin CRM flag and still marks an
-    approved contact, so it grants the same access here as `is_student` —
-    nobody who could use the app yesterday is locked out today.
+    Two tiers: guests, who are not signed in, and students, who are.
+    What counts as approved is defined once, in tiers.
     """
 
     message = _('This content is for signed-in students.')
@@ -89,6 +88,4 @@ class IsStudent(IsSignedIn):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        contact = request.auth.contact
-        return bool(contact.is_active
-                    and (contact.is_student or contact.is_member))
+        return tiers.is_approved(request.auth.contact)

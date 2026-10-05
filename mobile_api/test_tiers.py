@@ -5,6 +5,8 @@ from django.utils import timezone
 
 from engagement.models import DailyInspiration
 from members.models import Contact
+from programs.models import Program
+from studies.models import Enrolment
 from mobile_api import tiers
 from mobile_api.models import MobileToken
 
@@ -16,6 +18,19 @@ def contact(phone, **flags):
 
 
 class TierRuleTests(TestCase):
+    def test_is_member_is_the_flag(self):
+        # The only flag the web writes: the website sets it on join-centre
+        # approval, and enrolling sets it too.
+        self.assertTrue(tiers.is_approved(
+            contact('+233500000020', is_active=True, is_member=True)))
+
+    def test_is_student_is_still_honoured_as_a_bridge(self):
+        # Nothing sets this automatically; it exists on contacts a member
+        # of staff ticked by hand. Until those are reconciled, refusing
+        # them would lock out people who can use the app today.
+        self.assertTrue(tiers.is_approved(
+            contact('+233500000021', is_active=True, is_student=True)))
+
     def test_either_approval_flag_counts(self):
         member = contact('+233500000001', is_active=True, is_member=True)
         student = contact('+233500000002', is_active=True, is_student=True)
@@ -103,3 +118,46 @@ class SignedInHomeTests(TestCase):
         body = response.json()
         self.assertIsNone(body['primary_enrolment'])
         self.assertEqual(body['active_enrolments'], [])
+
+
+class EnrolmentApprovesContactTests(TestCase):
+    """Enrolling someone is JCF saying they belong here."""
+
+    def setUp(self):
+        self.program = Program.objects.create(
+            title='Foundations', year=2026,
+            starts_on=timezone.localdate())
+
+    def test_enrolling_admits_an_unflagged_contact(self):
+        person = contact('+233500000030', is_active=True)
+        self.assertFalse(tiers.is_approved(person))
+
+        Enrolment.objects.create(contact=person, program=self.program)
+
+        person.refresh_from_db()
+        self.assertTrue(person.is_member)
+        self.assertTrue(tiers.is_approved(person))
+
+    def test_re_saving_does_not_re_admit_someone_unflagged_since(self):
+        person = contact('+233500000031', is_active=True)
+        enrolment = Enrolment.objects.create(
+            contact=person, program=self.program)
+        # Staff withdraw approval afterwards.
+        person.refresh_from_db()
+        person.is_member = False
+        person.save(update_fields=['is_member'])
+
+        enrolment.status = Enrolment.Status.PAUSED
+        enrolment.save()
+
+        person.refresh_from_db()
+        self.assertFalse(person.is_member)
+
+    def test_enrolling_does_not_reactivate_a_deactivated_contact(self):
+        # is_active is a deliberate staff decision and not ours to undo.
+        person = contact('+233500000032', is_active=False)
+        Enrolment.objects.create(contact=person, program=self.program)
+
+        person.refresh_from_db()
+        self.assertFalse(person.is_active)
+        self.assertFalse(tiers.is_approved(person))

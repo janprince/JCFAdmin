@@ -4,11 +4,21 @@ There used to be three — guest, member, student — and the rules for who
 could see and open what were re-derived in six modules, each slightly
 differently. There are two now, and the rules live here.
 
-`is_member` has NOT been removed from Contact. It is a JCFAdmin CRM flag,
-written by the public website at registration and counted on the
-dashboard, and it still marks an approved contact. It is no longer an app
-tier: a contact who is approved by either flag gets the student
-experience, so nobody who could use the app before is locked out now.
+`Contact.is_member` is THE approval flag, because it is the only one the
+web actually produces: approving a join-centre request on the website
+sets it (website/views.py), and creating an Enrolment sets it too.
+Nothing anywhere sets `is_student` automatically — staff tick it by hand
+and the legacy import carried it in — so it is read here only as a bridge
+for contacts flagged that way before this rule existed.
+
+The app's one signed-in tier is still called "student" in the interface.
+That is deliberate: the label is the product's word for the reader, and
+`is_member` is the database's word for the approval. They do not have to
+match, and the alternative was locking out everyone the website admits.
+
+THE BRIDGE IS TEMPORARY. Once the hand-flagged contacts have been
+reconciled — every is_student row given is_member — delete the second
+half of is_approved and this paragraph with it.
 """
 
 PUBLIC = 'public'
@@ -16,14 +26,11 @@ STUDENTS = 'students'
 
 
 def is_approved(contact):
-    """Whether this contact may open gated content.
-
-    Either flag, because both mean "JCF has approved this person" — only
-    the app's reading of them changed.
-    """
-    return bool(contact is not None
-                and contact.is_active
-                and (contact.is_student or contact.is_member))
+    """Whether this contact may open gated content."""
+    if contact is None or not contact.is_active:
+        return False
+    # is_member is the flag. is_student is the bridge described above.
+    return bool(contact.is_member or contact.is_student)
 
 
 def attendable_audiences(contact):
