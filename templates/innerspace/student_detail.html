@@ -65,7 +65,7 @@
                 {% if membership.is_active %}
                     <span class="jcf-status jcf-status--success">{% if membership.is_lifetime %}Lifetime access{% else %}Active{% endif %}</span>
                 {% elif membership %}
-                    <span class="jcf-status jcf-status--danger">{{ membership.get_status_display }}</span>
+                    <span class="jcf-status jcf-status--danger">{{ membership.state_display }}</span>
                 {% else %}
                     <span class="jcf-status jcf-status--neutral">No membership</span>
                 {% endif %}

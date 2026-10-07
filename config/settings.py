@@ -88,28 +88,16 @@ DATABASES = {
 }
 
 # ---------------------------------------------------------------------------
-# Innerspace platform database (drbaffourjan.com)
+# Inner Space (drbaffourjan.com)
 #
-# Owned by Prisma, hosted separately. Django reads and writes it but never
-# migrates it — InnerspaceRouter.allow_migrate refuses every operation against
-# this alias, so `manage.py migrate` cannot touch the schema.
-#
-# Point INNERSPACE_DATABASE_URL at Supabase's *session* pooler or the direct
-# connection. Do not set OPTIONS['server_side_binding'] = True: Django's
-# default client-side binding is what lets Postgres coerce our plain strings
-# into its native enum types (MembershipStatus, PaymentProvider).
+# The student platform owns its database and migrations. This admin reads and
+# changes students only through the platform's office API (innerspace/client.py)
+# and has no connection to that database. The key must equal the platform's
+# JCF_OFFICE_API_KEY. Leave either blank to show the Inner Space pages as
+# unavailable.
 # ---------------------------------------------------------------------------
-INNERSPACE_DATABASE_URL = env('INNERSPACE_DATABASE_URL', default='')
-
-if INNERSPACE_DATABASE_URL:
-    DATABASES['innerspace'] = env.db_url_config(INNERSPACE_DATABASE_URL)
-    DATABASES['innerspace'].update({
-        'CONN_MAX_AGE': 0,
-        # Transaction-pooled connections do not support named cursors.
-        'DISABLE_SERVER_SIDE_CURSORS': True,
-    })
-
-DATABASE_ROUTERS = ['innerspace.routers.InnerspaceRouter']
+INNERSPACE_API_URL = env('INNERSPACE_API_URL', default='')
+INNERSPACE_API_KEY = env('INNERSPACE_API_KEY', default='')
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

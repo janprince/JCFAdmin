@@ -1,8 +1,14 @@
+from datetime import datetime, time as dt_time
+
 from django import forms
 from django.utils import timezone
 
-from .models import AccessLevel
-from .services import add_months, end_of_day
+from .records import AccessLevel
+
+
+def end_of_day(date_value):
+    """Treat an admin-entered expiry date as the end of that day, not midnight."""
+    return timezone.make_aware(datetime.combine(date_value, dt_time.max), timezone.get_current_timezone())
 
 CURRENCY_CHOICES = [
     ('GHS', 'GHS'),
@@ -100,20 +106,18 @@ class AccessForm(AccessLevelMixin):
             cleaned['currency'] = 'GHS'
         return cleaned
 
-    @property
-    def months(self):
-        """Number of months chosen, or None for lifetime/custom."""
-        duration = self.cleaned_data['duration']
-        return int(duration) if duration.isdigit() else None
+    def duration_fields(self):
+        """What to send the platform: months to add, a fixed expiry, or neither for lifetime.
 
-    def expires_at(self, base=None):
-        """Resolve the form into an expiry datetime — None means lifetime."""
+        The platform does the date arithmetic — for an extension, months count
+        from the current expiry while it is still running.
+        """
         duration = self.cleaned_data['duration']
-        if duration == 'lifetime':
-            return None
         if duration == 'custom':
-            return end_of_day(self.cleaned_data['custom_expires_at'])
-        return add_months(base or timezone.now(), int(duration))
+            return {'expires_at': end_of_day(self.cleaned_data['custom_expires_at'])}
+        if duration.isdigit():
+            return {'months': int(duration)}
+        return {}
 
 
 class ReviewRequestForm(forms.Form):

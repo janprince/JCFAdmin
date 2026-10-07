@@ -30,7 +30,7 @@ inquiries/           # Inquiry — inline on member detail page (subject, remark
 staff_mgmt/          # Service team: ServiceUnit, Worker (service member), ServiceEntry (journey)
 teachings/           # Teaching — spiritual content tracking (topic, format, language, status)
 dashboard/           # Analytics view with ApexCharts
-innerspace/          # Innerspace student platform — SECOND, Prisma-owned database
+innerspace/          # Inner Space students — via drbaffourjan.com's office API; owns only the audit log
 resources/           # DigitalResource — the Foundation's web platforms and links, to open/copy/share
 templates/           # Project-level templates
   base.html          # HTML skeleton (CSS/JS)
@@ -69,7 +69,6 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py shell
 python manage.py check
-python manage.py innerspace_check   # verify the Innerspace DB mapping
 ```
 
 ## URL Structure
@@ -127,77 +126,43 @@ python manage.py innerspace_check   # verify the Innerspace DB mapping
 
 PostgreSQL database `jcf_management`. Connection configured via `DATABASE_URL` in `.env`.
 
-### Second database: Innerspace (`innerspace` alias)
+### Inner Space: the student platform's API, not its database
 
-The `innerspace` app reads and writes the **drbaffourjan.com** student platform
-database — a separate Supabase Postgres instance whose schema is owned by
-Prisma, in `/Users/kami/Projects/Kami/JIVA/drbaffourjan/prisma/schema.prisma`.
+The `innerspace` app manages students on **drbaffourjan.com** (the Inner Space
+platform, `/Users/kami/Projects/Kami/JIVA/drbaffourjan`). That app owns its
+database, its Prisma schema and migrations, and the rules for memberships and
+access levels. JCF has **no connection to that database** and models none of
+its tables — it calls the platform's office API instead:
 
-> ### NEVER run migrations against the Innerspace database from Django
->
-> That schema belongs to Prisma. A Django migration touching it would put the
-> two systems permanently out of step with each other, and `prisma migrate`
-> would then see the difference as drift and offer to reset — destroying live
-> student, membership and payment data.
->
-> This is enforced, not merely asked for: `InnerspaceRouter.allow_migrate`
-> returns `False` for every operation against the alias, and every remote model
-> is `managed = False`. Do not weaken either. Schema changes are made in the
-> drbaffourjan repo with `prisma migrate deploy`, then mirrored by hand into
-> `innerspace/models.py` and verified with `manage.py innerspace_check`.
+| JCF does | API call (`/api/jcf/v1/…`) |
+|---|---|
+| Student list, filters, counts | `GET students?q=&access=&page=` |
+| Student page | `GET students/:id` (membership, 20 latest payments, access requests) |
+| Grant / reactivate, extend | `POST students/:id/grant`, `…/extend` (`months` or `expiresAt`, neither = lifetime; optional cash `amount`) |
+| Revoke | `POST students/:id/revoke` |
+| Set level directly | `POST students/:id/level` |
+| Access-request queue, approve, decline | `GET access-requests?status=`, `POST access-requests/:id/approve`, `…/decline` |
 
-#### But `manage.py migrate` is still safe — and still required
-
-The rule above is about the *database*, not the command. The `innerspace` Django
-app owns one ordinary table in **JCF's own database**, and it needs migrating
-like anything else.
-
-The trap is the name. Django prefixes tables with the app label, so the audit
-log is called `innerspace_accessgrantlog` — but it lives in JCF's database, not
-Innerspace's. Anything the router sends to Supabase inherits `InnerspaceModel`
-(`Student`, `Membership`, `Payment`, `AccessRequest`); `AccessGrantLog` is a
-plain `models.Model` and stays local.
-
-So when you see an error like `column innerspace_accessgrantlog.previous_level
-does not exist`, the fix is a normal Django migration:
-
-```bash
-python manage.py migrate innerspace
-```
-
-Which command, which database:
-
-| Change | Run from | Command | Hits |
-|---|---|---|---|
-| Anything in JCF's own tables, incl. `innerspace_accessgrantlog` | `JCF` | `python manage.py migrate` | JCF DB |
-| Anything in the student platform schema | `drbaffourjan` | `npx prisma migrate deploy` | Innerspace DB |
-| Never | `JCF` | — | Innerspace DB |
-
-`manage.py migrate` cannot reach the Innerspace database even if pointed at it —
-the router refuses. Running it is safe.
-
-Run `python manage.py innerspace_check` after any Prisma migration — it
-compares model fields against the live columns and reports drift.
-
-Mapping rules that are easy to get wrong:
-
-- **Table names are case-sensitive.** Only `User` is `@@map`ped (to `users`);
-  `Membership` and `Payment` keep their capitals.
-- **Column naming is inconsistent.** `users` is snake_case except `accessLevel`;
-  `Membership` and `Payment` are camelCase throughout. Always set `db_column`.
-- **`id` columns are TEXT with no database default.** Prisma generates cuids in
-  the app layer, so `innerspace/cuid.py` does too.
-- **`updatedAt` is NOT NULL with no default.** Every write must set it.
-- **Timestamps are `timestamp(3)`, not `timestamptz`.** Use
-  `PrismaDateTimeField` (`innerspace/fields.py`), which converts naive UTC from
-  the database into aware datetimes and back.
-- **Statuses are native Postgres enums.** They work as `CharField` only because
-  Django's psycopg3 backend binds parameters client-side. Never set
-  `OPTIONS['server_side_binding'] = True` on this alias.
-
-All writes go through `innerspace/services.py`, which stamps `updatedAt`,
-records a `CASH` payment, and writes an `AccessGrantLog` entry (stored in JCF's
-own database, so the audit trail is independent of the student platform).
+- `innerspace/client.py` is the only code that talks to the platform. It sends
+  `Authorization: Bearer INNERSPACE_API_KEY`, which must equal the platform's
+  `JCF_OFFICE_API_KEY`. Outages raise `InnerspaceUnavailable` (pages show
+  "can't be reached"); refusals (404/409/400) raise `InnerspaceRefused`, whose
+  message is shown to staff as written. **Writes are never retried** — a
+  timeout may mean the change landed, and a repeated grant would record the
+  cash payment twice.
+- `innerspace/records.py` turns the JSON into plain objects with the attribute
+  names the templates use (`student.display_name`, `membership.is_active`, …).
+- `innerspace/services.py` calls the API, then writes `AccessGrantLog` — JCF's
+  own audit trail of which portal user did what — from the before/after values
+  the API returns. The log is the one table this app owns; it lives in JCF's
+  database (`innerspace_accessgrantlog`) and migrates normally.
+- The rules live on the platform (`drbaffourjan/src/lib/jcf-api/`): renewals
+  count from the current expiry while it is running; reactivation keeps the
+  original start date; approving refuses anything that would not raise the
+  level; a request can only be decided while pending.
+- Schema changes to students, memberships or payments are made in the
+  drbaffourjan repo (`npx prisma migrate deploy`) and, if JCF needs them, exposed
+  through the API — never by reaching into that database from here.
 
 Revoking access takes effect on the student's next sign-in, not immediately —
 the website carries `hasMembership` in a JWT and only re-reads the database when
@@ -222,9 +187,10 @@ Unlike a membership change, **a level change takes effect on the student's very
 next page load** — the website reads `accessLevel` from the database on every
 render rather than caching it in the session token. No sign-out needed.
 
-`approve_access_request()` refuses to lower a level; use `set_access_level()`
-for that. Both live in `innerspace/services.py` and write an `AccessGrantLog`
-entry with `previous_level`/`new_level`.
+Approving a request refuses to lower a level (the platform answers 409); use
+`set_access_level()` for that. `decide_access_request()` and
+`set_access_level()` live in `innerspace/services.py` and write an
+`AccessGrantLog` entry with `previous_level`/`new_level`.
 
 Decision emails to students are sent from Django (`innerspace/notifications.py`)
 — it is the actor and already has a mailer. Sends are best-effort: the decision
@@ -238,9 +204,10 @@ SECRET_KEY=<secret>
 DATABASE_URL=postgres://localhost:5432/jcf_management
 # The working .env may point DATABASE_URL at Neon instead. Check the host
 # before migrate or test; override it to localhost to run tests.
-# Innerspace platform DB. Supabase session pooler or direct connection —
-# not the transaction pooler. Blank disables the Innerspace pages.
-INNERSPACE_DATABASE_URL=postgres://...
+# Inner Space: drbaffourjan.com's office API. The key must equal the platform's
+# JCF_OFFICE_API_KEY. Blank shows the Inner Space pages as unavailable.
+INNERSPACE_API_URL=https://drbaffourjan.com
+INNERSPACE_API_KEY=<shared secret>
 ```
 
 ## Theme & Branding

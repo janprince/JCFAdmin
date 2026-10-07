@@ -2,10 +2,14 @@
 
 import django.db.models.deletion
 import django.utils.timezone
-import innerspace.cuid
 from django.conf import settings
 from django.db import migrations, models
 
+
+# The models below were unmanaged mirrors of the student platform's tables and
+# never had tables here. Their helper modules (innerspace.cuid, innerspace.fields)
+# were removed when Inner Space moved to the platform's API; plain fields stand
+# in for them, which changes no SQL. 0003 deletes the models.
 
 class Migration(migrations.Migration):
 
@@ -19,7 +23,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Membership',
             fields=[
-                ('id', models.CharField(default=innerspace.cuid.cuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(editable=False, max_length=32, primary_key=True, serialize=False)),
                 ('status', models.CharField(choices=[('FREE', 'Free'), ('ACTIVE', 'Active'), ('EXPIRED', 'Expired'), ('CANCELED', 'Canceled')], db_column='status', max_length=20)),
                 ('started_at', models.DateTimeField(db_column='startedAt')),
                 ('expires_at', models.DateTimeField(blank=True, db_column='expiresAt', null=True)),
@@ -37,7 +41,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Payment',
             fields=[
-                ('id', models.CharField(default=innerspace.cuid.cuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(editable=False, max_length=32, primary_key=True, serialize=False)),
                 ('provider', models.CharField(choices=[('STRIPE', 'Stripe'), ('PAYSTACK', 'Paystack'), ('FLUTTERWAVE', 'Flutterwave'), ('CASH', 'Cash (in person)')], db_column='provider', max_length=20)),
                 ('provider_ref', models.CharField(db_column='providerRef', max_length=255)),
                 ('amount', models.DecimalField(db_column='amount', decimal_places=30, max_digits=65)),
@@ -55,7 +59,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Student',
             fields=[
-                ('id', models.CharField(default=innerspace.cuid.cuid, editable=False, max_length=32, primary_key=True, serialize=False)),
+                ('id', models.CharField(editable=False, max_length=32, primary_key=True, serialize=False)),
                 ('email', models.EmailField(blank=True, db_column='email', max_length=254, null=True, unique=True)),
                 ('email_verified', models.DateTimeField(blank=True, db_column='email_verified', null=True)),
                 ('phone', models.CharField(blank=True, db_column='phone', max_length=32, null=True, unique=True)),
