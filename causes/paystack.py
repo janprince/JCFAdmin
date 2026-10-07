@@ -60,3 +60,16 @@ def validate_webhook_signature(payload: bytes, signature: str) -> bool:
         digestmod=hashlib.sha512,
     ).hexdigest()
     return hmac.compare_digest(expected, signature)
+
+
+# The Foundation website (jancosmicfoundation.org) names every donation
+# reference JCF-<timestamp>-<id>. The same Paystack account also takes
+# payments on drbaffourjan.com — Inner Space memberships (IS-…) and personal
+# offerings to Dr. Jan (DON-…) — and Paystack sends all of them to our
+# webhook. Those are not Foundation donations, so only JCF- references are
+# recorded; anything unrecognised is left out rather than guessed at.
+FOUNDATION_REFERENCE_PREFIX = 'JCF-'
+
+
+def is_foundation_donation(reference: str) -> bool:
+    return reference.startswith(FOUNDATION_REFERENCE_PREFIX)

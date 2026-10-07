@@ -187,6 +187,14 @@ class DonationVerifyAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Only Foundation website payments are donations; see causes/paystack.py.
+        from causes.paystack import is_foundation_donation
+        if not is_foundation_donation(reference):
+            return Response(
+                {'error': 'This payment is not a Foundation donation'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Prevent duplicate processing
         from causes.models import Donation
         if Donation.objects.filter(paystack_reference=reference).exists():
@@ -263,6 +271,13 @@ class PaystackWebhookAPIView(APIView):
 
         if not reference:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        # Inner Space memberships and offerings to Dr. Jan share this Paystack
+        # account. Acknowledge them so Paystack stops retrying, but record nothing.
+        from causes.paystack import is_foundation_donation
+        if not is_foundation_donation(reference):
+            logger.info('Paystack webhook: ignored non-Foundation payment ref=%s', reference)
+            return Response({'status': 'ignored'})
 
         from causes.models import Donation, Cause
 
