@@ -26,9 +26,10 @@
                 <div class="col-md-6">{% include "partials/_field.html" with field=form.full_name %}</div>
                 <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.gender %}</div>
                 <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.date_of_birth label="Date of birth" %}</div>
-                <div class="col-md-4">{% include "partials/_field.html" with field=form.profession %}</div>
-                <div class="col-md-4">{% include "partials/_field.html" with field=form.religion %}</div>
-                <div class="col-md-4">{% include "partials/_field.html" with field=form.referral label="Referred by" %}</div>
+                <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.day_of_birth label="Day of birth" help="Only if the date is not known." %}</div>
+                <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.profession %}</div>
+                <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.religion %}</div>
+                <div class="col-md-3 col-6">{% include "partials/_field.html" with field=form.referral label="Referred by" %}</div>
                 <div class="col-md-6">{% include "partials/_field.html" with field=form.father_name label="Father's name" %}</div>
                 <div class="col-md-6">{% include "partials/_field.html" with field=form.mother_name label="Mother's name" %}</div>
             </div>

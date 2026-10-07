@@ -59,7 +59,7 @@ class OfficeTests(TestCase):
         VolunteerApplication.objects.create(name='Volunteer', email='volunteer@example.com', phone='+233240000011', availability='Weekends')
         response = self.client.get(reverse('dashboard:analytics'))
         self.assertEqual(response.context['inbox_count'], 2)
-        self.assertEqual([task['count'] for task in response.context['inbox_tasks']], [0, 1, 0, 1])
+        self.assertEqual([task['count'] for task in response.context['inbox_tasks']], [0, 0, 1, 0, 1])  # Booking requests first.
         self.assertEqual(len(response.context['contact_trend']), 6)
 
     def test_general_giving_filter_and_payment_reference_search(self):

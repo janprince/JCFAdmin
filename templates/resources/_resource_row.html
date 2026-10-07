@@ -1,0 +1,32 @@
+{% comment %}One link: what it is, the address, and Copy / Open / Share. Expects `r`.{% endcomment %}
+<li class="jcf-resource{% if not r.is_active %} is-hidden-link{% endif %}" data-resource data-search="{{ r.title }} {{ r.display_url }} {{ r.description }} {{ r.language }} {{ r.get_audience_display }} {{ r.get_category_display }}">
+    <span class="jcf-resource__icon" aria-hidden="true"><i class="ph-light ph-{% if r.category == 'lessons' %}play-circle{% elif r.category == 'media' %}broadcast{% elif r.category == 'forms' %}clipboard-text{% elif r.category == 'platform' %}globe-hemisphere-west{% else %}link{% endif %}"></i></span>
+    <div class="jcf-rows__main">
+        <div class="jcf-resource__title">
+            <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.title }}<span class="visually-hidden"> (opens in a new tab)</span></a>
+            <span class="jcf-tags">
+                {% if r.audience != 'everyone' %}<span class="jcf-tag">{{ r.get_audience_display }}</span>{% endif %}
+                {% if r.language %}<span class="jcf-tag">{{ r.language }}</span>{% endif %}
+                {% if r.share_privately %}<span class="jcf-status jcf-status--warning" title="Share this link only with {{ r.get_audience_display|lower }}.">Share privately</span>{% endif %}
+            </span>
+        </div>
+        <span class="jcf-resource__url">{{ r.display_url }}</span>
+        {% if r.description %}<span class="jcf-cell-meta">{{ r.description }}</span>{% endif %}
+    </div>
+    <div class="jcf-resource__actions">
+        <button type="button" class="btn btn-light btn-sm" data-copy="{{ r.url }}" aria-label="Copy link to {{ r.title }}"><i class="ph ph-copy" aria-hidden="true"></i><span data-copy-label>Copy link</span></button>
+        <a href="{{ r.url }}" target="_blank" rel="noopener noreferrer" class="jcf-row-action" aria-label="Open {{ r.title }} in a new tab" title="Open"><i class="ph ph-arrow-square-out" aria-hidden="true"></i></a>
+        <button type="button" class="jcf-row-action" data-share="{{ r.url }}" data-share-title="{{ r.title }}" aria-label="Share {{ r.title }}" title="Share" hidden><i class="ph ph-share-network" aria-hidden="true"></i></button>
+        <div class="dropdown">
+            <button type="button" class="jcf-row-action" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" aria-label="More for {{ r.title }}"><i class="ph ph-dots-three-outline" aria-hidden="true"></i></button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><button type="button" class="dropdown-item" data-copy="{{ r.title }}: {{ r.url }}" data-copy-done="Copied with its name"><i class="ph ph-chat-text" aria-hidden="true"></i>Copy with name, for a message</button></li>
+                {% if can_manage %}
+                <li><a class="dropdown-item" href="{% url 'resources:resource_update' r.pk %}"><i class="ph ph-pencil-simple" aria-hidden="true"></i>Edit</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="{% url 'resources:resource_delete' r.pk %}"><i class="ph ph-trash" aria-hidden="true"></i>Delete</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</li>

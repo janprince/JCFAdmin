@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% load static %}
+{% comment %}Public pages: no portal chrome, no sign-in. Phone first — most people arrive from WhatsApp.{% endcomment %}
+{% block body %}
+<main class="jcf-public">
+    <header class="jcf-public__brand">
+        {% comment %}The shared logo lockup (brand.css), worded for the public.{% endcomment %}
+        <span class="jcf-logo jcf-logo--auth">
+            <span class="jcf-logo__tile"><img src="{% static 'jcf/img/jcf-mark.png' %}" alt="" width="120" height="110"></span>
+            <span class="jcf-logo__text">
+                <span class="jcf-logo__name">Jan Cosmic Foundation</span>
+                <span class="jcf-logo__sub">Consultations with Dr. Baffour Jan</span>
+            </span>
+        </span>
+    </header>
+    {% block public_content %}{% endblock %}
+    <footer class="jcf-public__foot">&copy; {% now "Y" %} Jan Cosmic Foundation · <a href="https://www.jancosmicfoundation.org">jancosmicfoundation.org</a></footer>
+</main>
+{% endblock %}

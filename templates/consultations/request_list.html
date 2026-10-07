@@ -1,0 +1,57 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Booking requests | JCF Management{% endblock %}
+{% block page_title %}Booking requests{% endblock %}
+{% block page_subtitle %}Details people sent through the booking form, waiting for a consultation date.{% endblock %}
+
+{% block page_actions %}
+{% include "consultations/_share_booking.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="card jcf-list">
+    {% include "partials/_tabs.html" with label="Filter by status" %}
+
+    <form method="get" class="jcf-toolbar" role="search">
+        {% keep_params 'status' %}
+        {% include "partials/_search.html" with placeholder="Search name, phone or residence" %}
+        {% if search_query %}<a href="{% querystring q=None page=None %}" class="jcf-toolbar__clear">Clear search</a>{% endif %}
+    </form>
+
+    <div class="table-responsive">
+        <table class="table jcf-table mb-0">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Lives in</th>
+                    <th>Prefers</th>
+                    <th>Contact record</th>
+                    <th>Sent</th>
+                    <th>Status</th>
+                    <th class="jcf-table__actions"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                {% url 'consultations:request_detail' r.pk as view_url %}
+                <tr>
+                    <td>{% include "partials/_person.html" with name=r.full_name meta=r.phone|phone url=view_url %}</td>
+                    <td>{{ r.residence|or_dash }}</td>
+                    <td>{% if r.preferred_mode %}{{ r.get_preferred_mode_display }}{% else %}<span class="jcf-cell-meta">Either</span>{% endif %}</td>
+                    <td>{% if r.contact %}{% if r.created_contact %}<span class="jcf-tag">New contact</span>{% else %}<span class="jcf-tag" title="Matched on name and phone; their record was not changed.">Already a contact</span>{% endif %}{% else %}<span class="jcf-cell-meta">Removed</span>{% endif %}</td>
+                    <td><span title="{{ r.created_at|date:'j M Y, H:i' }}">{{ r.created_at|timesince }} ago</span></td>
+                    <td>{% if r.status == 'new' %}<span class="jcf-status jcf-status--warning">Waiting</span>{% elif r.status == 'booked' %}<span class="jcf-status jcf-status--success">Booked{% if r.consultation %} · {{ r.consultation.scheduled_date|date:"j M" }}{% endif %}</span>{% else %}<span class="jcf-status jcf-status--neutral">Closed</span>{% endif %}</td>
+                    <td class="jcf-table__actions">
+                        {% if r.status == 'new' and r.contact %}<a href="{% url 'consultations:consultation_create' %}?request={{ r.pk }}" class="btn btn-primary btn-sm">Book</a>{% else %}<a href="{{ view_url }}" class="btn btn-light btn-sm">View</a>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                {% include "partials/_empty_row.html" with colspan=7 icon="calendar-plus" title="No booking requests here" text="Share the booking form on WhatsApp — new requests appear here." %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}<div class="jcf-list__foot">{% include "partials/_pagination.html" %}</div>{% endif %}
+</div>
+{% endblock %}

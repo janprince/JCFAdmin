@@ -15,6 +15,7 @@
 <form method="post" class="jcf-form">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    {% if booking_request %}<div class="alert alert-info" role="status">Booking from <a href="{% url 'consultations:request_detail' booking_request.pk %}" class="alert-link">their request</a>{% if booking_request.preferred_mode %} — they would like to meet <strong>{{ booking_request.get_preferred_mode_display|lower }}</strong>{% endif %}. Saving marks the request booked.</div>{% endif %}
     {% if selected_contact %}<p class="text-muted">For <strong>{{ selected_contact.full_name|person_name }}</strong> · {{ selected_contact.phone|phone }}</p>{% endif %}
 
     <section class="card">

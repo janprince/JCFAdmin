@@ -1260,3 +1260,238 @@ a.jcf-stat:hover {
 @media (hover: none) {
     .jcf-journey form { opacity: 1; }
 }
+
+/* --- Digital resources -------------------------------------------------- */
+
+.jcf-resource-group {
+    margin-bottom: 16px;
+}
+
+.jcf-resource-group .jcf-card-head {
+    justify-content: flex-start;
+}
+
+.jcf-resource {
+    align-items: flex-start !important;
+}
+
+.jcf-resource[hidden],
+.jcf-resource-group[hidden] {
+    display: none !important;
+}
+
+.jcf-resource.is-hidden-link {
+    opacity: 0.65;
+}
+
+.jcf-resource__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 22px;
+    color: var(--theme-primary);
+    background: rgba(var(--theme-primary-rgb), 0.08);
+}
+
+.jcf-resource__title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+}
+
+.jcf-resource__title > a {
+    font-weight: 600;
+    color: var(--theme-body-color);
+}
+
+.jcf-resource__title > a:hover {
+    color: var(--theme-primary);
+}
+
+.jcf-resource__url {
+    display: block;
+    margin: 2px 0;
+    overflow: hidden;
+    font-size: 12.5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--theme-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.jcf-resource__actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+}
+
+.jcf-resource__actions [data-copy] {
+    min-width: 104px;
+}
+
+.jcf-resource__actions [data-copy].is-copied {
+    color: var(--jcf-success-fg);
+    border-color: var(--jcf-success-fg);
+    background: var(--jcf-success-bg);
+}
+
+.jcf-resource-archive summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-weight: 500;
+    color: var(--theme-secondary-color);
+    cursor: pointer;
+}
+
+@media (max-width: 575.98px) {
+    .jcf-resource {
+        flex-wrap: wrap;
+    }
+
+    .jcf-resource__actions {
+        width: 100%;
+        padding-left: 52px;
+    }
+}
+
+/* --- Public booking form ------------------------------------------------ */
+
+.jcf-public {
+    max-width: 620px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 28px 16px 40px;
+}
+
+.jcf-public__brand {
+    margin-bottom: 28px;
+    color: var(--theme-heading-color, #25283a);
+}
+
+.jcf-public__intro h1,
+.jcf-public__done h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.jcf-public__intro p {
+    margin-bottom: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-public__form > .card {
+    margin-bottom: 14px;
+}
+
+.jcf-public__form .form-control,
+.jcf-public__form .form-select {
+    min-height: 44px;
+    font-size: 16px; /* Stops iOS zooming into the field. */
+}
+
+.jcf-public__step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.jcf-public__step span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    color: var(--theme-primary);
+    background: rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.jcf-public__trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.jcf-public__privacy {
+    margin: 14px 0 0;
+    font-size: 12.5px;
+    text-align: center;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-public__done {
+    text-align: center;
+}
+
+.jcf-public__done .jcf-card-body {
+    padding: 36px 24px;
+}
+
+.jcf-public__done i {
+    font-size: 52px;
+    color: var(--theme-primary); /* Public pages keep to the brand: no green. */
+}
+
+.jcf-public__done p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-public__foot {
+    margin-top: 32px;
+    font-size: 12px;
+    text-align: center;
+    color: var(--theme-secondary-color);
+}
+
+.jcf-public [hidden] {
+    display: none !important;
+}
+
+/* "Share booking form" menu on the consultation pages. */
+.jcf-share-menu {
+    width: 300px;
+    padding: 8px;
+}
+
+.jcf-share-menu__intro {
+    margin: 4px 8px 8px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--theme-secondary-color);
+    white-space: normal;
+}
+
+.jcf-share-menu__url {
+    display: block;
+    margin: 0 8px 8px;
+    padding: 6px 8px;
+    overflow-wrap: anywhere;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--theme-primary);
+    background: var(--jcf-neutral-bg);
+}
+
+.jcf-share-menu .dropdown-item {
+    border-radius: 6px;
+}

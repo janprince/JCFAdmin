@@ -1,0 +1,9 @@
+<div class="row g-3">
+    <div class="col-sm-6">{% include "partials/_field.html" with field=form.title %}</div>
+    <div class="col-sm-6">{% include "partials/_field.html" with field=form.url help="Paste the full address. www. links work too." %}</div>
+    <div class="col-sm-4">{% include "partials/_field.html" with field=form.category label="Group" %}</div>
+    <div class="col-sm-4">{% include "partials/_field.html" with field=form.audience %}</div>
+    <div class="col-sm-4">{% include "partials/_field.html" with field=form.language %}</div>
+    <div class="col-12">{% include "partials/_field.html" with field=form.description %}</div>
+    <div class="col-12">{% include "partials/_field.html" with field=form.share_privately %}</div>
+</div>

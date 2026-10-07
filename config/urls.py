@@ -13,6 +13,8 @@ urlpatterns = [
     path('account/', include('accounts.urls')),
     path('contacts/', include('members.urls')),
     path('consultations/', include('consultations.urls')),
+    # Public: the consultation booking form shared with people on WhatsApp.
+    path('book/', include('consultations.public_urls')),
 path('staff/', include('staff_mgmt.urls')),
     path('teachings/', include('teachings.urls')),
     # Public website content management
@@ -23,6 +25,7 @@ path('staff/', include('staff_mgmt.urls')),
     path('website/', include('website.urls')),
     # Innerspace student platform (drbaffourjan.com)
     path('innerspace/', include('innerspace.urls')),
+    path('resources/', include('resources.urls')),
     # Public API for Next.js website
     path('api/', include('config.api_urls')),
     path('admin/', admin.site.urls),

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'website',
     # Innerspace student platform (separate, Prisma-owned database)
     'innerspace',
+    'resources',
 ]
 
 MIDDLEWARE = [
@@ -205,6 +206,7 @@ REST_FRAMEWORK = {
 
 # CORS — allow the public website to access the API
 FOUNDATION_REGISTRATION_RATE = env('FOUNDATION_REGISTRATION_RATE', default='20/hour')
+CONSULTATION_REQUEST_RATE = env('CONSULTATION_REQUEST_RATE', default='10/hour')
 
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'https://www.jancosmicfoundation.org',

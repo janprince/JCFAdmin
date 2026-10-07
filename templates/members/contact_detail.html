@@ -66,6 +66,7 @@
                 <dl class="jcf-dl">
                     <dt>Gender</dt><dd>{{ contact.gender|or_dash }}</dd>
                     <dt>Date of birth</dt><dd>{{ contact.date_of_birth|date:"j M Y"|or_dash }}</dd>
+                    <dt>Day of birth</dt><dd>{{ contact.birth_weekday|or_dash }}</dd>
                     <dt>Religion</dt><dd>{% if contact.religion != "N/A" %}{{ contact.religion|or_dash }}{% else %}{{ ""|or_dash }}{% endif %}</dd>
                     <dt>Referred by</dt><dd>{{ contact.referral|or_dash }}</dd>
                     <dt>Father</dt><dd>{{ contact.father_name|person_name|or_dash }}</dd>

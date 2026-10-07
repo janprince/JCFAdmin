@@ -31,6 +31,7 @@ staff_mgmt/          # Service team: ServiceUnit, Worker (service member), Servi
 teachings/           # Teaching — spiritual content tracking (topic, format, language, status)
 dashboard/           # Analytics view with ApexCharts
 innerspace/          # Innerspace student platform — SECOND, Prisma-owned database
+resources/           # DigitalResource — the Foundation's web platforms and links, to open/copy/share
 templates/           # Project-level templates
   base.html          # HTML skeleton (CSS/JS)
   layouts/           # dashboard.html (topbar+sidebar+footer), auth.html (login)
@@ -91,6 +92,10 @@ python manage.py innerspace_check   # verify the Innerspace DB mapping
 | `/consultations/<pk>/edit/` | ConsultationUpdateView | consultations |
 | `/consultations/<pk>/complete/` | mark_complete | consultations |
 | `/consultations/<pk>/delete/` | delete_consultation | consultations |
+| `/consultations/requests/` | RequestListView (booking requests) | consultations |
+| `/consultations/requests/<pk>/` | RequestDetailView | consultations |
+| `/book/` | BookingFormView — **public**, no sign-in | consultations (`booking` namespace) |
+| `/book/thanks/` | BookingThanksView — public | consultations |
 | `/inquiries/add/<pk>/` | add_inquiry | inquiries |
 | `/inquiries/<pk>/edit/` | update_inquiry | inquiries |
 | `/inquiries/<pk>/delete/` | delete_inquiry | inquiries |
@@ -113,6 +118,9 @@ python manage.py innerspace_check   # verify the Innerspace DB mapping
 | `/innerspace/requests/` | AccessRequestListView | innerspace |
 | `/innerspace/requests/<pk>/approve/` | ApproveRequestView | innerspace |
 | `/innerspace/requests/<pk>/decline/` | DeclineRequestView | innerspace |
+| `/resources/` | ResourceListView (every portal role) | resources |
+| `/resources/add/` | ResourceCreateView (POST, content area) | resources |
+| `/resources/<pk>/edit/` | ResourceUpdateView (content area) | resources |
 | `/admin/` | Django Admin | admin |
 
 ## Database
@@ -264,6 +272,7 @@ INNERSPACE_DATABASE_URL=postgres://...
   Foundation photograph (`static/paces/images/auth-jcf.jpg`).
 - The overview prioritizes incoming work, consultations, giving, gatherings,
   and draft publishing. Financial totals must be grouped by currency.
+- The public booking form (`/book/`) creates a `ConsultationRequest` and a contact, matching an existing contact only on name + phone and never changing it. See `docs/consultation-booking-form.md`. Public pages use `templates/booking/_layout.html` and keep to brand colours (no green).
 - General donations have a null cause. Centre requests and general Foundation
   registrations are different workflows. `/api/join-foundation/` now saves Foundation registrations
   for the public Join page; see `docs/foundation-registration.md`.
@@ -312,6 +321,7 @@ Auth pages extend `layouts/auth.html` and override `{% block auth_content %}`.
 - `accounts/access.py` is the authoritative role policy; `accounts/middleware.py` enforces portal routes and first-login password setup. Add a policy entry when adding protected modules/routes.
 - The service team (`staff_mgmt`) records commitment (full-time / part-time / volunteer), status (active / on leave / inactive), service units, start/end dates and an optional monthly allowance per currency. `Worker` keeps its name because `Profile.worker` links to it. Edits that change commitment, units, status or allowance write an automatic `ServiceEntry` (`staff_mgmt/journey.py`); staff add milestones, thanks, check-ins and retreats by hand.
 - `ServiceUnit.portal_roles` bounds the roles an account linked to a member of that unit can be given (`PortalUserForm.clean`). It never grants anything — areas still come from the role. Members with no unit are unconstrained; only Admins can change a unit's roles. Ended service with a live account, or a role outside the units, is flagged for review, not auto-revoked.
+- `accounts.access.OPEN_ROUTES` lists pages every portal role may open (currently the digital resources list); `route_allowed()` is shared by the middleware and navigation. Adding or editing resource links needs the `content` area.
 - Admin manages portal access; Administrator manages all operational areas; Secretary manages community, inbox and consultations; Media Operations manages publishing/content. Django admin is reserved for system superusers.
 - Navigation, dashboard sections and Inner Space action permissions derive from that policy. Never rely only on hiding a link.
 - Password reset/deactivation are CSRF-protected POSTs. Account changes are audited; no plaintext password logging or email. New/reset initial passwords must be changed on first sign-in.

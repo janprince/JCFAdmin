@@ -2,7 +2,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect, render
 from django.utils.deprecation import MiddlewareMixin
 
-from .access import areas_for, area_for_route
+from .access import areas_for, route_allowed
 
 
 class PortalAccessMiddleware(MiddlewareMixin):
@@ -14,7 +14,8 @@ class PortalAccessMiddleware(MiddlewareMixin):
         if request.path_info.startswith('/api/') or name in {'login', 'logout'}:
             return None
         protected = namespace in {'dashboard', 'members', 'centres', 'consultations',
-                                  'teachings', 'blog', 'events', 'causes', 'innerspace', 'website', 'staff', 'accounts', 'admin'}
+                                  'teachings', 'blog', 'events', 'causes', 'innerspace', 'website', 'staff', 'accounts', 'admin',
+                                  'resources'}
         if not protected:
             return None
         if not request.user.is_authenticated:
@@ -27,8 +28,7 @@ class PortalAccessMiddleware(MiddlewareMixin):
         if namespace == 'admin':
             allowed = request.user.is_superuser
         else:
-            areas = areas_for(request.user)
-            allowed = bool(areas) if namespace == 'dashboard' else area_for_route(namespace, name) in areas
+            allowed = route_allowed(areas_for(request.user), namespace, name)
         if not allowed:
             return render(request, 'accounts/access_denied.html', status=403)
         return None

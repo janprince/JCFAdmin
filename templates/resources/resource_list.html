@@ -1,0 +1,72 @@
+{% extends "layouts/dashboard.html" %}{% load static %}
+
+{% block title %}Digital resources | JCF Management{% endblock %}
+{% block page_title %}Digital resources{% endblock %}
+{% block page_subtitle %}The Foundation’s web platforms and links — ready to open, copy or share.{% endblock %}
+
+{% block page_actions %}
+{% if can_manage %}<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResourceModal"><i class="ph ph-plus" aria-hidden="true"></i>Add link</button>{% endif %}
+{% endblock %}
+
+{% block content %}
+<div data-resources>
+    {% if groups %}
+    <div class="jcf-toolbar jcf-toolbar--bare">
+        <label class="jcf-search">
+            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" data-resource-filter placeholder="Find a link — e.g. Twi, lessons, website" aria-label="Find a link" autocomplete="off">
+        </label>
+        <span class="jcf-cell-meta" data-resource-count role="status"></span>
+    </div>
+    {% endif %}
+
+    {% for group in groups %}
+    <section class="card jcf-resource-group" aria-labelledby="group-{{ group.value }}" data-resource-group>
+        <div class="jcf-card-head">
+            <h2 class="jcf-card-head__title" id="group-{{ group.value }}">{{ group.label }}</h2>
+            <span class="jcf-count">{{ group.items|length }}</span>
+        </div>
+        <ul class="jcf-rows">
+            {% for r in group.items %}{% include "resources/_resource_row.html" %}{% endfor %}
+        </ul>
+    </section>
+    {% empty %}
+    <div class="card">{% if can_manage %}{% include "partials/_empty.html" with icon="link-simple" title="No links yet" text="Add the platforms, lessons and pages members and students ask for most." %}{% else %}{% include "partials/_empty.html" with icon="link-simple" title="No links yet" text="Ask a content manager to add the platforms you share most." %}{% endif %}</div>
+    {% endfor %}
+
+    <div class="card jcf-resource-none" data-resource-none hidden>{% include "partials/_empty.html" with icon="magnifying-glass" title="No links match" text="Try a shorter word, or clear the search." %}</div>
+
+    {% if archived %}
+    <details class="jcf-resource-archive">
+        <summary>Hidden links <span class="jcf-count">{{ archived|length }}</span></summary>
+        <section class="card mt-2" aria-label="Hidden links">
+            <ul class="jcf-rows">
+                {% for r in archived %}{% include "resources/_resource_row.html" %}{% endfor %}
+            </ul>
+        </section>
+    </details>
+    {% endif %}
+</div>
+
+{% if can_manage %}
+<datalist id="resource-languages">{% for language in languages %}<option value="{{ language }}">{% endfor %}</datalist>
+<div class="modal fade" id="addResourceModal" tabindex="-1" aria-labelledby="addResourceTitle" aria-hidden="true"{% if form.errors %} data-jcf-open{% endif %}>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" action="{% url 'resources:resource_create' %}" class="modal-content">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h5 class="modal-title" id="addResourceTitle">Add link</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">{% include "resources/_resource_fields.html" %}</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add link</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'jcf/js/resources.js' %}"></script>{% endblock %}

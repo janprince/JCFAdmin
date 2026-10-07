@@ -1,0 +1,100 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Booking request · {{ booking.full_name|person_name }} | JCF Management{% endblock %}
+{% block page_title %}{{ booking.full_name|person_name }}{% endblock %}
+{% block page_subtitle %}Sent {{ booking.created_at|date:"l j F Y, H:i" }} through the booking form.{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'consultations:request_list' %}">Booking requests</a></li>
+<li class="breadcrumb-item active">{{ booking.full_name|person_name }}</li>
+{% endblock %}
+
+{% block page_actions %}
+{% if booking.status == 'new' and booking.contact %}<a href="{% url 'consultations:consultation_create' %}?request={{ booking.pk }}" class="btn btn-primary"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Book consultation</a>{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if booking.status == 'booked' %}
+<div class="alert alert-success d-flex gap-2 align-items-center" role="status">
+    <i class="ph ph-calendar-check fs-18" aria-hidden="true"></i>
+    <span>Booked{% if booking.consultation %} for <strong>{{ booking.consultation.scheduled_date|date:"l, j F Y" }}</strong> · {{ booking.consultation.get_mode_display }}{% endif %}{% if booking.handled_by %} by {{ booking.handled_by.get_full_name|default:booking.handled_by.email }}{% endif %}.</span>
+</div>
+{% elif booking.status == 'closed' %}
+<div class="alert alert-secondary d-flex gap-2 align-items-center" role="status">
+    <i class="ph ph-archive fs-18" aria-hidden="true"></i>
+    <span>Closed {{ booking.handled_at|date:"j M Y" }}{% if booking.handled_by %} by {{ booking.handled_by.get_full_name|default:booking.handled_by.email }}{% endif %}. No consultation was booked.</span>
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <div class="col-xl-8">
+        <section class="card">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">What they sent</h2></div>
+            <div class="jcf-card-body">
+                <dl class="jcf-dl">
+                    <dt>Full name</dt><dd>{{ booking.full_name }}</dd>
+                    <dt>Date of birth</dt><dd>{{ booking.date_of_birth|date:"j F Y"|default:"Not known" }}</dd>
+                    <dt>Day of birth</dt><dd>{{ booking.birth_weekday|or_dash }}</dd>
+                    <dt>Profession</dt><dd>{{ booking.profession|or_dash }}</dd>
+                    <dt>Home town / region</dt><dd>{{ booking.hometown|or_dash }}</dd>
+                    <dt>Religion</dt><dd>{{ booking.religion|or_dash }}</dd>
+                    <dt>Telephone</dt><dd><a href="tel:{{ booking.phone }}" class="jcf-num">{{ booking.phone|phone }}</a> · <a href="https://wa.me/{{ booking.phone|stringformat:'s'|cut:'+' }}" target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
+                    <dt>Email</dt><dd>{% if booking.email %}<a href="mailto:{{ booking.email }}">{{ booking.email }}</a>{% else %}{{ ""|or_dash }}{% endif %}</dd>
+                    <dt>Current residence</dt><dd>{{ booking.residence|or_dash }}</dd>
+                    <dt>Heard about Dr. Jan</dt><dd>{{ booking.referral }}</dd>
+                    <dt>Would like to meet</dt><dd>{{ booking.get_preferred_mode_display|default:"Either way" }}</dd>
+                </dl>
+                {% if booking.note %}
+                <h3 class="jcf-stat__label mt-4 mb-1">Note to the office</h3>
+                <p class="jcf-prewrap mb-0">{{ booking.note }}</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-4">
+        <section class="card mb-3">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Contact record</h2></div>
+            <div class="jcf-card-body">
+                {% if booking.contact %}
+                {% url 'members:contact_detail' booking.contact.pk as contact_url %}
+                {% include "partials/_person.html" with name=booking.contact.full_name meta=booking.contact.phone|phone url=contact_url %}
+                <p class="form-text mb-0 mt-3">{% if booking.created_contact %}Added to contacts from this form.{% else %}They were already in contacts, matched on name and phone. Their record was not changed — compare and update it if anything is new.{% endif %}</p>
+                {% else %}
+                <p class="mb-0 text-muted">The contact record has been deleted.</p>
+                {% endif %}
+                {% if shares_phone %}
+                <p class="form-text mb-0 mt-3"><i class="ph ph-info" aria-hidden="true"></i> Also on this phone number: {% for other in shares_phone %}<a href="{% url 'members:contact_detail' other.pk %}">{{ other.full_name|person_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="jcf-card-head"><h2 class="jcf-card-head__title">Not booking?</h2></div>
+            <div class="jcf-card-body d-grid gap-2">
+                {% if booking.status == 'new' %}
+                <form method="post" action="{% url 'consultations:request_close' booking.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-light w-100">Close without booking</button>
+                </form>
+                <p class="form-text mb-0">For a request that is no longer needed. Their contact record stays.</p>
+                {% if removable %}
+                <form method="post" action="{% url 'consultations:request_remove' booking.pk %}" data-confirm="Remove this request and the contact it created? Use this only for spam or a mistaken submission.">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger w-100 mt-2">Remove as spam</button>
+                </form>
+                {% endif %}
+                {% elif booking.status == 'closed' %}
+                <form method="post" action="{% url 'consultations:request_reopen' booking.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-light w-100">Reopen request</button>
+                </form>
+                {% else %}
+                <p class="mb-0 text-muted">This request has been booked. Change the consultation from the Consultations page.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

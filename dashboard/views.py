@@ -9,7 +9,7 @@ from django.views.generic import TemplateView
 
 from accounts.access import areas_for
 from members.models import Contact
-from consultations.models import Consultation
+from consultations.models import Consultation, ConsultationRequest
 from teachings.models import Teaching
 from causes.models import Donation
 from events.models import Event
@@ -44,6 +44,8 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
                 ('Centre join requests', 'People waiting to connect with a centre', 'users-three', JoinCentreRequest.objects.filter(status='pending').count(), reverse('website:join_request_list') + '?status=pending'),
                 ('Volunteer applications', 'Offers of time and skills to review', 'hand-heart', VolunteerApplication.objects.filter(status='pending').count(), reverse('website:volunteer_app_list') + '?status=pending'),
             ]
+            if 'consultations' in access:
+                tasks.insert(0, ('Booking requests', 'Details sent through the booking form, waiting for a date', 'calendar-plus', ConsultationRequest.objects.filter(status='new').count(), reverse('consultations:request_list')))
             context['inbox_count'] = sum(item[3] for item in tasks)
             context['inbox_tasks'] = [{'title': title, 'description': description, 'icon': icon, 'count': count, 'url': url} for title, description, icon, count, url in tasks]
         if 'giving' in access:

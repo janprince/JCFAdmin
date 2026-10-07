@@ -1,0 +1,12 @@
+{% extends "booking/_layout.html" %}
+{% block title %}Thank you | Jan Cosmic Foundation{% endblock %}
+{% block public_content %}
+<section class="card jcf-public__done">
+    <div class="jcf-card-body">
+        <i class="ph-light ph-check-circle" aria-hidden="true"></i>
+        <h1>Thank you{% if sent.name %}, {{ sent.name }}{% endif %}</h1>
+        <p>We’ve received your details. The Foundation office will contact you{% if sent.phone %} on <strong>{{ sent.phone }}</strong>{% endif %} to arrange a date for your consultation with Dr. Jan.</p>
+        <p class="mb-0">There’s nothing more you need to do. You can close this page.</p>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "booking/_layout.html" %}{% load static %}
+{% block title %}Book a consultation | Jan Cosmic Foundation{% endblock %}
+{% block public_content %}
+<div class="jcf-public__intro">
+    <h1>Book a consultation</h1>
+    <p>Please share these details so the office can arrange your consultation with Dr. Jan. It takes about two minutes. We will contact you to agree a date.</p>
+</div>
+
+<form method="post" class="jcf-public__form" data-booking-form novalidate>
+    {% csrf_token %}
+    {% if form.errors %}
+    <div class="alert alert-danger" role="alert" tabindex="-1" data-booking-errors>
+        {% if form.non_field_errors %}{{ form.non_field_errors|join:" " }}{% else %}Please check the answers marked below.{% endif %}
+    </div>
+    {% endif %}
+    <div class="jcf-public__trap" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Leave this empty</label>{{ form.website }}</div>
+
+    <section class="card">
+        <div class="jcf-card-body">
+            <h2 class="jcf-public__step"><span>1</span>About you</h2>
+            <div class="d-grid gap-3">
+                {% include "partials/_field.html" with field=form.full_name %}
+                <div data-dob-known>
+                    {% include "partials/_field.html" with field=form.date_of_birth nohelp=True %}
+                    <p class="form-text mb-0" data-weekday aria-live="polite"></p>
+                </div>
+                <div data-dob-unknown>{% include "partials/_field.html" with field=form.day_of_birth %}</div>
+                {% include "partials/_field.html" with field=form.dob_unknown %}
+                {% include "partials/_field.html" with field=form.profession help="Your work, or Student / Retired." %}
+                {% include "partials/_field.html" with field=form.religion %}
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="jcf-card-body">
+            <h2 class="jcf-public__step"><span>2</span>Where you’re from</h2>
+            <div class="d-grid gap-3">
+                {% include "partials/_field.html" with field=form.hometown %}
+                {% include "partials/_field.html" with field=form.residence %}
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="jcf-card-body">
+            <h2 class="jcf-public__step"><span>3</span>How we can reach you</h2>
+            <div class="d-grid gap-3">
+                {% include "partials/_field.html" with field=form.phone %}
+                {% include "partials/_field.html" with field=form.email label="Email (optional)" %}
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="jcf-card-body">
+            <h2 class="jcf-public__step"><span>4</span>A little more</h2>
+            <div class="d-grid gap-3">
+                {% include "partials/_field.html" with field=form.heard_from %}
+                <div data-heard-detail>{% include "partials/_field.html" with field=form.heard_detail label="Who or where (optional)" %}</div>
+                <fieldset class="jcf-field">
+                    <legend class="form-label">{{ form.preferred_mode.label }}</legend>
+                    <div class="jcf-choices">
+                        {% for radio in form.preferred_mode %}<label class="jcf-choice">{{ radio.tag }}<span class="jcf-choice__body"><strong>{{ radio.choice_label }}</strong></span></label>{% endfor %}
+                    </div>
+                </fieldset>
+                {% include "partials/_field.html" with field=form.note label="Anything you’d like the office to know (optional)" help="Please keep private matters for the consultation itself." %}
+            </div>
+        </div>
+    </section>
+
+    <button type="submit" class="btn btn-primary btn-lg w-100">Send my details</button>
+    <p class="jcf-public__privacy"><i class="ph ph-lock-simple" aria-hidden="true"></i> Your details are kept privately by the Foundation office and used only to arrange your consultation.</p>
+</form>
+{% endblock %}
+{% block extra_js %}<script src="{% static 'jcf/js/booking.js' %}"></script>{% endblock %}

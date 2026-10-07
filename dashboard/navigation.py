@@ -15,7 +15,7 @@ def _waiting(routes):
     Default database only: the Inner Space queue lives in the remote student
     platform, and a round trip to it on every page load is not worth a badge.
     """
-    from consultations.models import Consultation
+    from consultations.models import Consultation, ConsultationRequest
     from website.models import ContactSubmission, FoundationRegistration, JoinCentreRequest, VolunteerApplication
     queues = {
         'website:foundation_registration_list': lambda: FoundationRegistration.objects.filter(reviewed_at__isnull=True),
@@ -23,6 +23,7 @@ def _waiting(routes):
         'website:join_request_list': lambda: JoinCentreRequest.objects.filter(status='pending'),
         'website:volunteer_app_list': lambda: VolunteerApplication.objects.filter(status='pending'),
         'consultations:consultation_list': lambda: Consultation.objects.filter(done=False, scheduled_date__lte=timezone.localdate()),
+        'consultations:request_list': lambda: ConsultationRequest.objects.filter(status='new'),
     }
     counts = [queues[route]().order_by().annotate(route=Value(route)).values('route').annotate(n=Count('pk'))
               for route in routes if route in queues]
@@ -36,8 +37,9 @@ def _waiting(routes):
 # first because the office starts its day there.
 DEFINITIONS = [
     (None, 'Overview', 'squares-four', [('Foundation overview', 'dashboard:analytics')]),
+    (None, 'Digital resources', 'link-simple', [('Digital resources', 'resources:resource_list')]),
     ('Daily work', 'Inbox', 'tray', [('Foundation registrations', 'website:foundation_registration_list'), ('Contact messages', 'website:contact_list'), ('Centre join requests', 'website:join_request_list'), ('Volunteer applications', 'website:volunteer_app_list'), ('Newsletter subscribers', 'website:newsletter_list')]),
-    ('Daily work', 'Consultations', 'calendar-check', [('Consultations', 'consultations:consultation_list')]),
+    ('Daily work', 'Consultations', 'calendar-check', [('Consultations', 'consultations:consultation_list'), ('Booking requests', 'consultations:request_list')]),
     ('Daily work', 'Inner Space', 'monitor-play', [('Online students', 'innerspace:student_list'), ('Access requests', 'innerspace:request_list')]),
     ('Foundation', 'Community', 'users-three', [('All contacts', 'members:contact_list'), ('Members', 'members:member_list'), ('Students', 'members:student_list'), ('Centres', 'centres:centre_list')]),
     ('Foundation', 'Giving', 'hand-heart', [('Initiatives', 'causes:cause_list'), ('Donations', 'causes:donation_list')]),

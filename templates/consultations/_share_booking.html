@@ -1,0 +1,12 @@
+{% comment %}"Share booking form" menu: the link people fill in before a consultation is booked. Needs booking_url and booking_message.{% endcomment %}
+<div class="dropdown">
+    <button type="button" class="btn btn-light" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="ph ph-share-network" aria-hidden="true"></i>Share booking form</button>
+    <div class="dropdown-menu dropdown-menu-end jcf-share-menu">
+        <p class="jcf-share-menu__intro">Send this to someone who isn’t in our contacts yet. Their details arrive in Booking requests.</p>
+        <code class="jcf-share-menu__url" id="booking-url">{{ booking_url }}</code>
+        <button type="button" class="dropdown-item" data-copy="{{ booking_message }}" data-copy-done="WhatsApp message copied" data-copy-select="#booking-url"><i class="ph ph-whatsapp-logo" aria-hidden="true"></i><span data-copy-label>Copy WhatsApp message</span></button>
+        <button type="button" class="dropdown-item" data-copy="{{ booking_url }}" data-copy-done="Booking form link copied" data-copy-select="#booking-url"><i class="ph ph-copy" aria-hidden="true"></i><span data-copy-label>Copy link only</span></button>
+        <a class="dropdown-item" href="https://wa.me/?text={{ booking_message|urlencode }}" target="_blank" rel="noopener noreferrer"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>Open in WhatsApp</a>
+        <a class="dropdown-item" href="{{ booking_url }}" target="_blank" rel="noopener noreferrer"><i class="ph ph-arrow-square-out" aria-hidden="true"></i>Preview the form</a>
+    </div>
+</div>

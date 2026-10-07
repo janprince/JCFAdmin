@@ -1,0 +1,32 @@
+{% extends "layouts/dashboard.html" %}
+
+{% block title %}Edit {{ object.title }} | JCF Management{% endblock %}
+{% block page_title %}{{ object.title }}{% endblock %}
+{% block page_subtitle %}Edit this link.{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{% url 'resources:resource_list' %}">Digital resources</a></li>
+<li class="breadcrumb-item active">Edit</li>
+{% endblock %}
+
+{% block content %}
+{% url 'resources:resource_list' as cancel_url %}
+<datalist id="resource-languages">{% for language in languages %}<option value="{{ language }}">{% endfor %}</datalist>
+<form method="post" class="jcf-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <section class="card"><div class="jcf-card-body">{% include "resources/_resource_fields.html" %}</div></section>
+    <section class="card">
+        <div class="jcf-card-head"><h2 class="jcf-card-head__title">On the resources page</h2></div>
+        <div class="jcf-card-body">
+            <div class="row g-3">
+                <div class="col-sm-4">{% include "partials/_field.html" with field=form.position label="Order" %}</div>
+                <div class="col-sm-8 d-flex align-items-end">{% include "partials/_field.html" with field=form.is_active %}</div>
+            </div>
+            <p class="form-text mb-0 mt-2">Hidden links stay listed under “Hidden links” for content managers, so they can be restored.</p>
+        </div>
+    </section>
+    {% include "partials/_form_actions.html" with cancel_url=cancel_url submit_label="Save link" %}
+</form>
+{% endblock %}

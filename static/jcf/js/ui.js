@@ -134,3 +134,76 @@
         if (editors.some(state => state.dirty && !state.submitted)) { event.preventDefault(); event.returnValue = ''; }
     });
 })();
+
+/* data-copy="text" on a button copies the text. A [data-copy-label] inside
+   it reads "Copied" for a moment; data-copy-done names what was copied for
+   screen readers. Shared by digital resources and the booking-form link. */
+(function () {
+    'use strict';
+    const live = document.createElement('p');
+    live.className = 'visually-hidden';
+    live.setAttribute('aria-live', 'polite');
+    document.body.append(live);
+
+    // The clipboard API can be refused (plain http, embedded browsers), so
+    // fall back to the older copy command before giving up.
+    const legacyCopy = text => {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.opacity = '0';
+        document.body.append(area);
+        area.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (error) { ok = false; }
+        area.remove();
+        return ok;
+    };
+    const copyText = async text => {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            if (!legacyCopy(text)) throw error;
+        }
+    };
+    // Last resort: select the address on screen so Ctrl+C / Cmd+C copies it.
+    const selectTarget = button => {
+        const target = button.dataset.copySelect ? document.querySelector(button.dataset.copySelect)
+            : button.closest('[data-resource]')?.querySelector('.jcf-resource__url');
+        if (!target) return false;
+        window.getSelection().selectAllChildren(target);
+        return true;
+    };
+
+    document.addEventListener('click', async event => {
+        const button = event.target.closest('[data-copy]');
+        if (!button) return;
+        const label = button.querySelector('[data-copy-label]');
+        const icon = button.querySelector('i');
+        if (label && !label.dataset.original) label.dataset.original = label.textContent;
+        if (icon && !icon.dataset.original) icon.dataset.original = icon.className;
+        const restore = delay => {
+            clearTimeout(button.copyTimer);
+            button.copyTimer = setTimeout(() => {
+                if (label) label.textContent = label.dataset.original;
+                if (icon) icon.className = icon.dataset.original;
+                button.classList.remove('is-copied');
+            }, delay);
+        };
+        try {
+            await copyText(button.dataset.copy);
+            live.textContent = (button.dataset.copyDone || 'Copied') + '.';
+            if (label) label.textContent = 'Copied';
+            if (icon) icon.className = 'ph ph-check';
+            button.classList.add('is-copied');
+            restore(1800);
+        } catch (error) {
+            const keys = navigator.platform.toLowerCase().includes('mac') ? '⌘C' : 'Ctrl+C';
+            const selected = selectTarget(button);
+            live.textContent = selected ? `This browser blocked copying. The text is selected — press ${keys}.`
+                : 'This browser blocked copying.';
+            if (label && selected) { label.textContent = `Press ${keys}`; restore(4000); }
+        }
+    });
+})();

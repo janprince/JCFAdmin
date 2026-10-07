@@ -6,7 +6,7 @@ class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
         fields = [
-            'full_name', 'gender', 'date_of_birth', 'phone', 'telephone',
+            'full_name', 'gender', 'date_of_birth', 'day_of_birth', 'phone', 'telephone',
             'email', 'profession', 'religion', 'residence', 'hometown',
             'country', 'father_name', 'mother_name', 'referral',
             'centre', 'is_member', 'is_student', 'is_active',
@@ -15,6 +15,7 @@ class ContactForm(forms.ModelForm):
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}),
             'gender': forms.Select(attrs={'class': 'form-select'}),
             'date_of_birth': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'day_of_birth': forms.Select(attrs={'class': 'form-select'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+233...'}),
             'telephone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Telephone (optional)'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email (optional)'}),

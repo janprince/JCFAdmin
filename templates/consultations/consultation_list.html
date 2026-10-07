@@ -5,11 +5,19 @@
 {% block page_subtitle %}Sessions booked with the spiritual master.{% endblock %}
 
 {% block page_actions %}
+{% include "consultations/_share_booking.html" %}
 <a href="{% url 'consultations:consultation_create' %}" class="btn btn-primary"><i class="ph ph-calendar-plus" aria-hidden="true"></i>Book consultation</a>
 {% endblock %}
 
 {% block content %}
 {% now "Y-m-d" as today %}
+{% if new_request_count %}
+<a class="alert alert-warning d-flex gap-2 align-items-center text-reset" href="{% url 'consultations:request_list' %}">
+    <i class="ph ph-tray-arrow-down fs-18" aria-hidden="true"></i>
+    <span><strong>{{ new_request_count }} booking request{{ new_request_count|pluralize }}</strong> from the booking form {{ new_request_count|pluralize:"is,are" }} waiting for a date.</span>
+    <span class="ms-auto">Review <i class="ph ph-arrow-right" aria-hidden="true"></i></span>
+</a>
+{% endif %}
 <div class="card jcf-list">
     {% include "partials/_tabs.html" with label="Filter consultations" %}
 

@@ -195,7 +195,7 @@ class PortalAccessTests(TestCase):
                 else:
                     yield namespace, pattern.name
         for namespace, name in walk(get_resolver().url_patterns):
-            if namespace in {'members','centres','consultations','staff','website','teachings','events','blog','causes','innerspace'}:
+            if namespace in {'members','centres','consultations','staff','website','teachings','events','blog','causes','innerspace','resources'}:
                 self.assertIsNotNone(area_for_route(namespace, name or ''), (namespace,name))
 
     def test_public_api_stays_public_and_csrf_protects_account_actions(self):

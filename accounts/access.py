@@ -6,7 +6,7 @@ AREAS = {
     'inbox': 'Messages, applications & subscribers',
     'consultations': 'Consultations',
     'publishing': 'Teachings, events & writings',
-    'content': 'Website content',
+    'content': 'Website content & digital resource links',
     'giving': 'Initiatives & donations',
     'innerspace': 'Inner Space students & access decisions',
     'staff': 'Service team, units & allowances',
@@ -39,6 +39,8 @@ def areas_for(user):
 def area_for_route(namespace, name):
     if namespace == 'staff':
         return 'accounts' if name.startswith(('user_', 'role_')) else 'staff'
+    if namespace == 'resources':
+        return 'content'
     if namespace == 'website':
         if name.startswith(('foundation_registration_', 'contact_', 'join_request_', 'volunteer_app_', 'newsletter_')):
             return 'inbox'
@@ -50,10 +52,19 @@ def area_for_route(namespace, name):
             'causes': 'giving', 'innerspace': 'innerspace'}.get(namespace)
 
 
+# Pages every portal role may open, whatever its areas.
+OPEN_ROUTES = {('resources', 'resource_list')}
+
+
+def route_allowed(areas, namespace, name):
+    if namespace == 'dashboard' or (namespace, name) in OPEN_ROUTES:
+        return bool(areas)
+    return area_for_route(namespace, name) in areas
+
+
 def can_visit(user, route):
     namespace, _, name = route.partition(':')
-    areas = areas_for(user)
-    return bool(areas) if namespace == 'dashboard' else area_for_route(namespace, name) in areas
+    return route_allowed(areas_for(user), namespace, name)
 
 
 def role_cards():

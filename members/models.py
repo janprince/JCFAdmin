@@ -8,9 +8,21 @@ class Contact(models.Model):
         MALE = 'Male', 'Male'
         FEMALE = 'Female', 'Female'
 
+    class Weekday(models.TextChoices):
+        # Python's date.weekday() order, so the index converts a birth date.
+        MONDAY = 'Monday', 'Monday'
+        TUESDAY = 'Tuesday', 'Tuesday'
+        WEDNESDAY = 'Wednesday', 'Wednesday'
+        THURSDAY = 'Thursday', 'Thursday'
+        FRIDAY = 'Friday', 'Friday'
+        SATURDAY = 'Saturday', 'Saturday'
+        SUNDAY = 'Sunday', 'Sunday'
+
     full_name = models.CharField(max_length=255)
     gender = models.CharField(max_length=10, choices=Gender.choices, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
+    day_of_birth = models.CharField(max_length=10, choices=Weekday.choices, blank=True,
+                                    help_text='Only needed when the date of birth is not known.')
     phone = PhoneNumberField()
     telephone = PhoneNumberField(blank=True)
     email = models.EmailField(blank=True)
@@ -44,6 +56,13 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.full_name
+
+    @property
+    def birth_weekday(self):
+        """The day of the week they were born: from the date when known."""
+        if self.date_of_birth:
+            return self.Weekday.values[self.date_of_birth.weekday()]
+        return self.day_of_birth
 
 
 class DataFile(models.Model):
