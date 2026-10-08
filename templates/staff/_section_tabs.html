@@ -1,1 +1,6 @@
-<nav class="jcf-access-tabs" aria-label="Service team sections"><a href="{% url 'staff:staff_list' %}"{% if active == 'directory' %} aria-current="page"{% endif %}>Service members</a><a href="{% url 'staff:unit_list' %}"{% if active == 'units' %} aria-current="page"{% endif %}>Service units</a>{% if office_access.accounts %}<a href="{% url 'staff:user_list' %}"{% if active == 'access' %} aria-current="page"{% endif %}>Portal access</a><a href="{% url 'staff:role_guide' %}"{% if active == 'roles' %} aria-current="page"{% endif %}>Role guide</a>{% endif %}</nav>
+{% comment %}Tabs for the Service team pages (directory, units) or the Portal access pages (accounts, role guide) — the two sit in different sidebar sections.{% endcomment %}
+{% if active == 'access' or active == 'roles' %}
+<nav class="jcf-access-tabs" aria-label="Portal access sections"><a href="{% url 'staff:user_list' %}"{% if active == 'access' %} aria-current="page"{% endif %}>Accounts</a><a href="{% url 'staff:role_guide' %}"{% if active == 'roles' %} aria-current="page"{% endif %}>Role guide</a></nav>
+{% else %}
+<nav class="jcf-access-tabs" aria-label="Service team sections"><a href="{% url 'staff:staff_list' %}"{% if active == 'directory' %} aria-current="page"{% endif %}>Service members</a><a href="{% url 'staff:unit_list' %}"{% if active == 'units' %} aria-current="page"{% endif %}>Service units</a></nav>
+{% endif %}

@@ -221,9 +221,10 @@ INNERSPACE_API_KEY=<shared secret>
   Semantic status colors remain distinct. Light/dark modes both work.
 - Sidebar and topbar colors are pinned dark/light in `base.html`, including
   cached Paces config. Match selector specificity when overriding Paces skins.
-- `dashboard/navigation.py` defines sections (Daily work, Foundation,
-  Publishing, Administration), task groups, and resolves the most specific
-  active URL. `{% office_navigation %}` renders the sidebar. Gold badges count
+- `dashboard/navigation.py` defines sections (Daily work — queues only;
+  Community; Foundation; Publishing; Tools), task groups, and resolves the most
+  specific active URL. Keep labels equal to page titles and never reuse a name
+  across groups (e.g. "Online students" vs Contacts → Students). `{% office_navigation %}` renders the sidebar. Gold badges count
   records waiting on staff, fetched in one UNION ALL query (keep it to one —
   it runs on every page). The page finder uses those authorized navigation
   links; it searches pages, not records.

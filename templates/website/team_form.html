@@ -6,7 +6,7 @@
 
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{% url 'dashboard:analytics' %}">Dashboard</a></li>
-<li class="breadcrumb-item"><a href="{% url 'website:team_list' %}">Team members</a></li>
+<li class="breadcrumb-item"><a href="{% url 'website:team_list' %}">Website team</a></li>
 <li class="breadcrumb-item active">{% if form.instance.pk %}Edit{% else %}Add{% endif %}</li>
 {% endblock %}
 
