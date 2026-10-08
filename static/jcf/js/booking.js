@@ -32,6 +32,15 @@
   heard.addEventListener('change', showDetail);
   showDetail();
 
+  const religion = form.querySelector('select[name="religion"]');
+  const religionOther = form.querySelector('[data-religion-other]');
+  const showReligion = () => {
+    religionOther.hidden = religion.value !== 'Other';
+    if (!religionOther.hidden && document.activeElement === religion) religionOther.querySelector('input').focus();
+  };
+  religion.addEventListener('change', showReligion);
+  showReligion();
+
   form.addEventListener('submit', () => {
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;

@@ -42,7 +42,7 @@
                     <dt>Telephone</dt><dd><a href="tel:{{ booking.phone }}" class="jcf-num">{{ booking.phone|phone }}</a> · <a href="https://wa.me/{{ booking.phone|stringformat:'s'|cut:'+' }}" target="_blank" rel="noopener noreferrer">WhatsApp</a></dd>
                     <dt>Email</dt><dd>{% if booking.email %}<a href="mailto:{{ booking.email }}">{{ booking.email }}</a>{% else %}{{ ""|or_dash }}{% endif %}</dd>
                     <dt>Current residence</dt><dd>{{ booking.residence|or_dash }}</dd>
-                    <dt>Heard about Dr. Jan</dt><dd>{{ booking.referral }}</dd>
+                    <dt>Heard about Dr. Jan</dt><dd>{{ booking.referral|or_dash }}</dd>
                     <dt>Would like to meet</dt><dd>{{ booking.get_preferred_mode_display|default:"Either way" }}</dd>
                 </dl>
                 {% if booking.note %}

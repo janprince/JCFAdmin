@@ -61,7 +61,7 @@ class ConsultationRequest(models.Model):
     hometown = models.CharField('Home town / region', max_length=255)
     religion = models.CharField(max_length=255)
     residence = models.CharField('Current residence', max_length=255)
-    heard_from = models.CharField(max_length=20, choices=Heard.choices)
+    heard_from = models.CharField(max_length=20, choices=Heard.choices, blank=True)
     heard_detail = models.CharField(max_length=255, blank=True)
     preferred_mode = models.CharField(max_length=10, choices=Preference.choices, blank=True)
     note = models.TextField(blank=True)
@@ -89,5 +89,5 @@ class ConsultationRequest(models.Model):
     @property
     def referral(self):
         """How they heard, as one line for the contact's "Referred by"."""
-        label = self.get_heard_from_display()
-        return f'{label} — {self.heard_detail}' if self.heard_detail else label
+        label = self.get_heard_from_display() if self.heard_from else ''
+        return ' — '.join(part for part in (label, self.heard_detail) if part)

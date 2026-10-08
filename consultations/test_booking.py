@@ -14,7 +14,7 @@ User = get_user_model()
 
 def answers(**overrides):
     data = dict(full_name='  Ama   Serwaa Mensah ', date_of_birth='1990-05-15', profession='Teacher',
-                hometown='Kumasi, Ashanti Region', religion='Christian', phone='024 412 3456', email='',
+                hometown='Kumasi, Ashanti Region', religion='Christianity', phone='024 412 3456', email='',
                 residence='East Legon, Accra', heard_from='youtube', heard_detail='', preferred_mode='Remote', note='')
     data.update(overrides)
     return data
@@ -41,7 +41,7 @@ class PublicBookingFormTests(TestCase):
         self.assertEqual(contact.date_of_birth, date(1990, 5, 15))
         self.assertEqual(contact.birth_weekday, 'Tuesday')
         self.assertEqual((contact.profession, contact.hometown, contact.religion, contact.residence),
-                         ('Teacher', 'Kumasi, Ashanti Region', 'Christian', 'East Legon, Accra'))
+                         ('Teacher', 'Kumasi, Ashanti Region', 'Christianity', 'East Legon, Accra'))
         self.assertEqual(contact.referral, 'YouTube')
         thanks = self.client.get(reverse('booking:thanks'))
         self.assertContains(thanks, 'Thank you, Ama')
@@ -54,6 +54,19 @@ class PublicBookingFormTests(TestCase):
         contact = ConsultationRequest.objects.get().contact
         self.assertIsNone(contact.date_of_birth)
         self.assertEqual(contact.birth_weekday, 'Friday')
+
+    def test_how_they_heard_is_optional(self):
+        self.client.post(reverse('booking:form'), answers(heard_from='', heard_detail=''))
+        booking = ConsultationRequest.objects.get()
+        self.assertEqual((booking.heard_from, booking.referral, booking.contact.referral), ('', '', ''))
+
+    def test_religion_is_chosen_from_a_list_or_written_in(self):
+        response = self.client.post(reverse('booking:form'), answers(religion='Rastafari'))
+        self.assertIn('religion', response.context['form'].errors)
+        response = self.client.post(reverse('booking:form'), answers(religion='Other', religion_other=''))
+        self.assertIn('religion_other', response.context['form'].errors)
+        self.client.post(reverse('booking:form'), answers(religion='Other', religion_other='  Eckankar '))
+        self.assertEqual(ConsultationRequest.objects.get().contact.religion, 'Eckankar')
 
     def test_required_answers_and_impossible_dates_are_refused(self):
         response = self.client.post(reverse('booking:form'), answers(profession='', date_of_birth='2999-01-01', phone='12'))

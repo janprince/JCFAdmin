@@ -28,6 +28,7 @@
                 {% include "partials/_field.html" with field=form.dob_unknown %}
                 {% include "partials/_field.html" with field=form.profession help="Your work, or Student / Retired." %}
                 {% include "partials/_field.html" with field=form.religion %}
+                <div data-religion-other>{% include "partials/_field.html" with field=form.religion_other %}</div>
             </div>
         </div>
     </section>
@@ -56,7 +57,7 @@
         <div class="jcf-card-body">
             <h2 class="jcf-public__step"><span>4</span>A little more</h2>
             <div class="d-grid gap-3">
-                {% include "partials/_field.html" with field=form.heard_from %}
+                {% include "partials/_field.html" with field=form.heard_from label="How did you hear about Dr. Jan? (optional)" %}
                 <div data-heard-detail>{% include "partials/_field.html" with field=form.heard_detail label="Who or where (optional)" %}</div>
                 <fieldset class="jcf-field">
                     <legend class="form-label">{{ form.preferred_mode.label }}</legend>

@@ -21,9 +21,19 @@ class ConsultationForm(forms.ModelForm):
         }
 
 
+# The faiths people name most often, as they would write them. Stored as the
+# label itself, so contact records read as plain words. "Other" asks for it.
+RELIGIONS = ['Christianity', 'Islam', 'African Traditional Religion', 'Hinduism', 'Buddhism', 'Judaism',
+             'Bahá’í Faith', 'Spiritual but not religious', 'No religion', 'Prefer not to say']
+OTHER_RELIGION = 'Other'
+
+
 class BookingRequestForm(forms.ModelForm):
     """The public booking form. Plain questions, in the order the office asked them on WhatsApp."""
     dob_unknown = forms.BooleanField(required=False, label='I don’t know my exact date of birth')
+    religion = forms.ChoiceField(choices=[('', 'Choose one')] + [(r, r) for r in RELIGIONS] + [(OTHER_RELIGION, 'Other…')],
+                                 label='Religion')
+    religion_other = forms.CharField(required=False, max_length=100, label='Your religion')
     # Left empty by people; filled by bots that complete every field.
     website = forms.CharField(required=False, widget=forms.TextInput(attrs={'tabindex': '-1', 'autocomplete': 'off'}))
 
@@ -55,11 +65,12 @@ class BookingRequestForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ('profession', 'hometown', 'religion', 'residence', 'heard_from'):
+        for name in ('profession', 'hometown', 'residence'):
             self.fields[name].required = True
+        self.fields['heard_from'].required = False
         self.fields['date_of_birth'].required = False
         self.fields['day_of_birth'].choices = [('', 'Choose a day')] + list(Contact.Weekday.choices)
-        self.fields['heard_from'].choices = [('', 'Choose one')] + list(ConsultationRequest.Heard.choices)
+        self.fields['heard_from'].choices = [('', 'Choose one, if you like')] + list(ConsultationRequest.Heard.choices)
         self.fields['preferred_mode'].choices = list(ConsultationRequest.Preference.choices) + [('', 'Either is fine')]
         self.fields['preferred_mode'].required = False
         self.fields['date_of_birth'].widget.attrs['max'] = date.today().isoformat()
@@ -82,4 +93,10 @@ class BookingRequestForm(forms.ModelForm):
             self.add_error('date_of_birth', 'Enter your date of birth, or tick “I don’t know my exact date of birth”.')
         elif born > date.today() or born.year < 1900:
             self.add_error('date_of_birth', 'Check the year — this date doesn’t look right.')
+        if data.get('religion') == OTHER_RELIGION:
+            other = ' '.join((data.get('religion_other') or '').split())
+            if other:
+                data['religion'] = other
+            else:
+                self.add_error('religion_other', 'Tell us your religion, or choose one from the list.')
         return data
