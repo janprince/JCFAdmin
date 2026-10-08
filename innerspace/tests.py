@@ -34,8 +34,8 @@ DETAIL = {('GET', 'students/cstudent1'): (200, {'student': student(), 'payments'
 
 
 class Reply:
-    def __init__(self, status, body):
-        self.status_code, self.body = status, body
+    def __init__(self, status, body, headers=None):
+        self.status_code, self.body, self.headers = status, body, headers or {}
         self.ok = status < 400
 
     def json(self):
@@ -48,13 +48,14 @@ class FakePlatform:
     def __init__(self, routes):
         self.routes, self.calls = routes, []
 
-    def request(self, method, url, params=None, json=None, timeout=None, headers=None):
+    def request(self, method, url, params=None, json=None, timeout=None, headers=None, allow_redirects=True):
+        assert allow_redirects is False, 'the client must never follow redirects'
         path = url.split('/api/jcf/v1/', 1)[1]
         self.calls.append({'method': method, 'path': path, 'params': params, 'json': json, 'headers': headers})
-        status, body = self.routes[(method, path)]
+        status, body, *headers = self.routes[(method, path)]
         if isinstance(body, Exception):
             raise body
-        return Reply(status, body)
+        return Reply(status, body, *headers)
 
 
 @override_settings(INNERSPACE_API_URL=API, INNERSPACE_API_KEY='office-key',
@@ -175,3 +176,9 @@ class ClientTests(TestCase):
         fake = FakePlatform({('GET', 'students'): (401, {'error': {'code': 'UNAUTHORISED', 'message': 'Missing or wrong office API key.'}})})
         with self.assertRaisesMessage(InnerspaceUnavailable, 'INNERSPACE_API_KEY'):
             InnerspaceClient(session=fake).students()
+
+    def test_a_redirect_names_the_address_to_configure_instead_of_following_it(self):
+        fake = FakePlatform({('GET', 'students'): (307, {}, {'Location': 'https://www.platform.test/api/jcf/v1/students'})})
+        with self.assertRaisesMessage(InnerspaceUnavailable, 'Set INNERSPACE_API_URL to https://www.platform.test'):
+            InnerspaceClient(session=fake).students()
+        self.assertEqual(len(fake.calls), 1)

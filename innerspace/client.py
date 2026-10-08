@@ -21,6 +21,8 @@ grant would record the cash payment twice.
 import logging
 from collections.abc import Sequence
 
+from urllib.parse import urljoin, urlsplit
+
 import requests
 from django.conf import settings
 
@@ -79,11 +81,20 @@ class InnerspaceClient:
             raise InnerspaceUnavailable('Inner Space is not configured on this server. Set INNERSPACE_API_URL and INNERSPACE_API_KEY.')
         url = f'{self.base_url}/api/jcf/v1/{path}'
         try:
-            response = self.session.request(method, url, params=params, json=body, timeout=TIMEOUT,
+            # Never follow redirects: the key would be dropped on a move to another
+            # host (drbaffourjan.com -> www.), and a write must not be re-sent.
+            response = self.session.request(method, url, params=params, json=body, timeout=TIMEOUT, allow_redirects=False,
                                             headers={'Authorization': f'Bearer {self.api_key}', 'Accept': 'application/json'})
         except requests.RequestException as exc:
             logger.warning('Inner Space API %s %s failed: %s', method, path, exc)
             raise InnerspaceUnavailable('Could not reach drbaffourjan.com. Try again in a moment.') from exc
+
+        if 300 <= response.status_code < 400:
+            target = urlsplit(urljoin(url, response.headers.get('Location', '')))
+            logger.error('Inner Space API %s redirects to %s', self.base_url, target.geturl())
+            raise InnerspaceUnavailable(
+                f'{self.base_url} redirects to {target.scheme}://{target.netloc}. '
+                f'Set INNERSPACE_API_URL to {target.scheme}://{target.netloc} and restart.')
 
         try:
             data = response.json()
