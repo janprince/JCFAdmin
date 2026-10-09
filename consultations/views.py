@@ -14,6 +14,13 @@ from dashboard.listing import count_by, tabs
 from .models import Consultation, ConsultationRequest
 from .forms import ConsultationForm
 from .public import booking_link
+from .sms import text_booking
+
+
+def notify_by_sms(request, consultation, rescheduled=False):
+    """Text the date. Call only after the booking is committed: a failure is a warning, never an error."""
+    sent, note = text_booking(consultation, rescheduled=rescheduled)
+    (messages.info if sent else messages.warning)(request, note)
 
 
 def share_context(request):
@@ -95,18 +102,21 @@ class ConsultationCreateView(LoginRequiredMixin, CreateView):
         context['booking_request'] = booking
         return context
 
-    @transaction.atomic
     def form_valid(self, form):
-        response = super().form_valid(form)
-        booking = self.booking_request()
-        if booking and booking.contact_id == self.object.contact_id:
-            booking.status = ConsultationRequest.Status.BOOKED
-            booking.consultation = self.object
-            booking.handled_by, booking.handled_at = self.request.user, timezone.now()
-            booking.save(update_fields=['status', 'consultation', 'handled_by', 'handled_at'])
-            messages.success(self.request, f'Consultation booked for {self.object.contact.full_name}. Their booking request is marked booked.')
-        else:
-            messages.success(self.request, 'Consultation booked successfully.')
+        # Save the booking (and close its request) first; the SMS goes out after.
+        with transaction.atomic():
+            response = super().form_valid(form)
+            booking = self.booking_request()
+            if booking and booking.contact_id == self.object.contact_id:
+                booking.status = ConsultationRequest.Status.BOOKED
+                booking.consultation = self.object
+                booking.handled_by, booking.handled_at = self.request.user, timezone.now()
+                booking.save(update_fields=['status', 'consultation', 'handled_by', 'handled_at'])
+                messages.success(self.request, f'Consultation booked for {self.object.contact.full_name}. Their booking request is marked booked.')
+            else:
+                messages.success(self.request, 'Consultation booked successfully.')
+        if form.cleaned_data.get('send_sms'):
+            notify_by_sms(self.request, self.object)
         return response
 
 
@@ -117,8 +127,12 @@ class ConsultationUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('consultations:consultation_list')
 
     def form_valid(self, form):
+        rescheduled = 'scheduled_date' in form.changed_data
+        response = super().form_valid(form)
         messages.success(self.request, 'Consultation updated successfully.')
-        return super().form_valid(form)
+        if form.cleaned_data.get('send_sms'):
+            notify_by_sms(self.request, self.object, rescheduled=rescheduled)
+        return response
 
 
 @login_required

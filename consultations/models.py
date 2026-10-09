@@ -14,6 +14,7 @@ class Consultation(models.Model):
     mode = models.CharField(max_length=10, choices=Mode.choices)
     scheduled_date = models.DateField()
     done = models.BooleanField(default=False)
+    sms_sent_at = models.DateTimeField(null=True, blank=True, help_text='When the date was last texted to the contact.')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

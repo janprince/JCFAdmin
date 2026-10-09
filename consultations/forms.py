@@ -11,6 +11,16 @@ class ConsultationForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Contact',
     )
+    # On for a new booking; off when editing, so a typo fix doesn't text anyone.
+    send_sms = forms.BooleanField(required=False, initial=True, label='Text the date to them by SMS',
+                                  help_text='Ghana numbers only, for today or a later date.',
+                                  widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['send_sms'].initial = False
+            self.fields['send_sms'].label = 'Text them the new date by SMS'
 
     class Meta:
         model = Consultation

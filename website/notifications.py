@@ -12,35 +12,59 @@ def is_ghana_number(phone):
     """Check if a phone number is a Ghana number (+233)."""
     try:
         parsed = phonenumbers.parse(str(phone), 'GH')
-        return parsed.country_code == 233
+        return parsed.country_code == 233 and phonenumbers.is_valid_number(parsed)
     except phonenumbers.NumberParseException:
         return False
 
 
-def send_sms_arkesel(to, message):
-    """Send SMS via Arkesel API."""
+class SmsNotSent(Exception):
+    """Why an SMS did not go out, in words staff can act on."""
+
+
+def arkesel_recipient(phone):
+    """Arkesel wants international digits with no plus sign: 233241234567."""
+    parsed = phonenumbers.parse(str(phone), 'GH')
+    return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164).lstrip('+')
+
+
+def deliver_sms(to, message):
+    """Send one SMS through Arkesel, or raise SmsNotSent saying why.
+
+    Arkesel can answer 200 and still refuse a message, so the JSON `status`
+    is checked as well as the HTTP code.
+    """
     api_key = getattr(settings, 'ARKESEL_API_KEY', '')
     if not api_key:
-        logger.warning('ARKESEL_API_KEY not configured; skipping SMS to %s', to)
-        return False
-
+        raise SmsNotSent('SMS is not set up on this server (ARKESEL_API_KEY is empty).')
     payload = {
         'sender': getattr(settings, 'ARKESEL_SENDER_ID', 'JCF'),
         'message': message,
-        'recipients': [str(to)],
+        'recipients': [arkesel_recipient(to)],
     }
     try:
-        resp = requests.post(
-            'https://sms.arkesel.com/api/v2/sms/send',
-            headers={'api-key': api_key},
-            json=payload,
-            timeout=10,
-        )
-        resp.raise_for_status()
-        logger.info('SMS sent to %s via Arkesel', to)
+        resp = requests.post('https://sms.arkesel.com/api/v2/sms/send', headers={'api-key': api_key},
+                             json=payload, timeout=10)
+    except requests.RequestException as exc:
+        logger.error('Arkesel SMS to %s failed: %s', to, exc)
+        raise SmsNotSent('Could not reach the SMS service. Try again later.') from exc
+    try:
+        body = resp.json()
+    except ValueError:
+        body = {}
+    if not resp.ok or (body.get('status') and body.get('status') != 'success'):
+        reason = body.get('message') or f'the SMS service answered {resp.status_code}'
+        logger.error('Arkesel refused SMS to %s: %s %s', to, resp.status_code, reason)
+        raise SmsNotSent(f'The SMS service refused it: {reason}.')
+    logger.info('SMS sent to %s via Arkesel', to)
+
+
+def send_sms_arkesel(to, message):
+    """Send SMS via Arkesel. Returns True when sent; failures are logged, never raised."""
+    try:
+        deliver_sms(to, message)
         return True
-    except requests.RequestException as e:
-        logger.error('Arkesel SMS failed for %s: %s', to, e)
+    except SmsNotSent as exc:
+        logger.warning('SMS to %s not sent: %s', to, exc)
         return False
 
 

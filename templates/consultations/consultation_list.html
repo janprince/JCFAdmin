@@ -46,7 +46,7 @@
                 {% with day=c.scheduled_date|date:"Y-m-d" %}
                 <tr>
                     <td>{% include "partials/_person.html" with name=c.contact.full_name meta=c.contact.phone|phone url=contact_url %}</td>
-                    <td class="jcf-num">{{ c.scheduled_date|date:"D, j M Y" }}</td>
+                    <td class="jcf-num">{{ c.scheduled_date|date:"D, j M Y" }}{% if c.sms_sent_at %}<span class="jcf-cell-meta" title="Texted {{ c.sms_sent_at|date:'j M Y, H:i' }}"><i class="ph ph-chat-text" aria-hidden="true"></i> Texted {{ c.sms_sent_at|date:"j M" }}</span>{% endif %}</td>
                     <td>
                         {% if c.mode == "Remote" %}<span class="jcf-tag"><i class="ph ph-video-camera"></i>Remote</span>
                         {% else %}<span class="jcf-tag"><i class="ph ph-buildings"></i>Onsite</span>{% endif %}
