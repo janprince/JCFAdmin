@@ -127,7 +127,7 @@ class OfficeTests(TestCase):
         self.assertEqual(counts['Contact messages'], 1)
         self.assertEqual(counts['Volunteer applications'], 1)
         self.assertFalse(counts['Foundation registrations'])
-        self.assertIsNone(counts['Members'])
+        self.assertIsNone(counts['Contacts'])
         self.assertEqual(next(g for g in groups if g['label'] == 'Inbox')['count'], 2)
 
     def test_sign_out_control_uses_post_and_works(self):

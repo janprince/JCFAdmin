@@ -13,14 +13,17 @@ Manage an account to update its name, email, staff link or role. Reset initial p
 | Area | Admin | Administrator | Secretary | Media Operations |
 |---|---|---|---|---|
 | Contacts, members, students, centres | Manage | Manage | Manage | — |
-| Messages, applications, centre requests, subscribers | Manage | Manage | Manage | — |
-| Consultations | Manage | Manage | Manage | — |
-| Teachings, events, writings | Manage | Manage | — | Manage |
-| Website content | Manage | Manage | — | Manage |
+| Inbox: registrations, messages, centre requests, volunteer applications | Manage | Manage | Manage | — |
+| Consultations and booking requests | Manage | Manage | Manage | — |
+| Inner Space student registration and access decisions | Manage | Manage | — | — |
+| Events and gatherings | Manage | Manage | — | Manage |
 | Initiatives and donations | Manage | Manage | — | — |
-| Inner Space students and access decisions | Manage | Manage | — | — |
 | Service team, units, allowances | Manage | Manage | — | — |
+| Teachings and writings | Manage | — | — | Manage |
+| Website content, newsletters, digital resource links | Manage | — | — | Manage |
 | Portal accounts and roles | Manage | — | — | — |
+
+Every role can open Digital resources to copy and share links; adding or editing them belongs to website content. The Administrator runs the office and the Foundation and does not publish.
 
 Every recognized role has a tailored overview and can change its own password. These are fixed roles, defined centrally in `accounts/access.py`; service roles (job titles) remain descriptive and do not grant permissions.
 

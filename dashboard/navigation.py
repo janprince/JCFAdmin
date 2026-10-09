@@ -35,23 +35,25 @@ def _waiting(routes):
 # (section, group label, icon, [(link label, route)]). A section heading is
 # drawn above the first group of each section the user can see.
 #
-# Each section answers one question: what is waiting for me (queues only),
-# who do we serve, how is the Foundation run, what do we share, and the tools.
-# Within a group the main list comes first and its queue second. Labels match
-# page titles, and no two read alike ("Online students" vs Contacts → Students,
-# "Website team" vs "Service team").
+# The Inbox sits under Overview: it is where the day starts. Then the office's
+# own work, the Foundation, publishing, and tools. Single-link groups share
+# their label with the page title; Contacts' Members and Students are tabs on
+# the contacts page rather than separate entries.
 DEFINITIONS = [
     (None, 'Overview', 'squares-four', [('Foundation overview', 'dashboard:analytics')]),
-    ('Daily work', 'Inbox', 'tray', [('Foundation registrations', 'website:foundation_registration_list'), ('Contact messages', 'website:contact_list'), ('Centre join requests', 'website:join_request_list'), ('Volunteer applications', 'website:volunteer_app_list')]),
-    ('Daily work', 'Consultations', 'calendar-check', [('Consultations', 'consultations:consultation_list'), ('Booking requests', 'consultations:request_list')]),
-    ('Daily work', 'Inner Space', 'monitor-play', [('Online students', 'innerspace:student_list'), ('Access requests', 'innerspace:request_list')]),
-    ('Community', 'Contacts', 'address-book', [('All contacts', 'members:contact_list'), ('Members', 'members:member_list'), ('Students', 'members:student_list'), ('Newsletter subscribers', 'website:newsletter_list')]),
-    ('Community', 'Centres', 'buildings', [('Centres', 'centres:centre_list')]),
+    (None, 'Inbox', 'tray', [('Foundation registrations', 'website:foundation_registration_list'), ('Contact messages', 'website:contact_list'), ('Centre join requests', 'website:join_request_list'), ('Volunteer applications', 'website:volunteer_app_list')]),
+    ('The office', 'Contacts', 'address-book', [('Contacts', 'members:contact_list')]),
+    ('The office', 'Consultations', 'calendar-check', [('Consultations', 'consultations:consultation_list')]),
+    ('The office', 'Booking requests', 'calendar-plus', [('Booking requests', 'consultations:request_list')]),
+    ('The office', 'Students registration', 'monitor-play', [('Online students', 'innerspace:student_list'), ('Access requests', 'innerspace:request_list')]),
+    ('Foundation', 'Centres', 'buildings', [('Centres', 'centres:centre_list')]),
+    ('Foundation', 'Events', 'calendar-dots', [('Events', 'events:event_list')]),
     ('Foundation', 'Giving', 'hand-heart', [('Initiatives', 'causes:cause_list'), ('Donations', 'causes:donation_list')]),
     ('Foundation', 'Service team', 'identification-badge', [('Service members', 'staff:staff_list'), ('Service units', 'staff:unit_list')]),
-    ('Publishing', 'Teachings & writings', 'book-open-text', [('Teachings', 'teachings:teaching_list'), ('Writings', 'blog:post_list')]),
-    ('Publishing', 'Events', 'calendar-dots', [('Events', 'events:event_list')]),
+    ('Publishing', 'Writings', 'note-pencil', [('Writings', 'blog:post_list')]),
+    ('Publishing', 'Teachings', 'book-open-text', [('Teachings', 'teachings:teaching_list')]),
     ('Publishing', 'Website', 'globe-simple', [('Gallery', 'website:gallery_list'), ('Website team', 'website:team_list'), ('Testimonials', 'website:testimonial_list'), ('Volunteer roles', 'website:volunteer_list'), ('Impact statistics', 'website:impact_list')]),
+    ('Publishing', 'Newsletters', 'envelope-simple', [('Newsletters', 'website:newsletter_list')]),
     ('Tools', 'Digital resources', 'link-simple', [('Digital resources', 'resources:resource_list')]),
     ('Tools', 'Portal access', 'key', [('Accounts', 'staff:user_list'), ('Role guide', 'staff:role_guide')]),
 ]

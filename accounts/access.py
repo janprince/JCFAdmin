@@ -3,26 +3,28 @@ from .models import Profile
 
 AREAS = {
     'community': 'Contacts, members, students & centres',
-    'inbox': 'Messages, applications & subscribers',
-    'consultations': 'Consultations',
-    'publishing': 'Teachings, events & writings',
-    'content': 'Website content & digital resource links',
+    'inbox': 'Messages & applications',
+    'consultations': 'Consultations & booking requests',
+    'innerspace': 'Inner Space student registration & access decisions',
+    'events': 'Events & gatherings',
     'giving': 'Initiatives & donations',
-    'innerspace': 'Inner Space students & access decisions',
     'staff': 'Service team, units & allowances',
+    'publishing': 'Teachings & writings',
+    'content': 'Website content, newsletters & digital resource links',
     'accounts': 'Portal accounts & roles',
 }
 ROLE_AREAS = {
     Profile.Role.ADMIN: frozenset(AREAS),
-    Profile.Role.ADMINISTRATOR: frozenset(AREAS) - {'accounts'},
+    # Runs the office and the Foundation; publishing belongs to Media Operations.
+    Profile.Role.ADMINISTRATOR: frozenset(AREAS) - {'accounts', 'publishing', 'content'},
     Profile.Role.SECRETARY: frozenset({'community', 'inbox', 'consultations'}),
-    Profile.Role.MEDIA_OPS: frozenset({'publishing', 'content'}),
+    Profile.Role.MEDIA_OPS: frozenset({'publishing', 'content', 'events'}),
 }
 ROLE_DESCRIPTIONS = {
     'admin': 'Full portal access, including creating accounts and assigning roles.',
-    'administrator': 'Foundation operations, publishing, giving, Inner Space and the service team. Cannot manage portal accounts.',
+    'administrator': 'The office and the Foundation: contacts, consultations, Inner Space, centres, events, giving and the service team. No publishing or portal account management.',
     'secretary': 'Contacts, centres, consultations and incoming requests. No giving, service team allowances or account administration.',
-    'media_operations': 'Teachings, events, writings and website content. No private contact records, giving or service team administration.',
+    'media_operations': 'Teachings, writings, events, website content and newsletters. No private contact records, giving or service team administration.',
 }
 
 def areas_for(user):
@@ -42,13 +44,13 @@ def area_for_route(namespace, name):
     if namespace == 'resources':
         return 'content'
     if namespace == 'website':
-        if name.startswith(('foundation_registration_', 'contact_', 'join_request_', 'volunteer_app_', 'newsletter_')):
+        if name.startswith(('foundation_registration_', 'contact_', 'join_request_', 'volunteer_app_')):
             return 'inbox'
-        if name.startswith(('gallery_', 'volunteer_', 'testimonial_', 'team_', 'impact_')):
+        if name.startswith(('gallery_', 'volunteer_', 'testimonial_', 'team_', 'impact_', 'newsletter_')):
             return 'content'
         return None
     return {'members': 'community', 'centres': 'community', 'consultations': 'consultations',
-            'teachings': 'publishing', 'blog': 'publishing', 'events': 'publishing',
+            'teachings': 'publishing', 'blog': 'publishing', 'events': 'events',
             'causes': 'giving', 'innerspace': 'innerspace'}.get(namespace)
 
 

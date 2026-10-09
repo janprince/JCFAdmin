@@ -54,13 +54,14 @@ class AnalyticsView(LoginRequiredMixin, TemplateView):
             context['overdue_consultation_count'] = Consultation.objects.filter(done=False, scheduled_date__lt=today).count()
             context['upcoming_consultations'] = Consultation.objects.filter(done=False, scheduled_date__gte=today, scheduled_date__lte=today + timedelta(days=7)).select_related('contact').order_by('scheduled_date', 'pk')[:5]
             context['today_consultation_count'] = Consultation.objects.filter(done=False, scheduled_date=today).count()
-        if 'publishing' in access:
+        if 'events' in access:
             # Multi-day events stay current through their final day.
             events = Event.objects.filter(is_published=True).filter(Q(end_date__gte=today) | Q(end_date__isnull=True, date__gte=today))
             context['upcoming_events'] = events.order_by('date', 'time')[:3]
             context['upcoming_event_count'] = events.count()
-            context['draft_post_count'] = Post.objects.filter(status='draft').count()
             context['draft_event_count'] = Event.objects.filter(is_published=False).count()
+        if 'publishing' in access:
+            context['draft_post_count'] = Post.objects.filter(status='draft').count()
             context['pending_teaching_count'] = Teaching.objects.filter(status='pending').count()
         if 'community' in access:
             context['recent_contacts'] = Contact.objects.order_by('-created_at', '-pk')[:4]

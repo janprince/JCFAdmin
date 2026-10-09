@@ -27,7 +27,7 @@ class DigitalResourceTests(TestCase):
     def test_every_role_can_open_and_copy_but_only_content_managers_edit(self):
         for role, user in self.users.items():
             self.client.force_login(user)
-            manages = role in ('admin', 'administrator', 'media_operations')
+            manages = role in ('admin', 'media_operations')  # Website content; not the Administrator.
             with self.subTest(role=role):
                 response = self.client.get(reverse('resources:resource_list'))
                 self.assertContains(response, 'data-copy="https://www.drbaffourjan.com"')
@@ -52,7 +52,7 @@ class DigitalResourceTests(TestCase):
         self.assertContains(self.client.get(reverse('resources:resource_list')), 'Share privately')
 
     def test_invalid_link_reopens_the_add_modal(self):
-        self.client.force_login(self.users['administrator'])
+        self.client.force_login(self.users['media_operations'])
         response = self.client.post(reverse('resources:resource_create'), {'title': '', 'url': 'not a link', 'category': 'other', 'audience': 'everyone'})
         self.assertContains(response, 'data-jcf-open')
         self.assertIn('url', response.context['form'].errors)

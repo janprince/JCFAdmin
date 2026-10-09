@@ -209,3 +209,32 @@ class PortalAccessTests(TestCase):
         self.assertEqual(response.context['form'].initial['email'], self.contact.email)
         self.assertIn('no-store', response.headers['Cache-Control'])
         self.assertContains(self.client.get(reverse('staff:staff_list')), 'Set up access')
+
+
+class SidebarArrangementTests(TestCase):
+    """The Administrator runs the office and the Foundation, and does not publish."""
+
+    def sidebar(self, role):
+        user = User.objects.create_user(username=role, email=f'{role}@example.com', password=PASSWORD)
+        user.profile.role = role
+        user.profile.save()
+        request = RequestFactory().get(reverse('dashboard:analytics'))
+        request.user = user
+        request.resolver_match = resolve(request.path)
+        return user, {group['label']: group['section'] for group in navigation_for(request)}
+
+    def test_administrator_keeps_events_but_not_publishing_or_portal_access(self):
+        user, groups = self.sidebar('administrator')
+        self.assertEqual(groups['Events'], 'Foundation')
+        self.assertEqual(groups['Students registration'], 'The office')
+        for hidden in ('Writings', 'Teachings', 'Website', 'Newsletters', 'Portal access'):
+            self.assertNotIn(hidden, groups)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(reverse('events:event_list')).status_code, 200)
+        for route in ('blog:post_list', 'teachings:teaching_list', 'website:gallery_list', 'website:newsletter_list', 'staff:user_list'):
+            self.assertEqual(self.client.get(reverse(route)).status_code, 403, route)
+
+    def test_media_operations_still_manage_events_with_publishing(self):
+        _, groups = self.sidebar('media_operations')
+        self.assertTrue({'Events', 'Writings', 'Teachings', 'Website', 'Newsletters'} <= set(groups))
+        self.assertNotIn('Contacts', groups)

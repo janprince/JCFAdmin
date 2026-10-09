@@ -221,9 +221,9 @@ INNERSPACE_API_KEY=<shared secret>
   Semantic status colors remain distinct. Light/dark modes both work.
 - Sidebar and topbar colors are pinned dark/light in `base.html`, including
   cached Paces config. Match selector specificity when overriding Paces skins.
-- `dashboard/navigation.py` defines sections (Daily work — queues only;
-  Community; Foundation; Publishing; Tools), task groups, and resolves the most
-  specific active URL. Keep labels equal to page titles and never reuse a name
+- `dashboard/navigation.py` defines the sidebar: Overview and Inbox, then
+  The office, Foundation, Publishing and Tools; it resolves the most specific
+  active URL. Keep labels equal to page titles and never reuse a name
   across groups (e.g. "Online students" vs Contacts → Students). `{% office_navigation %}` renders the sidebar. Gold badges count
   records waiting on staff, fetched in one UNION ALL query (keep it to one —
   it runs on every page). The page finder uses those authorized navigation
@@ -290,7 +290,7 @@ Auth pages extend `layouts/auth.html` and override `{% block auth_content %}`.
 - The service team (`staff_mgmt`) records commitment (full-time / part-time / volunteer), status (active / on leave / inactive), service units, start/end dates and an optional monthly allowance per currency. `Worker` keeps its name because `Profile.worker` links to it. Edits that change commitment, units, status or allowance write an automatic `ServiceEntry` (`staff_mgmt/journey.py`); staff add milestones, thanks, check-ins and retreats by hand.
 - `ServiceUnit.portal_roles` bounds the roles an account linked to a member of that unit can be given (`PortalUserForm.clean`). It never grants anything — areas still come from the role. Members with no unit are unconstrained; only Admins can change a unit's roles. Ended service with a live account, or a role outside the units, is flagged for review, not auto-revoked.
 - `accounts.access.OPEN_ROUTES` lists pages every portal role may open (currently the digital resources list); `route_allowed()` is shared by the middleware and navigation. Adding or editing resource links needs the `content` area.
-- Admin manages portal access; Administrator manages all operational areas; Secretary manages community, inbox and consultations; Media Operations manages publishing/content. Django admin is reserved for system superusers.
+- Admin manages portal access; Administrator manages the office and the Foundation (contacts, inbox, consultations, Inner Space, centres, events, giving, service team) but not publishing; Secretary manages community, inbox and consultations; Media Operations manages publishing, website content, newsletters and events. Events has its own `events` area so it can sit under Foundation. Django admin is reserved for system superusers.
 - Navigation, dashboard sections and Inner Space action permissions derive from that policy. Never rely only on hiding a link.
 - Password reset/deactivation are CSRF-protected POSTs. Account changes are audited; no plaintext password logging or email. New/reset initial passwords must be changed on first sign-in.
 - Apply the accounts migration to the default Foundation DB when deploying. See `docs/portal-access.md` for rollout, legacy-account behavior and validation; regression tests are in `accounts/test_portal_access.py`.
